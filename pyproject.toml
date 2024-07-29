@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "ososedki-dl"
+version = "0.1.0"
+description = ""
+authors = ["Alejandro González Momblán <agelrenorenardo@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+aiofiles = "^24.1.0"
+aiohttp = "^3.9.5"
+beautifulsoup4 = "^4.12.2"
+fake-useragent = "^1.5.1"
+platformdirs = "^4.2.2"
+requests = "^2.31.0"
+rich = "^13.5.3"
+tldextract = "^5.1.2"
+tqdm = "^4.66.1"
+validators = "^0.22.0"
+requests-pprint = "^1.0.1"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+ososedki-dl = "ososedki_dl.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
