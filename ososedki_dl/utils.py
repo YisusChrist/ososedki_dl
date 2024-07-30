@@ -108,16 +108,9 @@ async def fetch(
     property: str = "text",
     headers: Optional[dict[str, str]] = None,
 ) -> Any:
-    try:
-        return await _generic_fetch(
-            session=session, url=url, headers=headers, response_property=property
-        )
-    except ClientResponseError as e:
-        print(f"Failed to fetch {url} with status {e.status}")
-        return None
-    except InvalidURL:
-        print(f'Invalid URL: "{url}"')
-        return None
+    return await _generic_fetch(
+        session=session, url=url, headers=headers, response_property=property
+    )
     """
     ua = UserAgent(min_version=120.0)
     headers = headers or {"User-Agent": ua.random}
@@ -194,6 +187,12 @@ async def download_and_compare(
     except ClientResponseError as e:
         print(f"Failed to fetch {url} with status {e.status}")
         return {"url": url, "status": f"error: {e.status}"}
+    except InvalidURL as e:
+        print(f'Invalid URL: "{url}"')
+        return {"url": url, "status": f"error: {e}"}
+    except Exception as e:
+        print(f"Failed to fetch {url} with error {e}")
+        return {"url": url, "status": "error"}
 
     if media_path.exists():
         file_content: bytes = media_path.read_bytes()
