@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-At the moment codewars-solver only considers the very latest commit to be supported.
+At the moment ososedki_dl only considers the very latest commit to be supported.
 We combine that with our fast response to incidents and the automated updates
 to minimize the time between vulnerability publication and patch release.
 
@@ -21,4 +21,4 @@ Instead, you should email the maintainers directly at: [**agelrenorenardo@gmail.
 
 We will deal with the vulnerability privately and submit a patch as soon as possible.
 
-You can also submit your vulnerability report to [huntr.dev](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyisuschrist%2Fcodewars-solver) and see if you can get a bounty reward.
+You can also submit your vulnerability report to [huntr.dev](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyisuschrist%2Fososedki_dl) and see if you can get a bounty reward.

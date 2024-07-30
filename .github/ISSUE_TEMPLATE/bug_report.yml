@@ -8,8 +8,8 @@ body:
       attributes:
           value: |
               ## Self Check
-              - Look for similar errors in existing [GitHub Issues](https://github.com/YisusChrist/codewars-solver/issues?q=is%3Aissue) (open or closed).
-              - Take a look at the [documentation](https://github.com/YisusChrist/codewars-solver/wiki) for help.
+              - Look for similar errors in existing [GitHub Issues](https://github.com/YisusChrist/ososedki_dl/issues?q=is%3Aissue) (open or closed).
+              - Take a look at the [documentation](https://github.com/YisusChrist/ososedki_dl/wiki) for help.
     - type: textarea
       validations:
           required: true
@@ -49,8 +49,8 @@ body:
       validations:
           required: true
       attributes:
-          label: codewars-solver version
-          description: Run `codewars-solver -V` to check.
+          label: ososedki_dl version
+          description: Run `ososedki_dl -V` to check.
           placeholder: "1.0"
     - type: textarea
       attributes:

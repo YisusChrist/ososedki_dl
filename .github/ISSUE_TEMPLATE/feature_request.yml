@@ -8,7 +8,7 @@ body:
       attributes:
           value: |
               ## Self Check
-              - Look for similar features in existing [GitHub Issues](https://github.com/YisusChrist/codewars-solver/issues?q=is%3Aissue) (open or closed).
+              - Look for similar features in existing [GitHub Issues](https://github.com/YisusChrist/ososedki_dl/issues?q=is%3Aissue) (open or closed).
     - type: textarea
       attributes:
           label: If the feature solves a problem you have, specify it here.

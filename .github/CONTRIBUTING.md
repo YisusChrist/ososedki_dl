@@ -1,6 +1,6 @@
 # CONTRIBUTING GUIDELINES
 
-codewars-solver is a community-driven project. Contribution is welcome, encouraged, and appreciated.
+ososedki_dl is a community-driven project. Contribution is welcome, encouraged, and appreciated.
 It is also essential for the development of the project.
 
 First, please take a moment to review our [code of conduct](CODE_OF_CONDUCT.md).
@@ -13,18 +13,19 @@ you would make is not already covered.
 
 <!-- TOC updateonsave:true depthfrom:2 -->
 
--   [Reporting Issues](#reporting-issues)
-    -   [You have a problem](#you-have-a-problem)
-    -   [You have a suggestion](#you-have-a-suggestion)
--   [Submitting Pull Requests](#submitting-pull-requests)
-    -   [Getting started](#getting-started)
-    -   [You have a solution](#you-have-a-solution)
-    -   [You have an addition](#you-have-an-addition)
--   [Use the Search, Luke](#use-the-search-luke)
--   [Commit Guidelines](#commit-guidelines)
-    -   [Format](#format)
-    -   [Style](#style)
--   [Volunteer](#volunteer)
+- [CONTRIBUTING GUIDELINES](#contributing-guidelines)
+  - [Reporting Issues](#reporting-issues)
+    - [You have a problem](#you-have-a-problem)
+    - [You have a suggestion](#you-have-a-suggestion)
+  - [Submitting Pull Requests](#submitting-pull-requests)
+    - [Getting started](#getting-started)
+    - [You have a solution](#you-have-a-solution)
+    - [You have an addition](#you-have-an-addition)
+  - [Use the Search, Luke](#use-the-search-luke)
+  - [Commit Guidelines](#commit-guidelines)
+    - [Format](#format)
+    - [Style](#style)
+  - [Volunteer](#volunteer)
 
 <!-- /TOC -->
 
@@ -115,7 +116,7 @@ and [create an issue](#reporting-issues) or [submit a PR](#submitting-pull-reque
 
 ## Commit Guidelines
 
-codewars-solver uses the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+ososedki_dl uses the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 specification. The automatic changelog tool uses these to automatically generate
 a changelog based on the commit messages. Here's a guide to writing a commit message
 to allow this:
