@@ -4,11 +4,11 @@ from pathlib import Path
 import re
 from typing import Any, Optional
 
-import aiofiles
-import validators
+import aiofiles  # type: ignore
+import validators  # type: ignore
 from aiohttp import ClientConnectorError, ClientResponseError, ClientSession, InvalidURL
-from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
+from bs4 import BeautifulSoup  # type: ignore
+from fake_useragent import UserAgent  # type: ignore
 from rich import print
 from rich.prompt import Prompt
 
@@ -73,7 +73,7 @@ async def _generic_fetch(
     session: ClientSession,
     url: str,
     headers: Optional[dict[str, str]] = None,
-    response_property: Optional[str] = "text",
+    response_property: str = "text",
 ) -> Any:
     ua = UserAgent(min_version=120.0)
     headers = headers or {"User-Agent": ua.random}
@@ -103,15 +103,18 @@ async def _generic_fetch(
 async def fetch(
     session: ClientSession,
     url: str,
-    property: Optional[str] = "text",
+    property: str = "text",
     headers: Optional[dict[str, str]] = None,
 ) -> Any:
     try:
         return await _generic_fetch(
             session=session, url=url, headers=headers, response_property=property
         )
-    except (ClientResponseError, InvalidURL) as e:
+    except ClientResponseError as e:
         print(f"Failed to fetch {url} with status {e.status}")
+        return None
+    except InvalidURL:
+        print(f'Invalid URL: "{url}"')
         return None
     """
     ua = UserAgent(min_version=120.0)

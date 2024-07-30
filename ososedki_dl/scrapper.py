@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable
+from typing import Awaitable, Callable
 
 from aiohttp import ClientSession
 from rich.console import Console
@@ -8,7 +8,7 @@ from rich.progress import Progress, TaskID
 console = Console()
 
 
-def print_errors(results: list[str]) -> None:
+def print_errors(results: list[dict[str, str]]) -> None:
     console.print("\nErrors:")
     for result in results:
         if "error" in result["status"]:
@@ -20,7 +20,7 @@ async def generic_download(
     urls: list[str],
     download_path: Path,
     download_func: Callable[
-        [ClientSession, str, Path, Progress, TaskID], list[dict[str, str]]
+        [ClientSession, str, Path, Progress, TaskID], Awaitable[list[dict[str, str]]]
     ],
 ) -> None:
     with Progress() as progress:
@@ -51,7 +51,7 @@ async def generic_download(
 
 async def _generic_callback(
     callback: Callable[
-        [ClientSession, str, Path, Progress, TaskID], list[dict[str, str]]
+        [ClientSession, str, Path, Progress, TaskID], Awaitable[list[dict[str, str]]]
     ],
     session: ClientSession,
     url: str,
@@ -72,7 +72,7 @@ async def eromexxx_download(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-) -> None:
+) -> list[dict[str, str]]:
     from ososedki_dl.crawlers.eromexxx import download_profile
 
     return await _generic_callback(
@@ -110,7 +110,7 @@ async def sorrymother_download(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-) -> None:
+) -> list[dict[str, str]]:
     from ososedki_dl.crawlers.sorrymother import download_album
 
     return await _generic_callback(
@@ -129,7 +129,7 @@ async def wildskirts_download(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-) -> None:
+) -> list[dict[str, str]]:
     from ososedki_dl.crawlers.wildskirts import download_profile
 
     return await _generic_callback(
@@ -148,7 +148,7 @@ async def fapello_is_download(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-) -> None:
+) -> list[dict[str, str]]:
     from ososedki_dl.crawlers.fapello_is import download_profile
 
     return await _generic_callback(

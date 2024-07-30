@@ -98,10 +98,10 @@ async def download_album(
     try:
         soup: BeautifulSoup = await get_soup(session, album_url)
     except ValueError:
-        return
+        return []
     except ClientResponseError as e:
         print(f"Failed to fetch {album_url} with status {e.status}")
-        return
+        return []
 
     videos: list = [video_source["src"] for video_source in soup.find_all("source")]
     images: list = [

@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from aiohttp import ClientSession
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 from rich.progress import Progress, TaskID
 
 from ._common import process_album

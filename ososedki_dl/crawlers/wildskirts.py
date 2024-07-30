@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 
 from aiohttp import ClientSession
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import download_media_items, fetch_soup
@@ -56,7 +56,6 @@ async def download_profile(
     # ! Beware, the trailing slash may return different results
     if profile_url.endswith("/"):
         profile_url = profile_url[:-1]
-        
 
     profile: str = profile_url.split("/")[-1]
 

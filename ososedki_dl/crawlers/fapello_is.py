@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import requests
+import requests  # type: ignore
 from aiohttp import ClientSession
 from rich import print
 from rich.progress import Progress, TaskID
@@ -19,7 +19,7 @@ async def download_profile(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-) -> None:
+) -> list[dict[str, str]]:
     if profile_url.endswith("/"):
         profile_url = profile_url[:-1]
 

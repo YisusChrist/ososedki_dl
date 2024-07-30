@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Callable
 
 from aiohttp import ClientResponseError, ClientSession
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
