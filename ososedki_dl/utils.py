@@ -1,12 +1,14 @@
 import hashlib
+import re
 from asyncio import sleep
 from pathlib import Path
-import re
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 import aiofiles  # type: ignore
 import validators  # type: ignore
-from aiohttp import ClientConnectorError, ClientResponseError, ClientSession, InvalidURL
+from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
+                     InvalidURL)
 from bs4 import BeautifulSoup  # type: ignore
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
@@ -210,8 +212,9 @@ async def download_and_save_media(
     album_path: Path,
     headers: Optional[dict[str, str]] = None,
 ) -> dict[str, str]:
-    media_name: str = url.split("/")[-1]
-    media_path: Path = album_path / media_name
+    # Use urlparse to extract the media name from the URL
+    media_name: str = urlparse(url).path.split("/")[-1]
+    media_path: Path = sanitize_path(album_path, media_name)
 
     return await download_and_compare(
         session,
