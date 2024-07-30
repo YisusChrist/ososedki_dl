@@ -3,7 +3,7 @@ import re
 from asyncio import sleep
 from pathlib import Path
 from typing import Any, Optional
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 import aiofiles  # type: ignore
 import validators  # type: ignore
@@ -23,7 +23,7 @@ def get_valid_url() -> str:
         if validators.url(url):
             return url
         else:
-            print("[bold red]Error:[/bold red] Please enter a valid URL.")
+            print("[bold red]Error:[/] Please enter a valid URL.")
 
 
 def get_valid_path() -> Path:
@@ -217,7 +217,7 @@ async def download_and_save_media(
     headers: Optional[dict[str, str]] = None,
 ) -> dict[str, str]:
     # Use urlparse to extract the media name from the URL
-    media_name: str = urlparse(url).path.split("/")[-1]
+    media_name: str = unquote(urlparse(url).path).split("/")[-1]
     media_path: Path = sanitize_path(album_path, media_name)
 
     if not headers and "sorrymother.video" in url:
