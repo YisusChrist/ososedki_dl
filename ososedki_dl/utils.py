@@ -147,7 +147,7 @@ async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
 
 
 def get_url_hashfile(url: str) -> Path:
-    url_hash: str = hashlib.md5(url.encode("utf-8")).hexdigest()
+    url_hash: str = hashlib.sha256(url.encode("utf-8")).hexdigest()
     return CACHE_PATH / url_hash
 
 
