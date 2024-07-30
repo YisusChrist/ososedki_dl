@@ -1,9 +1,11 @@
 [tool.poetry]
 name = "ososedki-dl"
 version = "0.1.0"
-description = ""
+description = "Blazing bulk web scraper for leak sites"
+license = "GPL-3.0-only"
 authors = ["Alejandro González Momblán <agelrenorenardo@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/YisusChrist/ososedki_dl"
 
 [tool.poetry.dependencies]
 python = "^3.12"
