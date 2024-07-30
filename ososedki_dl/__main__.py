@@ -9,16 +9,11 @@ from .consts import EXIT_SUCCESS
 from .scrapper import downloaders, generic_download
 from .utils import get_user_input
 
-from ososedki_dl.crawlers.fapello_is import download_profile
-
 
 async def run_main_loop() -> None:
     async with ClientSession() as session:
         while True:
             url, download_path = get_user_input()
-
-            # download_profile(url, download_path)
-            # continue
 
             # Find the appropriate downloader based on the URL
             for domain, downloader in downloaders.items():
