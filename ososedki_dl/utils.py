@@ -53,6 +53,8 @@ def sanitize_path(path: Path, title: str) -> Path:
     sanitized_title: str = re.sub(invalid_chars, "_", title)
     # Remove leading and trailing spaces
     sanitized_title = sanitized_title.strip()
+    if sanitized_title.startswith("_"):
+        sanitized_title = sanitized_title[1:]
 
     return (path / sanitized_title).resolve()
 
@@ -90,8 +92,7 @@ async def _generic_fetch(
 
                 # Dynamically access the specified response property
                 if hasattr(response, response_property):
-                    response_data = await getattr(response, response_property)()
-                    return response_data
+                    return await getattr(response, response_property)()
                 else:
                     raise ValueError(
                         f"Response object has no property '{response_property}'"
@@ -152,7 +153,7 @@ def get_url_hashfile(url: str) -> Path:
 
 def write_to_cache(url: str) -> None:
     cache_filename: Path = get_url_hashfile(url)
-    with open(cache_filename, "w") as f:
+    with open(cache_filename, "w"):
         pass
 
 
