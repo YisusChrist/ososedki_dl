@@ -1,3 +1,5 @@
+"""Constants for the package."""
+
 from pathlib import Path
 from platformdirs import user_log_dir  # type: ignore
 

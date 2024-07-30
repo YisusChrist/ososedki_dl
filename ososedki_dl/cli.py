@@ -1,3 +1,5 @@
+"""Command-line interface for the program."""
+
 import sys
 from argparse import ArgumentParser, Namespace, RawTextHelpFormatter
 from typing import NoReturn

@@ -1,3 +1,5 @@
+"""Scrapper module for downloading images from various websites."""
+
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -9,7 +11,7 @@ console = Console()
 
 
 def print_errors(results: list[dict[str, str]]) -> None:
-    console.print("\nErrors:")
+    console.print("Errors:")
     for result in results:
         if "error" in result["status"]:
             console.print(f"[red]{result['url']}[/]: {result['status']}")

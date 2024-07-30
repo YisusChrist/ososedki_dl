@@ -1,3 +1,5 @@
+"""Main module for the package."""
+
 import asyncio
 from argparse import Namespace
 
