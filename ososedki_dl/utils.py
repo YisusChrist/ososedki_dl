@@ -220,6 +220,12 @@ async def download_and_save_media(
     media_name: str = urlparse(url).path.split("/")[-1]
     media_path: Path = sanitize_path(album_path, media_name)
 
+    if not headers and "sorrymother.video" in url:
+        headers = {
+            "Range": "bytes=0-",
+            "Referer": "https://sorrymother.to/",
+        }
+
     return await download_and_compare(
         session,
         url,
