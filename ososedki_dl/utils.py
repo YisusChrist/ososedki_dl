@@ -143,8 +143,12 @@ async def fetch(
 
 async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
     # print(f"[green]Downloading [/]{url}")
-    async with aiofiles.open(media_path, "wb") as f:
-        await f.write(image_content)
+    try:
+        async with aiofiles.open(media_path, "wb") as f:
+            await f.write(image_content)
+    except (OSError, FileNotFoundError, TypeError) as e:
+        print(f"Failed to write to {media_path} with error: {e}")
+
     write_to_cache(url)
 
 
