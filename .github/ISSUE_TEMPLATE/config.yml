@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+    - name: Contributing to codewars-solver
+      url: https://github.com/YisusChrist/codewars-solver/blob/main/CONTRIBUTING.md
+      about: Guidelines for how to report an issue.
+    - name: Support
+      url: https://github.com/YisusChrist/codewars-solver/discussions
+      about: Ask the community for support
+    - name: Documentation
+      url: https://github.com/YisusChrist/codewars-solver/wiki
+      about: Many questions might be already answered here.
