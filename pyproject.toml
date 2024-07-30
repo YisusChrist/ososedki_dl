@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ososedki-dl"
+name = "ososedki_dl"
 version = "0.1.0"
 description = "Blazing bulk web scraper for leak sites"
 license = "GPL-3.0-only"
@@ -24,7 +24,7 @@ requests-pprint = "^1.0.1"
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.scripts]
-ososedki-dl = "ososedki_dl.__main__:main"
+ososedki_dl = "ososedki_dl.__main__:main"
 
 [build-system]
 requires = ["poetry-core"]
