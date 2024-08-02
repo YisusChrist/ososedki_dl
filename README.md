@@ -140,11 +140,11 @@ The program can be run from the terminal with the `ososedki_dl` command. It will
 
 ### Example of execution
 
-![Alt](demo.mp4)
+https://github.com/user-attachments/assets/1b82d20f-1680-4cda-9021-ebd0f87a72ed
 
 ### WIP: Upcoming progress bar feature for heavy files
 
-![Alt](video.mp4)
+https://github.com/user-attachments/assets/aa48b23d-f18a-4309-88bf-1786bd4eb9a4
 
 ### Supported sites
 
