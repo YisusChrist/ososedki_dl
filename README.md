@@ -42,19 +42,19 @@
 <details>
 <summary>Table of Contents</summary>
 
--   [Requirements](#requirements)
--   [Installation](#installation)
-    -   [From PyPI](#from-pypi)
-    -   [Manual installation](#manual-installation)
-    -   [Uninstall](#uninstall)
--   [Usage](#usage)
-    -   [Example of execution](#example-of-execution)
-    -   [WIP: Upcoming progress bar feature for heavy files](#wip-upcoming-progress-bar-feature-for-heavy-files)
-    -   [Supported sites](#supported-sites)
--   [Contributors](#contributors)
-    -   [How do I contribute to ososedki_dl?](#how-do-i-contribute-to-ososedki_dl)
--   [License](#license)
--   [Credits](#credits)
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [From PyPI](#from-pypi)
+  - [Manual installation](#manual-installation)
+  - [Uninstall](#uninstall)
+- [Usage](#usage)
+  - [Example of execution](#example-of-execution)
+  - [WIP: Upcoming progress bar feature for heavy files](#wip-upcoming-progress-bar-feature-for-heavy-files)
+  - [Supported sites](#supported-sites)
+- [Contributors](#contributors)
+  - [How do I contribute to ososedki\_dl?](#how-do-i-contribute-to-ososedki_dl)
+- [License](#license)
+- [Credits](#credits)
 
 </details>
 
@@ -72,7 +72,6 @@ Here's a breakdown of the packages needed and their versions:
 -   [requests-pprint](https://pypi.org/project/requests-pprint) >= 1.0.1
 -   [rich](https://pypi.org/project/rich) >= 13.5.3
 -   [tldextract](https://pypi.org/project/tldextract) >= 5.1.2
--   [tqdm](https://pypi.org/project/tqdm) >= 4.66.1
 -   [validators](https://pypi.org/project/validators) >= 0.22.0
 
 > [!NOTE]
