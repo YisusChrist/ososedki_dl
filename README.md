@@ -144,7 +144,7 @@ https://github.com/user-attachments/assets/1b82d20f-1680-4cda-9021-ebd0f87a72ed
 
 ### WIP: Upcoming progress bar feature for heavy files
 
-https://github.com/user-attachments/assets/aa48b23d-f18a-4309-88bf-1786bd4eb9a4
+https://github.com/user-attachments/assets/b3a0ecfc-4c85-4513-807a-2e1981e3eb19
 
 ### Supported sites
 
