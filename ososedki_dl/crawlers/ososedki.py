@@ -17,7 +17,10 @@ def ososedki_title_extractor(soup: BeautifulSoup) -> str:
     try:
         title: str = text.split("cosplay model ")[1].split(".")[0]
     except IndexError:
-        title = text.split("Of course, ")[1].split(" is clearly over 18 years")[0]
+        try:
+            title = text.split("Of course, ")[1].split(" is clearly over 18 years")[0]
+        except IndexError:
+            title = "Unknown"
     return title
 
 
