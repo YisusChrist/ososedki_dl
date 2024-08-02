@@ -1,5 +1,5 @@
-name: ❓ Question
-description: If you have a question about how to use ososedki_dl that's not well covered by our documentation
+name: ❓ Ask a question
+description: Submit a question to get help or clarification 🙋‍♂️
 labels: ["question"]
 assignees:
     - YisusChrist
@@ -8,37 +8,36 @@ body:
       attributes:
           value: |
               ## Self Check
-              - Look for similar errors in existing [GitHub Issues](https://github.com/YisusChrist/ososedki_dl/issues?q=is%3Aissue) (open or closed).
-              - Take a look at the [documentation](https://github.com/YisusChrist/ososedki_dl/wiki) for help.
+              - Check the [documentation](https://github.com/YisusChrist/ososedki_dl/wiki) and [GitHub Issues](https://github.com/YisusChrist/ososedki_dl/issues?q=is%3Aissue) to see if your question has already been answered.
     - type: textarea
       validations:
           required: true
       attributes:
-          label: Describe the bug
-          description: A clear description of what the bug is.
+          label: Question
+          description: Clearly state your question.
+          placeholder: "What is the purpose of the `ososedki_dl` tool?"
     - type: textarea
       validations:
           required: true
       attributes:
-          label: Steps to reproduce
+          label: Context
           description: |
-              Steps to reproduce the problem.
+              Provide any necessary context for your question. For example, explain the scenario or code that led to your question.
           placeholder: |
-              For example:
-              1. Execute with options '...'
-              2. Check output '...'
-              3. See error
+              I was trying to use the tool to solve a problem with the following code:
+              ```python
+              # code snippet here
+              ```
     - type: textarea
       validations:
           required: true
       attributes:
-          label: Expected behavior
-          description: A brief description of what should happen.
-    - type: textarea
-      attributes:
-          label: Screenshots and recordings
+          label: Expected outcome or clarification needed
           description: |
-              If applicable, add screenshots to help explain your problem. You can also record an asciinema session: https://asciinema.org/
+              What do you expect to achieve, or what specific clarification are you seeking?
+          placeholder: |
+              I expected the tool to return a different output.
+              Can you clarify how the solver handles edge cases?
     - type: input
       validations:
           required: true
@@ -50,9 +49,9 @@ body:
           required: true
       attributes:
           label: ososedki_dl version
-          description: Run `ososedki_dl -v` to check.
+          description: Run `ososedki_dl -V` to check.
           placeholder: "1.0"
     - type: textarea
       attributes:
-          label: Additional context
-          description: Add any other context about the problem here. This can be path, platform, shell...
+          label: Additional context or resources
+          description: Add any other context or references (e.g., links, code snippets) that may help in answering your question.
