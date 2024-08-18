@@ -236,6 +236,17 @@ async def download_and_save_media(
 ) -> dict[str, str]:
     # Use urlparse to extract the media name from the URL
     media_name: str = unquote(urlparse(url).path).split("/")[-1]
+    if not Path(media_name).suffix:
+        # If media_name has no extension, add one using the url content type
+        response: requests.Response = requests.head(url, headers=headers)
+        content_type: str = response.headers.get("Content-Type")
+        if not content_type:
+            print(f"Failed to get content type for {url}")
+        else:
+            # Map content type to a file extension
+            extension = content_type.split("/")[-1]  # e.g., 'image/jpeg' -> 'jpeg'
+            media_name = f"{media_name}.{extension}"
+
     media_path: Path = sanitize_path(album_path, media_name)
 
     if not headers and "sorrymother.video" in url:
