@@ -13,20 +13,12 @@ console = Console()
 
 # Mapping of domain patterns to their respective module and function names
 downloaders: dict[str, tuple[str, str]] = {
-    "https://bunkr-albums.io": (
-        "ososedki_dl.crawlers.bunkrr_albums",
-        "find_albums",
-    ),
     "https://eromexxx.com": (
         "ososedki_dl.crawlers.eromexxx",
         "download_profile",
     ),
     "https://fapello.is": (
         "ososedki_dl.crawlers.fapello_is",
-        "download_profile",
-    ),
-    "https://husvjjal.blogspot.com": (
-        "ososedki_dl.crawlers.husvjjal_blogspot",
         "download_profile",
     ),
     "https://ososedki.com": (
