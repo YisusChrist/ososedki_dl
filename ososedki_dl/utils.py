@@ -17,11 +17,17 @@ from rich.prompt import Prompt
 from .consts import CACHE_PATH, CHECK_CACHE
 
 
-def get_valid_url() -> str:
+def get_valid_url() -> list:
     while True:
-        url: str = Prompt.ask("Enter the URL to download from")
-        if validators.url(url):
-            return url
+        result: list = []
+        urls: str = Prompt.ask("Enter the URL to download from")
+        url_list = urls.split(" ")
+        for u in url_list:
+            url = u.strip()
+            if validators.url(url):
+                result.append(url)
+        if result:
+            return result
         else:
             print("[bold red]Error:[/] Please enter a valid URL.")
 
@@ -37,9 +43,9 @@ def get_valid_path() -> Path:
         return real_path
 
 
-def get_user_input() -> tuple[str, Path]:
+def get_user_input() -> tuple[list, Path]:
     print("\n", end="")
-    url: str = get_valid_url()
+    url: list = get_valid_url()
     path: Path = get_valid_path()
     print("\n", end="")
 
