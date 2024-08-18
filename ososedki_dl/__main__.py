@@ -29,12 +29,10 @@ def main() -> None:
     args: Namespace = get_parsed_args()
     install()
 
-    run = True
-    while run:
-        try:
-            asyncio.run(run_main_loop())
-        except KeyboardInterrupt:
-            run = False
+    try:
+        asyncio.run(run_main_loop())
+    except KeyboardInterrupt:
+        pass
 
     exit_session(EXIT_SUCCESS)
 
