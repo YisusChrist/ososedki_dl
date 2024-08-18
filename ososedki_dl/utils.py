@@ -6,6 +6,7 @@ from typing import Any, Optional
 from urllib.parse import unquote, urlparse
 
 import aiofiles  # type: ignore
+import requests  # type: ignore
 import validators  # type: ignore
 from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
                      InvalidURL)
@@ -15,6 +16,8 @@ from rich import print
 from rich.prompt import Prompt
 
 from .consts import CACHE_PATH, CHECK_CACHE
+
+ua = UserAgent(min_version=120.0)
 
 
 def get_valid_url() -> list:
@@ -85,7 +88,6 @@ async def _generic_fetch(
     headers: Optional[dict[str, str]] = None,
     response_property: str = "text",
 ) -> Any:
-    ua = UserAgent(min_version=120.0)
     headers = headers or {"User-Agent": ua.random}
 
     while True:
@@ -107,6 +109,16 @@ async def _generic_fetch(
         except ClientConnectorError as e:
             print(f"Failed to connect to {url} with error {e}. Retrying...")
             await sleep(5)
+
+        except ClientResponseError as e:  # 4xx, 5xx errors
+            print(f"Failed to fetch {url} with status {e.status}")
+            response = requests.get(url)
+            response.raise_for_status()
+            # Dynamically access the specified response property
+            if hasattr(response, response_property):
+                return getattr(response, response_property)()
+            else:
+                return response.content
 
 
 async def fetch(
