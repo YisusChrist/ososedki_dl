@@ -37,7 +37,7 @@
 
 <br>
 
-`ososedki_dl` is a Python app that allows you to download all the images from online albums. The program is designed to be simple and easy to use, with a command-line interface that allows you to download images from the website with a single command.
+`ososedki_dl` is a Python app that allows you to download all the images from online albums. The program is designed to be simple and easy to use, with a command-line interface that allows you to download images from the website with a single command. Check the [Supported sites](#supported-sites) section to see the list of supported websites.
 
 <details>
 <summary>Table of Contents</summary>
@@ -52,7 +52,7 @@
   - [WIP: Upcoming progress bar feature for heavy files](#wip-upcoming-progress-bar-feature-for-heavy-files)
   - [Supported sites](#supported-sites)
 - [Contributors](#contributors)
-  - [How do I contribute to ososedki\_dl?](#how-do-i-contribute-to-ososedki_dl)
+  - [How do I contribute to ososedki_dl?](#how-do-i-contribute-to-ososedki_dl)
 - [License](#license)
 - [Credits](#credits)
 
@@ -62,17 +62,17 @@
 
 Here's a breakdown of the packages needed and their versions:
 
--   [poetry](https://pypi.org/project/poetry) - 1.7.1 (_only for manual installation_)
--   [aiofiles](https://pypi.org/project/aiofiles) >= 24.1.0
--   [aiohttp](https://pypi.org/project/aiohttp) >= 3.9.5
--   [beautifulsoup4](https://pypi.org/project/beautifulsoup4) >= 4.12.2
--   [fake-useragent](https://pypi.org/project/fake-useragent) >= 1.5.1
--   [platformdirs](https://pypi.org/project/platformdirs) >= 4.2.2
--   [requests](https://pypi.org/project/requests) >= 2.31.0
--   [requests-pprint](https://pypi.org/project/requests-pprint) >= 1.0.1
--   [rich](https://pypi.org/project/rich) >= 13.5.3
--   [tldextract](https://pypi.org/project/tldextract) >= 5.1.2
--   [validators](https://pypi.org/project/validators) >= 0.22.0
+- [poetry](https://pypi.org/project/poetry) - 1.7.1 (_only for manual installation_)
+- [aiofiles](https://pypi.org/project/aiofiles) >= 24.1.0
+- [aiohttp](https://pypi.org/project/aiohttp) >= 3.9.5
+- [beautifulsoup4](https://pypi.org/project/beautifulsoup4) >= 4.12.2
+- [fake-useragent](https://pypi.org/project/fake-useragent) >= 1.5.1
+- [platformdirs](https://pypi.org/project/platformdirs) >= 4.2.2
+- [requests](https://pypi.org/project/requests) >= 2.31.0
+- [requests-pprint](https://pypi.org/project/requests-pprint) >= 1.0.1
+- [rich](https://pypi.org/project/rich) >= 13.5.3
+- [tldextract](https://pypi.org/project/tldextract) >= 5.1.2
+- [validators](https://pypi.org/project/validators) >= 0.22.0
 
 > [!NOTE]
 > The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.6. Although the software may work with previous versions, it is not guaranteed.
@@ -105,22 +105,22 @@ If you prefer to install the program manually, follow these steps:
 
 1. Download the latest version of [ososedki_dl](https://github.com/YisusChrist/ososedki_dl) from this repository:
 
-    ```bash
-    git clone https://github.com/YisusChrist/ososedki_dl
-    cd ososedki_dl
-    ```
+   ```bash
+   git clone https://github.com/YisusChrist/ososedki_dl
+   cd ososedki_dl
+   ```
 
 2. Install the package:
 
-    ```bash
-    poetry install
-    ```
+   ```bash
+   poetry install
+   ```
 
 3. Run the program:
 
-    ```bash
-    poetry run ososedki_dl
-    ```
+   ```bash
+   poetry run ososedki_dl
+   ```
 
 ### Uninstall
 
@@ -147,13 +147,14 @@ https://github.com/user-attachments/assets/b3a0ecfc-4c85-4513-807a-2e1981e3eb19
 
 ### Supported sites
 
-| Domain        | URL                    |
-| ------------- | ---------------------- |
-| `eromexxx`    | https://eromexxx.com   |
-| `fapello_is`  | https://fapello.is     |
-| `osoedki`     | https://osoedki.com    |
-| `sorrymother` | https://sorrymother.to |
-| `wildskirts`  | https://wildskirts.com |
+| Domain         | URL                     | Scrapping          | Downloading        |
+| -------------- | ----------------------- | ------------------ | ------------------ |
+| `eromexxx`     | https://eromexxx.com    | :heavy_check_mark: | :heavy_check_mark: |
+| `fapello_is`   | https://fapello.is      | :heavy_check_mark: | :heavy_check_mark: |
+| `osoedki`      | https://osoedki.com     | :heavy_check_mark: | :heavy_check_mark: |
+| `sorrymother`  | https://sorrymother.to  | :heavy_check_mark: | :heavy_check_mark: |
+| `wildskirts`   | https://wildskirts.com  | :heavy_check_mark: | :heavy_check_mark: |
+| `bunkr-albums` | https://bunkr-albums.io | :heavy_check_mark: | :x:                |
 
 ## Contributors
 
