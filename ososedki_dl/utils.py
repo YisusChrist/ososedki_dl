@@ -8,8 +8,7 @@ from urllib.parse import unquote, urlparse
 import aiofiles  # type: ignore
 import requests  # type: ignore
 import validators  # type: ignore
-from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
-                     InvalidURL)
+from aiohttp import ClientConnectorError, ClientResponseError, ClientSession, InvalidURL
 from bs4 import BeautifulSoup  # type: ignore
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
@@ -85,14 +84,18 @@ async def get_soup(session: ClientSession, url: str) -> BeautifulSoup:
 async def _generic_fetch(
     session: ClientSession,
     url: str,
-    headers: Optional[dict[str, str]] = None,
     response_property: str = "text",
+    **kwargs: Any,
 ) -> Any:
-    headers = headers or {"User-Agent": ua.random}
+    if not kwargs.get("headers"):
+        headers: dict[str, str] = {"User-Agent": ua.random}
+
+        # Update the headers from the kwargs
+        kwargs["headers"] = headers
 
     while True:
         try:
-            async with session.get(url, headers=headers) as response:
+            async with session.get(url=url, **kwargs) as response:
                 if response.status == 429:  # Too many requests
                     await sleep(5)
                     continue
@@ -125,32 +128,11 @@ async def fetch(
     session: ClientSession,
     url: str,
     property: str = "text",
-    headers: Optional[dict[str, str]] = None,
+    **kwargs: Optional[dict[str, str]],
 ) -> Any:
     return await _generic_fetch(
-        session=session, url=url, headers=headers, response_property=property
+        session=session, url=url, response_property=property, **kwargs
     )
-    """
-    ua = UserAgent(min_version=120.0)
-    headers = headers or {"User-Agent": ua.random}
-    try:
-        async with session.get(url, headers=headers) as response:
-            if response.status == 429:  # Too many requests
-                await sleep(5)
-                # Retry the request
-                return await fetch(session, url, headers)
-            response.raise_for_status()
-            r_url: str = str(response.url)
-            if r_url.endswith("/"):
-                r_url = r_url[:-1]
-            if r_url != url and "/model" not in url:
-                raise ValueError(f"Redirected to {r_url}")
-            return await response.text()
-    except ClientConnectorError as e:
-        print(f"Failed to connect to {url} with error {e}. Retrying...")
-        await sleep(5)
-        return await fetch(session, url, headers)
-    """
 
 
 async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
@@ -198,10 +180,10 @@ async def download_and_compare(
             return {"url": url, "status": "skipped"}
     try:
         image_content: bytes = await fetch(
-            session,
-            url,
-            "read",
-            headers,
+            session=session,
+            url=url,
+            property="read",
+            headers=headers,
         )
     except ClientResponseError as e:
         print(f"Failed to fetch {url} with status {e.status}")
