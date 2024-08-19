@@ -18,6 +18,8 @@ LOG_PATH: str = user_log_dir(appname=PACKAGE, ensure_exists=True)
 
 LOG_FILE: Path = Path(LOG_PATH).resolve() / f"{PACKAGE}.log"
 
+MAX_TIMEOUT = 5
+
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
