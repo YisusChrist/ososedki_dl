@@ -1,18 +1,70 @@
 """Downloader for https://husvjjal.blogspot.com"""
 
-import ast
 import json
+from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup  # type: ignore
 from requests import Response, Session  # type: ignore
-from requests_pprint import print_response_summary
-import requests
 from rich import print
 from rich.progress import Progress, TaskID
 
+from ..utils import fetch
 from ._common import fetch_soup, process_album
+
+
+@lru_cache
+async def download_album(
+    session: ClientSession,
+    album_url: str,
+    download_path: Path,
+    progress: Progress,
+    task: TaskID,
+) -> list[dict[str, str]]:
+    return await process_album(
+        session=session,
+        album_url=album_url,
+        download_path=download_path,
+        progress=progress,
+        task=task,
+        title_extractor=lambda _: "husvjjal",
+        media_filter=husvjjal_blogspot_media_filter,
+    )
+
+
+async def get_related_albums(session: ClientSession, album_url: str) -> list[str]:
+    print(f"Fetching related albums for {album_url}")
+
+    headers: dict[str, str] = {"Referer": album_url}
+
+    js_url = "https://husvjjal.blogspot.com/feeds/posts/default"
+    params: dict[str, str] = {
+        "alt": "json-in-script",
+        "callback": "BloggerJS.related",
+        "max-results": "12",
+        "q": 'label:"Video"',
+    }
+
+    js_script: str = await fetch(
+        session=session, url=js_url, headers=headers, params=params
+    )
+    script_json: str = js_script.split("BloggerJS.related(")[1].split(");")[0].strip()
+    # Convert the str to a dictionary
+    js_dict: dict[str, Any] = json.loads(script_json)
+
+    js_feed_entry: list[dict] = js_dict["feed"]["entry"]
+
+    related_albums: list[str] = []
+    for entry in js_feed_entry:
+        entry_link: list[dict] = entry["link"]
+        for link in entry_link:
+            if link["rel"] == "alternate" and link["type"] == "text/html":
+                related_albums.append(link["href"])
+                break
+
+    return related_albums
 
 
 def get_soup(session: Session, url: str) -> BeautifulSoup:
@@ -89,13 +141,6 @@ def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
             if not max_stream:
                 continue
             urls.append(max_stream["play_url"])
-            """
-            response: Response = requests.get(max_stream["play_url"])
-            response.raise_for_status()
-            print_response_summary(response)
-            with open("video.mp4", "wb") as f:
-                f.write(response.content)
-            """
 
     return urls
 
@@ -120,6 +165,20 @@ async def download_profile(
             title_extractor=lambda _: "husvjjal",
             media_filter=husvjjal_blogspot_media_filter,
         )
+        related_albums: list[str] = await get_related_albums(
+            session,
+            profile_url,
+        )
+        for related_album in related_albums:
+            results += await process_album(
+                session=session,
+                album_url=related_album,
+                download_path=download_path,
+                progress=progress,
+                task=task,
+                title_extractor=lambda _: "husvjjal",
+                media_filter=husvjjal_blogspot_media_filter,
+            )
         return results
 
     soup: BeautifulSoup = await fetch_soup(session, profile_url)
@@ -134,19 +193,22 @@ async def download_profile(
     albums_html = soup.find_all("a", class_=album_classes)
     albums = list(set([album["href"] for album in albums_html]))
 
-    print(albums)
-    print(f"Total_albums: {len(albums)}")
-
     results = []
-    for album in albums:
-        results += await process_album(
+    index = 0
+    while index < len(albums):
+        album: str = albums[index]
+        results += await download_album(
             session=session,
             album_url=album,
             download_path=download_path,
             progress=progress,
             task=task,
-            title_extractor=lambda _: "husvjjal",
-            media_filter=husvjjal_blogspot_media_filter,
         )
+        related_albums = await get_related_albums(session, album)
+        for related_album in related_albums:
+            if related_album not in albums:
+                albums.append(related_album)
+
+        index += 1  # Move to the next album in the list
 
     return results
