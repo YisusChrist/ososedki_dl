@@ -25,6 +25,10 @@ downloaders: dict[str, tuple[str, str]] = {
         "ososedki_dl.crawlers.fapello_is",
         "download_profile",
     ),
+    "https://husvjjal.blogspot.com": (
+        "ososedki_dl.crawlers.husvjjal_blogspot",
+        "download_profile",
+    ),
     "https://ososedki.com": (
         "ososedki_dl.crawlers.ososedki",
         "download_album",
