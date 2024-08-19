@@ -9,12 +9,15 @@ from bs4 import BeautifulSoup  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
+from ososedki_dl.consts import MAX_TIMEOUT
 from ososedki_dl.crawlers._common import fetch_soup
 
 
 def get_real_url(url: str) -> str:
     print(f"Resolving {url}")
-    response: requests.Response = requests.head(url, allow_redirects=True)
+    response: requests.Response = requests.head(
+        url, allow_redirects=True, timeout=MAX_TIMEOUT
+    )
     return response.url
 
 
