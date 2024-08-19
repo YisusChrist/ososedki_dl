@@ -4,6 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup  # type: ignore
@@ -94,23 +95,26 @@ def get_max_stream(js_script: str) -> dict[str, str]:
 
 
 def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
+    # Define allowed hostnames
+    allowed_img_hostnames: set[str] = {"i.postimg.cc", "postimg.cc"}
+
     images: list[str] = []
     for tag in soup.find_all("a"):
         img_tag = tag.find("img")
         if not img_tag:
             continue
 
-        # print(tag)
-        if tag.get("href", "").strip().startswith("https://postimg.cc/"):
-            value: str = tag.get("href", "").strip()
-            if not value:
-                continue
-            images.append(value)
-        else:
-            value = img_tag.get("src", "").strip()
-            if not value or not value.startswith("https://i.postimg.cc/"):
-                continue
-            images.append(value)
+        href: str = tag.get("href", "").strip()
+        src: str = img_tag.get("src", "").strip()
+
+        # Parse the URL to check the hostname
+        href_hostname: str | None = urlparse(href).hostname
+        src_hostname: str | None = urlparse(src).hostname
+
+        if href_hostname and href_hostname in allowed_img_hostnames:
+            images.append(href)
+        elif src_hostname and src_hostname in allowed_img_hostnames:
+            images.append(src)
 
     videos: list[str] = [
         tag.get("src", "").strip()
@@ -120,7 +124,8 @@ def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
     urls: list[str] = []
     with Session() as session:
         for img in images:
-            if img.startswith("https://i.postimg.cc"):
+            img_hostname: str | None = urlparse(img).hostname
+            if img_hostname and img_hostname == "i.postimg.cc":
                 urls.append(img)
                 continue
             soup = get_soup(session=session, url=img)
@@ -129,7 +134,10 @@ def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
                 {"id": "download"},
             )
             if download_link:
-                urls.append(download_link["href"])
+                download_href: str = download_link.get("href", "").strip()
+                download_hostname: str | None = urlparse(download_href).hostname
+                if download_hostname and download_href.startswith("https://"):
+                    urls.append(download_href)
 
         for vid in videos:
             soup = get_soup(session=session, url=vid)
@@ -140,7 +148,10 @@ def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
             max_stream: dict[str, str] = get_max_stream(js_script.string)
             if not max_stream:
                 continue
-            urls.append(max_stream["play_url"])
+            play_url: str = max_stream.get("play_url", "").strip()
+            play_hostname: str | None = urlparse(play_url).hostname
+            if play_hostname and play_url.startswith("https://"):
+                urls.append(play_url)
 
     return urls
 
