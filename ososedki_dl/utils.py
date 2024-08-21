@@ -23,7 +23,7 @@ from rich.prompt import Prompt
 from .consts import CACHE_PATH, CHECK_CACHE, MAX_TIMEOUT
 
 ua = UserAgent(min_version=120.0)
-client_timeout = ClientTimeout(total=MAX_TIMEOUT)
+client_timeout = ClientTimeout()
 
 
 def get_valid_url() -> list:
@@ -203,7 +203,7 @@ async def download_and_compare(
         return {"url": url, "status": f"error: {e}"}
     except Exception as e:
         print(f"Failed to fetch {url} with error {e}")
-        return {"url": url, "status": "error"}
+        return {"url": url, "status": f"error: {e}"}
 
     if media_path.exists():
         file_content: bytes = media_path.read_bytes()
