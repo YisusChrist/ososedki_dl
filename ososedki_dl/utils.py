@@ -255,3 +255,8 @@ async def download_and_save_media(
         media_path,
         headers,
     )
+
+
+def main_entry(func) -> Any:
+    func.is_main_entry = True
+    return func

@@ -5,12 +5,14 @@ from pathlib import Path
 import requests
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup  # type: ignore
-
 from rich import print
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.consts import MAX_TIMEOUT
 from ososedki_dl.crawlers._common import fetch_soup
+from ososedki_dl.utils import main_entry
+
+DOWNLOAD_URL = "https://bunkr-albums.io"
 
 
 def get_real_url(url: str) -> str:
@@ -21,6 +23,7 @@ def get_real_url(url: str) -> str:
     return response.url
 
 
+@main_entry
 async def find_albums(
     session: ClientSession,
     url: str,

@@ -7,8 +7,9 @@ from rich import print
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import download_media_items
-from ososedki_dl.utils import get_final_path
+from ososedki_dl.utils import get_final_path, main_entry
 
+DOWNLOAD_URL = "https://fapello.is"
 BASE_URL = "https://fapello.is//api/media"
 
 
@@ -19,6 +20,7 @@ async def fetch_media_urls(session: ClientSession, url: str) -> list[dict] | str
         return await response.json()
 
 
+@main_entry
 async def download_profile(
     session: ClientSession,
     profile_url: str,

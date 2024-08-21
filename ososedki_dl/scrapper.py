@@ -1,47 +1,17 @@
 """Scrapper module for downloading images from various websites."""
 
+import importlib
+import inspect
+import pkgutil
 from pathlib import Path
-from typing import Awaitable, Callable
-from importlib import import_module
+from types import ModuleType
 
 from aiohttp import ClientSession
 from rich.console import Console
 from rich.progress import Progress, TaskID
 
 console = Console()
-
-
-# Mapping of domain patterns to their respective module and function names
-downloaders: dict[str, tuple[str, str]] = {
-    "https://bunkr-albums.io": (
-        "ososedki_dl.crawlers.bunkrr_albums",
-        "find_albums",
-    ),
-    "https://eromexxx.com": (
-        "ososedki_dl.crawlers.eromexxx",
-        "download_profile",
-    ),
-    "https://fapello.is": (
-        "ososedki_dl.crawlers.fapello_is",
-        "download_profile",
-    ),
-    "https://husvjjal.blogspot.com": (
-        "ososedki_dl.crawlers.husvjjal_blogspot",
-        "download_profile",
-    ),
-    "https://ososedki.com": (
-        "ososedki_dl.crawlers.ososedki",
-        "download_album",
-    ),
-    "https://sorrymother.to": (
-        "ososedki_dl.crawlers.sorrymother",
-        "download_album",
-    ),
-    "https://wildskirts.com": (
-        "ososedki_dl.crawlers.wildskirts",
-        "download_profile",
-    ),
-}
+crawler_modules: list[ModuleType] = []
 
 
 def print_errors(results: list[dict[str, str]]) -> None:
@@ -49,6 +19,21 @@ def print_errors(results: list[dict[str, str]]) -> None:
     for result in results:
         if "error" in result["status"]:
             console.print(f"[red]{result['url']}[/]: {result['status']}")
+
+
+def load_crawler_modules() -> None:
+    """Dynamically load all modules in the given package."""
+    global crawler_modules
+
+    crawlers_package: str = "ososedki_dl.crawlers"
+    package: ModuleType = importlib.import_module(crawlers_package)
+
+    for _, module_name, _ in pkgutil.iter_modules(package.__path__):
+        if module_name.startswith("_") or module_name == "pinterest":
+            continue
+        full_module_name: str = f"{crawlers_package}.{module_name}"
+        module: ModuleType = importlib.import_module(full_module_name)
+        crawler_modules.append(module)
 
 
 async def generic_download(
@@ -93,16 +78,18 @@ async def handle_downloader(
     results: list[dict[str, str]],
     url: str,
 ) -> None:
-    for pattern, (module_name, function_name) in downloaders.items():
-        if url.startswith(pattern):
+    global crawler_modules
+
+    for module in crawler_modules:
+        download_url: str = module.DOWNLOAD_URL
+        if download_url and url.startswith(download_url):
             result: list[dict[str, str]] = await dynamic_download(
                 session=session,
                 album_url=url,
                 download_path=download_path,
                 progress=progress,
                 task=task,
-                module_name=module_name,
-                function_name=function_name,
+                module=module,
             )
             results.extend(result)
             break
@@ -116,11 +103,20 @@ async def dynamic_download(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-    module_name: str,
-    function_name: str,
+    module: ModuleType,
 ) -> list[dict[str, str]]:
-    module = import_module(module_name)
-    download_func = getattr(module, function_name)
+    # Use inspect.getmembers to find the function marked with is_main_entry
+    download_func = next(
+        (
+            func
+            for _, func in inspect.getmembers(module, inspect.isfunction)
+            if getattr(func, "is_main_entry", False)
+        ),
+        None,
+    )
+
+    if not download_func:
+        raise ValueError(f"No main entry function found in module {module.__name__}")
 
     result: list[dict[str, str]] = await download_func(
         session, album_url, download_path, progress, task

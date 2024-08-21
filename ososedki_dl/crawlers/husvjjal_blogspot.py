@@ -12,8 +12,10 @@ from requests import Response, Session  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ..utils import fetch
-from ._common import fetch_soup, process_album
+from ososedki_dl.crawlers._common import fetch_soup, process_album
+from ososedki_dl.utils import fetch, main_entry
+
+DOWNLOAD_URL = "https://husvjjal.blogspot.com"
 
 
 @lru_cache
@@ -156,6 +158,7 @@ def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
     return urls
 
 
+@main_entry
 async def download_profile(
     session: ClientSession,
     profile_url: str,

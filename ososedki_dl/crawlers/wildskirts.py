@@ -8,8 +8,9 @@ from bs4 import BeautifulSoup  # type: ignore
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import download_media_items, fetch_soup
-from ososedki_dl.utils import get_final_path
+from ososedki_dl.utils import get_final_path, main_entry
 
+DOWNLOAD_URL = "https://wildskirts.com"
 BASE_PHOTOS_URL = "https://photos.wildskirts.com"
 BASE_VIDEOS_URL = "https://video.wildskirts.com"
 
@@ -46,6 +47,7 @@ async def fetch_media_urls(session: ClientSession, url: str) -> list[str]:
     return wildskirts_media_filter(soup)
 
 
+@main_entry
 async def download_profile(
     session: ClientSession,
     profile_url: str,

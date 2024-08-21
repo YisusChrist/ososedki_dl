@@ -6,8 +6,10 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup  # type: ignore
 from rich.progress import Progress, TaskID
 
-from ._common import process_album
+from ososedki_dl.crawlers._common import process_album
+from ososedki_dl.utils import main_entry
 
+DOWNLOAD_URL = "https://ososedki.com"
 BASE_URL = "https://ososedki.com/images/a/"
 
 
@@ -32,6 +34,7 @@ def ososedki_media_filter(soup: BeautifulSoup) -> list[str]:
     ]
 
 
+@main_entry
 async def download_album(
     session: ClientSession,
     album_url: str,

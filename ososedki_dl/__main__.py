@@ -8,12 +8,14 @@ from rich.traceback import install
 
 from .cli import exit_session, get_parsed_args
 from .consts import EXIT_SUCCESS
-from .scrapper import generic_download
+from .scrapper import generic_download, load_crawler_modules
 from .utils import get_user_input
 
 
 async def run_main_loop() -> None:
     async with ClientSession() as session:
+        # Dynamically load all crawler modules
+        load_crawler_modules()
         while True:
             urls, download_path = get_user_input()
 

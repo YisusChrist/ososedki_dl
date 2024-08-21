@@ -8,9 +8,13 @@ from bs4 import BeautifulSoup  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.utils import download_and_save_media, get_final_path, get_soup
+from ososedki_dl.utils import (download_and_save_media, get_final_path,
+                               get_soup, main_entry)
+
+DOWNLOAD_URL = "https://eromexxx.com"
 
 
+@main_entry
 async def download_profile(
     session: ClientSession,
     profile_url: str,
