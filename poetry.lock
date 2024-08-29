@@ -622,13 +622,13 @@ requests = ">=1.0.0"
 
 [[package]]
 name = "requests-pprint"
-version = "1.1.0"
+version = "1.1.1"
 description = "Pretty print your python HTTP requests"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "requests_pprint-1.1.0-py3-none-any.whl", hash = "sha256:4f920a8739ebbce4ea29f4150ee4c1d19a3d87be3f466764546d48e3269c2f7b"},
-    {file = "requests_pprint-1.1.0.tar.gz", hash = "sha256:f3c38a69e3494e4bb5e959b433b7fde9fef40a2780d32f2039a53def71ee030c"},
+    {file = "requests_pprint-1.1.1-py3-none-any.whl", hash = "sha256:1e2b8c66922a2575a3f95b68b8a4a6e53b55a5993d53c0b072c6ca5c40dd3d9b"},
+    {file = "requests_pprint-1.1.1.tar.gz", hash = "sha256:51f1bfa32d8ce4c992fb9cd019f1ecec0db260a3f7ac07b03c7791c3f4b7bef4"},
 ]
 
 [package.dependencies]
