@@ -22,8 +22,7 @@ def waifubitches_title_extractor(soup: BeautifulSoup) -> str:
         elif " - " in text:
             title = text.split(" - ")[0].strip()
     except IndexError:
-        print("Error: ", text)
-        raise
+        print(f"ERROR: Could not extract title from '{text}'")
         title = "Unknown"
     return title
 
