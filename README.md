@@ -151,7 +151,7 @@ https://github.com/user-attachments/assets/b3a0ecfc-4c85-4513-807a-2e1981e3eb19
 | ------------------- | ----------------------------- | ------------------ | ------------------ |
 | `eromexxx`          | https://eromexxx.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `fapello_is`        | https://fapello.is            | :heavy_check_mark: | :heavy_check_mark: |
-| `osoedki`           | https://osoedki.com           | :heavy_check_mark: | :heavy_check_mark: |
+| `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `sorrymother`       | https://sorrymother.to        | :heavy_check_mark: | :heavy_check_mark: |
 | `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
 | `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
