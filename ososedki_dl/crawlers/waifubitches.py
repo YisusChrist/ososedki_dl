@@ -6,7 +6,8 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup  # type: ignore
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.crawlers._common import process_album
+from ososedki_dl.crawlers._common import (process_album, search_ososedki_media,
+                                          search_ososedki_title)
 from ososedki_dl.utils import main_entry
 
 DOWNLOAD_URL = "https://waifubitches.com"
@@ -14,27 +15,11 @@ BASE_URL = "https://waifubitches.com/images/a/"
 
 
 def waifubitches_title_extractor(soup: BeautifulSoup) -> str:
-    text_div = soup.find("title")
-    text: str = text_div.text.strip()
-    try:
-        if " (" in text:
-            title: str = text.split("(")[0].strip()
-        elif " - " in text:
-            title = text.split(" - ")[0].strip()
-    except IndexError:
-        print(f"ERROR: Could not extract title from '{text}'")
-        title = "Unknown"
-    return title
+    return search_ososedki_title(soup=soup, button_class="btn btn-sm bg-pink-pink")
 
 
 def waifubitches_media_filter(soup: BeautifulSoup) -> list[str]:
-    # ? If images under a tag return 404, use tag img and get src
-    # ? If no images are found, search for "https://sun9-" in img_url
-    return [
-        tag.get("href").replace("/604/", "/1280/")
-        for tag in soup.find_all("a")
-        if BASE_URL in tag.get("href")
-    ]
+    return search_ososedki_media(soup=soup, base_url=BASE_URL)
 
 
 @main_entry

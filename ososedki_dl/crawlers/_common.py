@@ -1,11 +1,13 @@
 """Common functions for crawlers."""
 
 import asyncio
+import re
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
+from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
 from aiohttp import ClientResponseError, ClientSession
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup, ResultSet  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
@@ -47,8 +49,9 @@ async def process_album(
     download_path: Path,
     progress: Progress,
     task: TaskID,
-    title_extractor: Callable[[BeautifulSoup], str],
     media_filter: Callable[[BeautifulSoup], list[str]],
+    title_extractor: Optional[Callable[[BeautifulSoup], str]] = None,
+    title: Optional[str] = None,
 ) -> list[dict[str, str]]:
     if album_url.endswith("/"):
         album_url = album_url[:-1]
@@ -58,20 +61,29 @@ async def process_album(
         return []
 
     try:
-        title: str = title_extractor(soup)
+        # Extract the title if a title_extractor is provided; otherwise, use the given title
+        if title_extractor:
+            title = title_extractor(soup)
+        if not title:
+            raise ValueError("Title could not be determined")
+
         media_urls: list = list(set(media_filter(soup)))
-    except TypeError as e:
-        # ? Handle soup corrupted or not as expected, retry soup fetching
-        print(f"Failed to extract media URLs: {e}. Retrying...")
+        print(f"Title: {title}")
+        print(f"Media URLs: {len(media_urls)}")
+        #input("Press Enter to continue...")
+    except (TypeError, ValueError) as e:
+        print(f"Failed to process album: {e}. Retrying...")
         return await process_album(
-            session,
-            album_url,
-            download_path,
-            progress,
-            task,
-            title_extractor,
-            media_filter,
+            session=session,
+            album_url=album_url,
+            download_path=download_path,
+            progress=progress,
+            task=task,
+            media_filter=media_filter,
+            title_extractor=title_extractor,
+            title=title,
         )
+
     album_path: Path = get_final_path(download_path, title)
 
     return await download_media_items(
@@ -93,3 +105,83 @@ def extract_videos(html_page: BeautifulSoup, base_url: str) -> list[str]:
         for video in html_page.find_all("video")
         if base_url in video["src"]
     ]
+
+
+def search_ososedki_title(
+    soup: BeautifulSoup, button_class: Optional[str] = None
+) -> str:
+    if button_class:
+        button_html = soup.find("a", class_=button_class)
+        if button_html:
+            print(f"Found button: {button_html.text}")
+            return button_html.text
+
+    text_div = soup.find("title")
+    text: str = text_div.text.strip()
+    title: str = "Unknown"
+
+    try:
+        if " (@" in text:
+            title = text.split(" (@")[0].strip()
+        elif re.search(r" - [0-9]*\s", text):
+            title = text.split(" - ")[0].strip()
+    except IndexError:
+        print(f"ERROR: Could not extract title from '{text}'")
+
+    if title == "Unknown":
+        title = _get_article_title(soup)
+
+    return title
+
+
+def search_ososedki_media(soup: BeautifulSoup, base_url: str) -> list[str]:
+    # ? If images under a tag return 404, use tag img and get src
+    images: list[str] = [
+        tag.get("href").replace("/604/", "/1280/")
+        for tag in soup.find_all("a", href=lambda href: base_url in href)
+    ]
+    if images:
+        return images
+
+    # ? If no images are found, search for "https://sun9-" in img_url
+    for tag in soup.find_all("a", href=lambda href: href.startswith("https://sun")):
+        href: str = tag.get("href")
+        print(f"Found sun9 image: {href}")
+        parsed_url: ParseResult = urlparse(href)
+        query: dict[str, list[str]] = parse_qs(parsed_url.query, keep_blank_values=True)
+        query.pop("cs", None)
+        u: ParseResult = parsed_url._replace(query=urlencode(query, True))
+        images.append(u.geturl())
+
+    return images
+
+
+def _get_article_title(soup: BeautifulSoup) -> str:
+    tags: set[str] = {
+        "leak",
+        "leaked",
+        "leaks",
+        "nude",
+        "nudes",
+        "of",
+        "onlyfans for",
+        "onlyfans leak",
+        "reddit",
+        "twitter",
+        "video",
+        "vk",
+        "xxx",
+        "onlyfan",
+        "onlyfanfor",
+    }
+
+    # Get the page article:tag and extract the title
+    article_tags: ResultSet[str] = soup.find_all("meta", {"property": "article:tag"})
+    for article_tag in article_tags:
+        tag_content: str = article_tag.get("content", "")
+        for tag in tags:
+            tag_suffix: str = f" {tag.lower()}"
+            if tag_content.lower().endswith(tag_suffix):
+                return tag_content.replace(tag_suffix, "")
+
+    return "Unknown"
