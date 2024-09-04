@@ -2,19 +2,15 @@ import hashlib
 import re
 from asyncio import sleep
 from pathlib import Path
+from ssl import SSLCertVerificationError
 from typing import Any, Optional
 from urllib.parse import unquote, urlparse
 
 import aiofiles  # type: ignore
 import requests  # type: ignore
 import validators  # type: ignore
-from aiohttp import (
-    ClientConnectorError,
-    ClientResponseError,
-    ClientSession,
-    ClientTimeout,
-    InvalidURL,
-)
+from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
+                     ClientTimeout, InvalidURL)
 from bs4 import BeautifulSoup  # type: ignore
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
@@ -23,7 +19,18 @@ from rich.prompt import Prompt
 from .consts import CACHE_PATH, CHECK_CACHE, MAX_TIMEOUT
 
 ua = UserAgent(min_version=120.0)
+_user_agent: str = ""
 client_timeout = ClientTimeout()
+
+
+def get_user_agent() -> str:
+    global _user_agent
+
+    if _user_agent != "":
+        return _user_agent
+
+    _user_agent = ua.random
+    return ua.random
 
 
 def get_valid_url() -> list:
@@ -95,7 +102,7 @@ async def _generic_fetch(
     **kwargs: Any,
 ) -> Any:
     if not kwargs.get("headers"):
-        headers: dict[str, str] = {"User-Agent": ua.random}
+        headers: dict[str, str] = {"User-Agent": get_user_agent()}
 
         # Update the headers from the kwargs
         kwargs["headers"] = headers
@@ -105,7 +112,9 @@ async def _generic_fetch(
             async with session.get(
                 url=url, timeout=client_timeout, **kwargs
             ) as response:
-                if response.status == 429:  # Too many requests
+                if (
+                    response.status == 429 or response.status == 503
+                ):  # Too Many Requests or Service Unavailable
                     await sleep(5)
                     continue
                 response.raise_for_status()
@@ -118,10 +127,11 @@ async def _generic_fetch(
                         f"Response object has no property '{response_property}'"
                     )
 
+        except SSLCertVerificationError as e:
+            raise e
         except ClientConnectorError as e:
             print(f"Failed to connect to {url} with error {e}. Retrying...")
             await sleep(5)
-
         except ClientResponseError as e:  # 4xx, 5xx errors
             print(f"Failed to fetch {url} with status {e.status}")
             response = requests.get(url, timeout=MAX_TIMEOUT, **kwargs)
