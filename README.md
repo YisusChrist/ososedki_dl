@@ -159,6 +159,7 @@ https://github.com/user-attachments/assets/b3a0ecfc-4c85-4513-807a-2e1981e3eb19
 | `waifubitches`      | https://waifubitches.com      | :heavy_check_mark: | :heavy_check_mark: |
 | `cosplayasian`      | https://cosplayasian.com      | :heavy_check_mark: | :heavy_check_mark: |
 | `cosplayrule34`     | https://cosplayrule34.com     | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplayboobs`      | https://cosplayboobs.com      | :heavy_check_mark: | :heavy_check_mark: |
 
 **\*** _The program will only scrape the media and display the URLs. You can easily pass all the URLs to the great [CyberDropDownloader](https://github.com/Jules-WinnfieldX/CyberDropDownloader) and download all of them with one command_:
 
