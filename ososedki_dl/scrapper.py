@@ -6,7 +6,7 @@ import pkgutil
 from pathlib import Path
 from types import ModuleType
 
-from aiohttp import ClientSession
+from aiohttp import ClientResponse, ClientSession
 from rich.console import Console
 from rich.progress import Progress, TaskID
 
@@ -117,6 +117,13 @@ async def dynamic_download(
 
     if not download_func:
         raise ValueError(f"No main entry function found in module {module.__name__}")
+
+    # Check if the URL is valid
+    try:
+        response: ClientResponse = await session.get(album_url)
+        response.raise_for_status()
+    except Exception as e:
+        return [{"url": album_url, "status": f"error: {e}"}]
 
     result: list[dict[str, str]] = await download_func(
         session, album_url, download_path, progress, task
