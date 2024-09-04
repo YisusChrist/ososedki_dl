@@ -5,7 +5,7 @@
     <a href="https://github.com/YisusChrist/ososedki_dl/forks">
         <img src="https://img.shields.io/github/forks/YisusChrist/ososedki_dl?color=171b20&label=Forks%20%20&logo=git&labelColor=f1cf8a&logoColor=ffffff">&nbsp;&nbsp;&nbsp;
     </a>
-    <a href="https://github.com/YisusChrist/ososedki_dl/">
+    <a href="https://github.com/YisusChrist/ososedki_dl/stargazers">
         <img src="https://img.shields.io/github/stars/YisusChrist/ososedki_dl?color=171b20&label=Stargazers&logo=octicon-star&labelColor=70a5eb">&nbsp;&nbsp;&nbsp;
     </a>
     <a href="https://github.com/YisusChrist/ososedki_dl/actions">
@@ -132,7 +132,7 @@ pipx uninstall ososedki_dl
 
 ## Usage
 
-> [!NOTE]
+> [!TIP]
 > For more information about the usage of the program, run `ososedki_dl --help` or `ososedki_dl -h`.
 
 The program can be run from the terminal with the `ososedki_dl` command. It will ask you to introduce the URL of the album you want to download. The program will automatically detect the domain, scrape the media (images and videos) and download them to the path specified by the user.
@@ -173,13 +173,13 @@ cyberdrop_dl <URL1> <URL2> <URL3> ...
 
 ### How do I contribute to ososedki_dl?
 
-Before you participate in our delightful community, please read the [code of conduct](.github/CODE_OF_CONDUCT.md).
+Before you participate in our delightful community, please read the [code of conduct](https://github.com/YisusChrist/.github/blob/main/CODE_OF_CONDUCT.md).
 
 I'm far from being an expert and suspect there are many ways to improve – if you have ideas on how to make the configuration easier to maintain (and faster), don't hesitate to fork and send pull requests!
 
 We also need people to test out pull requests. So take a look through [the open issues](https://github.com/YisusChrist/ososedki_dl/issues) and help where you can.
 
-See [Contributing](.github/CONTRIBUTING.md) for more details.
+See [Contributing](https://github.com/YisusChrist/.github/blob/main/CONTRIBUTING.md) for more details.
 
 ## License
 
