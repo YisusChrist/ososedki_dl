@@ -1,13 +1,15 @@
 """Command-line interface for the program."""
 
 import sys
-from argparse import ArgumentParser, Namespace, RawTextHelpFormatter
+from argparse import Namespace
 from typing import NoReturn
 
+from core_helpers.cli import setup_parser
 from rich import print
 
+from .consts import EXIT_FAILURE, LOG_PATH, PACKAGE
+from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
-from .consts import EXIT_FAILURE, LOG_PATH
 
 
 def get_parsed_args() -> Namespace:
@@ -17,46 +19,7 @@ def get_parsed_args() -> Namespace:
     Returns:
         The parsed arguments as an Namespace object.
     """
-    parser = ArgumentParser(
-        description="[Insert description]",  # Program description
-        formatter_class=RawTextHelpFormatter,  # Disable line wrapping
-        allow_abbrev=False,  # Disable abbreviations
-        add_help=False,  # Disable default help
-    )
-
-    g_targets = parser.add_argument_group("Options to add URLs")
-    # g_targets.add_argument("...")
-
-    g_misc = parser.add_argument_group("Miscellaneous Options")
-    # Help
-    g_misc.add_argument(
-        "-h", "--help", action="help", help="Show this help message and exit."
-    )
-    # Verbose
-    g_misc.add_argument(
-        "-t",
-        "--verbose",
-        dest="verbose",
-        action="store_true",
-        default=False,
-        help="Show log messages on screen. Default is False.",
-    )
-    # Debug
-    g_misc.add_argument(
-        "-d",
-        "--debug",
-        dest="debug",
-        action="store_true",
-        default=False,
-        help="Activate debug logs. Default is False.",
-    )
-    g_misc.add_argument(
-        "-v",
-        "--version",
-        action="version",
-        help="Show version number and exit.",
-        version=f"%(prog)s version {VERSION}",
-    )
+    parser, _ = setup_parser(package=PACKAGE, description=DESC, version=VERSION)
 
     return parser.parse_args()
 

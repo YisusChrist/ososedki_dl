@@ -4,10 +4,13 @@ import asyncio
 from argparse import Namespace
 
 from aiohttp import ClientSession
+from core_helpers.utils import print_welcome
 from rich.traceback import install
 
 from .cli import exit_session, get_parsed_args
-from .consts import EXIT_SUCCESS
+from .consts import EXIT_SUCCESS, GITHUB, PACKAGE
+from .consts import __desc__ as DESC
+from .consts import __version__ as VERSION
 from .scrapper import generic_download, load_crawler_modules
 from .utils import get_user_input
 
@@ -29,6 +32,7 @@ def main() -> None:
     Main function
     """
     args: Namespace = get_parsed_args()
+    print_welcome(PACKAGE, VERSION, DESC, GITHUB)
     install()
 
     try:
