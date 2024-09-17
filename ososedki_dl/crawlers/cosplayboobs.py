@@ -41,6 +41,7 @@ async def fetch_page_albums(session: ClientSession, page_url: str) -> list[str]:
 
     return albums
 
+
 async def find_model_albums(
     session: ClientSession, model_url: str
 ) -> tuple[list[str], str]:
