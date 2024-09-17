@@ -36,7 +36,7 @@ def main() -> None:
     args: Namespace = get_parsed_args()
     dest_path: Path = configure_paths(args)
 
-    print_welcome(PACKAGE, VERSION, DESC, GITHUB, random_font=True)
+    print_welcome(PACKAGE, VERSION, DESC, GITHUB)
     install()
 
     try:
