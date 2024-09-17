@@ -1,7 +1,7 @@
 """Constants for the package."""
 
 from pathlib import Path
-from platformdirs import user_log_dir  # type: ignore
+from core_helpers.xdg_paths import get_user_path
 
 try:
     from importlib import metadata
@@ -11,10 +11,10 @@ except ImportError:  # for Python < 3.8
 __version__: str = metadata.version(__package__ or __name__)
 __desc__: str = metadata.metadata(__package__ or __name__)["Summary"]
 GITHUB: str = metadata.metadata(__package__ or __name__)["Home-page"]
-PACKAGE: str | None = __package__
+PACKAGE: str = metadata.metadata(__package__ or __name__)["Name"]
 
 CACHE_PATH = Path(".cache")
-LOG_PATH: str = user_log_dir(appname=PACKAGE, ensure_exists=True)
+LOG_PATH: Path = get_user_path(package=PACKAGE, path_type="log")
 
 LOG_FILE: Path = Path(LOG_PATH).resolve() / f"{PACKAGE}.log"
 
