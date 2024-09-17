@@ -28,7 +28,7 @@ def get_path_from_dialog(title: str) -> Path:
     root = tk.Tk()
     root.withdraw()  # Hide the main window
 
-    path = Path(filedialog.askdirectory(initialdir=".", title=title)).resolve()
+    path: Path = Path(filedialog.askdirectory(initialdir=".", title=title)).resolve()
     logger.info("Path selected: %s", path)
 
     return path
@@ -47,8 +47,8 @@ def input_valid_path(prompt: str, default_path: Path) -> Path:
     """
     while True:
         print(f"[green]{prompt}[/] [grey53](default: {default_path})[/]: ", end="")
-        user_input = input().strip() or str(default_path)
-        path = Path(user_input).resolve()
+        user_input: str = input().strip() or str(default_path)
+        path: Path = Path(user_input).resolve()
 
         if path.exists() and path.is_dir():
             return path
@@ -59,6 +59,9 @@ def input_valid_path(prompt: str, default_path: Path) -> Path:
 def create_config_file(interactive: bool = False) -> None:
     """
     Create the configuration file.
+
+    Args:
+        interactive (bool): Whether to run in interactive mode. Defaults to False.
     """
     logger.debug("Creating configuration file at '%s'", CONFIG_FILE)
 
@@ -104,13 +107,13 @@ def configure_paths(args: Namespace) -> Path:
     """
     logger.debug("Configuring paths")
 
-    if not CONFIG_FILE.is_file():
-        # Configuration file doesn't exist, prompt the user for values and create the file
+    if not CONFIG_FILE.exists():
         # Warn the user that the configuration file doesn't exist
         print(
             "[yellow]Configuration file doesn't exist. "
             f"Creating configuration file at {CONFIG_FILE}[/]"
         )
+        # Prompt the user for values and create the file
         create_config_file(interactive=args.interactive)
 
     config_file: Path = CONFIG_FILE
