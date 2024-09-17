@@ -19,7 +19,36 @@ def get_parsed_args() -> Namespace:
     Returns:
         The parsed arguments as an Namespace object.
     """
-    parser, _ = setup_parser(package=PACKAGE, description=DESC, version=VERSION)
+    parser, g_main = setup_parser(
+        package=PACKAGE,
+        description=DESC,
+        version=VERSION,
+    )
+
+    # Destination path argument
+    g_main.add_argument(
+        "-dst",
+        "--destination",
+        dest="dest_path",
+        type=str,
+        help="Specify the destination path for moving profiles.",
+    )
+    # Config file argument
+    g_main.add_argument(
+        "-c",
+        "--config",
+        dest="config_file",
+        type=str,
+        help="Specify a configuration file.",
+    )
+    # Create config file interactive
+    g_main.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        default=False,
+        help="Enable interactive mode for the program",
+    )
 
     return parser.parse_args()
 

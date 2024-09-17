@@ -15,10 +15,12 @@ PACKAGE: str = metadata.metadata(__package__ or __name__)["Name"]
 
 CACHE_PATH = Path(".cache")
 LOG_PATH: Path = get_user_path(package=PACKAGE, path_type="log")
-
 LOG_FILE: Path = Path(LOG_PATH).resolve() / f"{PACKAGE}.log"
+CONFIG_PATH: Path = get_user_path(PACKAGE, "config")
+CONFIG_FILE: Path = CONFIG_PATH / f"{PACKAGE}.ini"
 
 MAX_TIMEOUT = 5
+DEFAULT_DEST_PATH: Path = Path("downloads")
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
