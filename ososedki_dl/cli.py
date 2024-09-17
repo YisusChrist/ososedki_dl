@@ -38,8 +38,8 @@ def exit_session(exit_value: int) -> NoReturn:
 
     if exit_value == EXIT_FAILURE:
         print(
-            "[red]There were errors during the execution of the script. "
-            f"Check the logs at {LOG_PATH} for more information.[/]"
+            "\n[red]There were errors during the execution of the script. "
+            f"Check the logs at '{LOG_PATH}' for more information.[/]"
         )
 
     # Exit the program with the given exit value
