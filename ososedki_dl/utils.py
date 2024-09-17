@@ -59,10 +59,11 @@ def get_valid_path() -> Path:
         return real_path
 
 
-def get_user_input() -> tuple[list, Path]:
+def get_user_input(path: Path) -> tuple[list, Path]:
     print("\n", end="")
     url: list = get_valid_url()
-    path: Path = get_valid_path()
+    if not path:
+        path = get_valid_path()
     print("\n", end="")
 
     return url, path
