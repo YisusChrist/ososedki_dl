@@ -7,4 +7,6 @@ on:
 jobs:
   tests:
     uses: YisusChrist/github-actions-workflows/.github/workflows/tests.yml@main
+    with:
+      python-version: "3.12"
     secrets: inherit

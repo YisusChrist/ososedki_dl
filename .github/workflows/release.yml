@@ -9,4 +9,6 @@ on:
 jobs:
   release:
     uses: YisusChrist/github-actions-workflows/.github/workflows/release.yml@main
+    with:
+      python-version: "3.12"
     secrets: inherit
