@@ -1,4 +1,8 @@
 <p align="center">
+    <img width="350" src="https://i.imgur.com/BRi2FsF.png" alt="Ososedki-dl logo">
+</p>
+
+<p align="center">
     <a href="https://github.com/YisusChrist/ososedki_dl/issues">
         <img src="https://img.shields.io/github/issues/YisusChrist/ososedki_dl?color=171b20&label=Issues%20%20&logo=gnubash&labelColor=e05f65&logoColor=ffffff">&nbsp;&nbsp;&nbsp;
     </a>
