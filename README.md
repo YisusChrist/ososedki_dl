@@ -56,7 +56,7 @@
   - [WIP: Upcoming progress bar feature for heavy files](#wip-upcoming-progress-bar-feature-for-heavy-files)
   - [Supported sites](#supported-sites)
 - [Contributors](#contributors)
-  - [How do I contribute to ososedki\_dl?](#how-do-i-contribute-to-ososedki_dl)
+  - [How do I contribute to ososedki_dl?](#how-do-i-contribute-to-ososedki_dl)
 - [License](#license)
 - [Credits](#credits)
 
@@ -183,7 +183,7 @@ I'm far from being an expert and suspect there are many ways to improve – if y
 
 We also need people to test out pull requests. So take a look through [the open issues](https://github.com/YisusChrist/ososedki_dl/issues) and help where you can.
 
-See [Contributing](https://github.com/YisusChrist/.github/blob/main/CONTRIBUTING.md) for more details.
+See [Contributing Guidelines](https://github.com/YisusChrist/.github/blob/main/CONTRIBUTING.md) for more details.
 
 ## License
 
