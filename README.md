@@ -66,7 +66,7 @@
 
 Here's a breakdown of the packages needed and their versions:
 
-- [poetry](https://pypi.org/project/poetry) - 1.7.1 (_only for manual installation_)
+- [poetry](https://pypi.org/project/poetry) >= 1.7.1 (_only for manual installation_)
 - [aiofiles](https://pypi.org/project/aiofiles) >= 24.1.0
 - [aiohttp](https://pypi.org/project/aiohttp) >= 3.9.5
 - [beautifulsoup4](https://pypi.org/project/beautifulsoup4) >= 4.12.2
