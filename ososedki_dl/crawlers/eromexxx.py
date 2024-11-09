@@ -46,15 +46,10 @@ async def download_profile(
         int(album.split("-")[-1].split("/")[0]) for album in albums
     )
     print(f"Highest_offset: {highest_offset}")
-
-    # Use the higher value between total_albums and highest_offset
-    max_albums: int = min(total_albums, highest_offset)
-    print(f"[green]Max_albums: {max_albums}")
-
     base_url: str = "".join(profile_url.split("/model"))
 
     results: list[dict[str, str]] = []
-    for i in range(1, max_albums + 1):
+    for i in range(1, highest_offset + 1):
         results += await download_album(
             session=session,
             album_url=f"{base_url}-{i}",
