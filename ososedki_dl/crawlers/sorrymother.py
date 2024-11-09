@@ -16,7 +16,7 @@ BASE_URL = "https://pics.sorrymother.video/"
 def sorrymother_title_extractor(soup: BeautifulSoup) -> str:
     # TODO: Add a better way to get the title, this fails if there is no tag
     # or if the first tag is not the correct title
-    tags = soup.find_all("a", {"class": "entry-tag"})
+    tags = soup.find_all("a", class_="entry-tag")
     return tags[0].text if tags else "Untitled"
 
 

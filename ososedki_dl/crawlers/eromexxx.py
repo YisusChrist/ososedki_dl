@@ -8,8 +8,12 @@ from bs4 import BeautifulSoup  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.utils import (download_and_save_media, get_final_path,
-                               get_soup, main_entry)
+from ososedki_dl.utils import (
+    download_and_save_media,
+    get_final_path,
+    get_soup,
+    main_entry,
+)
 
 DOWNLOAD_URL = "https://eromexxx.com"
 
@@ -30,7 +34,7 @@ async def download_profile(
     soup: BeautifulSoup = await get_soup(session, profile_url)
 
     # Get the total number of albums
-    header = soup.find("div", {"class": "header-title"})
+    header = soup.find("div", class_="header-title")
     total_albums = int(header.find("span").text.split(" ")[1])
     print(f"Total_albums: {total_albums}")
 
@@ -44,7 +48,7 @@ async def download_profile(
     print(f"Highest_offset: {highest_offset}")
 
     # Use the higher value between total_albums and highest_offset
-    max_albums: int = max(total_albums, highest_offset)
+    max_albums: int = min(total_albums, highest_offset)
     print(f"[green]Max_albums: {max_albums}")
 
     base_url: str = "".join(profile_url.split("/model"))
@@ -68,9 +72,13 @@ async def find_albums_with_pagination(
 ) -> list:
     soup: BeautifulSoup = await get_soup(session, profile_url)
     # Get pagination items
-    pagination = soup.find("ul", {"class": "pagination"})
+    pagination = soup.find("ul", class_="pagination")
     # Get the last page number
-    last_page = int(pagination.find_all("li")[-2].text)
+    try:
+        last_page = int(pagination.find_all("li")[-2].text)
+    except AttributeError:
+        # Only one page, return the current page
+        last_page = 1
 
     albums: list = []
     for page in range(1, last_page + 1):
@@ -85,7 +93,7 @@ async def find_albums_with_pagination(
 
 def find_albums_in_soup(soup: BeautifulSoup, profile: str) -> list:
     albums: list = []
-    for album in soup.find_all("a", {"class": "athumb thumb-link"}):
+    for album in soup.find_all("a", class_="athumb thumb-link"):
         if profile in album["href"]:
             albums.append(album["href"])
     return albums
@@ -109,8 +117,7 @@ async def download_album(
 
     videos: list = [video_source["src"] for video_source in soup.find_all("source")]
     images: list = [
-        image["data-src"]
-        for image in soup.find_all("img", {"class": "img-back lazyload"})
+        image["data-src"] for image in soup.find_all("img", class_="img-back lazyload")
     ]
     urls = list(set(images + videos))
 

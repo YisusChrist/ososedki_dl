@@ -18,7 +18,7 @@ BASE_VIDEOS_URL = "https://video.wildskirts.com"
 def get_total_items(soup: BeautifulSoup, item: str) -> int:
     try:
         return int(
-            soup.find("div", {"class": f"text-center mx-4 cursor-pointer tab-{item}"})
+            soup.find("div", class_=f"text-center mx-4 cursor-pointer tab-{item}")
             .find("p")
             .text
         )
