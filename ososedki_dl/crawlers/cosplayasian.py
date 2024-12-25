@@ -50,6 +50,7 @@ async def download_album(
         session=session,
         album_url=album_url,
         model_url=None,
+        cosplay_url=f"{DOWNLOAD_URL}/cos/",
         download_path=download_path,
         progress=progress,
         task=task,

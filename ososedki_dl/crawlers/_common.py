@@ -226,6 +226,7 @@ async def process_model_album(
     session: ClientSession,
     album_url: str,
     model_url: Optional[str],
+    cosplay_url: Optional[str],
     download_path: Path,
     progress: Progress,
     task: TaskID,
@@ -233,7 +234,9 @@ async def process_model_album(
     title_extractor: Callable[[BeautifulSoup], str],
     media_filter: Callable[[BeautifulSoup], list[str]],
 ) -> list[dict[str, str]]:
-    if model_url and album_url.startswith(model_url):
+    if (model_url and album_url.startswith(model_url)) or (
+        cosplay_url and album_url.startswith(cosplay_url)
+    ):
         results: list[dict[str, str]] = []
 
         # Find all the albums for the model incrementally
@@ -251,7 +254,6 @@ async def process_model_album(
                     progress=progress,
                     task=task,
                     media_filter=media_filter,
-                    # title=model,
                     title_extractor=title_extractor,
                 )
                 for album in albums
