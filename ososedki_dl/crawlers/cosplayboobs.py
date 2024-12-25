@@ -12,7 +12,7 @@ from ososedki_dl.crawlers._common import (fetch_soup, process_model_album,
 from ososedki_dl.utils import main_entry
 
 DOWNLOAD_URL = "https://cosplayboobs.com"
-BASE_URL = "https://cosplayboobs.com/images/a/"
+BASE_URL = DOWNLOAD_URL + "/images/a/"
 
 
 def cosplayboobs_title_extractor(soup: BeautifulSoup) -> str:
@@ -28,7 +28,7 @@ async def fetch_page_albums(session: ClientSession, page_url: str) -> list[str]:
     if not soup:
         return []
 
-    # Find all links with format https://cosplayboobs.com/xx/album/
+    # Find all links with format https://cosplayboobs.com/album/
     albums: list[str] = [
         f"{DOWNLOAD_URL}{a["href"]}"
         for a in soup.find_all("a", href=lambda x: x and "/album/" in x)

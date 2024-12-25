@@ -11,7 +11,7 @@ from ososedki_dl.crawlers._common import (process_album, search_ososedki_media,
 from ososedki_dl.utils import main_entry
 
 DOWNLOAD_URL = "https://ososedki.com"
-BASE_URL = "https://ososedki.com/images/a/"
+BASE_URL = DOWNLOAD_URL + "/images/a/"
 
 
 def ososedki_title_extractor(soup: BeautifulSoup) -> str:

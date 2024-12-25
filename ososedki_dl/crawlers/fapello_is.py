@@ -10,7 +10,7 @@ from ososedki_dl.crawlers._common import download_media_items
 from ososedki_dl.utils import get_final_path, main_entry
 
 DOWNLOAD_URL = "https://fapello.is"
-BASE_URL = "https://fapello.is//api/media"
+BASE_URL = DOWNLOAD_URL + "//api/media"
 
 
 async def fetch_media_urls(session: ClientSession, url: str) -> list[dict] | str:

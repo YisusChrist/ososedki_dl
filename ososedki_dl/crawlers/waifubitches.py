@@ -12,7 +12,7 @@ from ososedki_dl.crawlers._common import (fetch_soup, process_model_album,
 from ososedki_dl.utils import main_entry
 
 DOWNLOAD_URL = "https://waifubitches.com"
-BASE_URL = "https://waifubitches.com/images/a/"
+BASE_URL = DOWNLOAD_URL + "/images/a/"
 
 
 def waifubitches_title_extractor(soup: BeautifulSoup) -> str:
@@ -36,10 +36,6 @@ async def fetch_page_albums(session: ClientSession, page_url: str) -> list[str]:
     albums = list(set(albums))
 
     return albums
-
-
-def get_model_name(soup: BeautifulSoup) -> str:
-    return soup.find("title").text.split(" nude")[0].strip()
 
 
 @main_entry
