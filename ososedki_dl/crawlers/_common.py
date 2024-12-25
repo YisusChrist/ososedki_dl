@@ -12,7 +12,8 @@ from bs4 import BeautifulSoup, ResultSet  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.utils import download_and_save_media, get_final_path, get_soup
+from ososedki_dl.download import download_and_save_media, get_soup
+from ososedki_dl.utils import get_final_path
 
 
 async def fetch_soup(session: ClientSession, url: str) -> BeautifulSoup | None:

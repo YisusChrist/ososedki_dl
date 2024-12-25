@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup  # type: ignore
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.utils import (download_and_save_media, get_final_path,
-                               get_soup, main_entry)
+from ososedki_dl.download import download_and_save_media, get_soup
+from ososedki_dl.utils import get_final_path, main_entry
 
 DOWNLOAD_URL = "https://eromexxx.com"
 

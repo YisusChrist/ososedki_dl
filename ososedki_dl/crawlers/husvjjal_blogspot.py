@@ -13,7 +13,8 @@ from rich import print
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import fetch_soup, process_album
-from ososedki_dl.utils import fetch, main_entry
+from ososedki_dl.download import fetch
+from ososedki_dl.utils import main_entry
 
 DOWNLOAD_URL = "https://husvjjal.blogspot.com"
 
