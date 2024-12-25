@@ -3,7 +3,8 @@
 import asyncio
 import re
 from pathlib import Path
-from typing import Callable, Optional
+from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
+                    Optional)
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
 from aiohttp import ClientResponseError, ClientSession
@@ -70,7 +71,6 @@ async def process_album(
         media_urls: list = list(set(media_filter(soup)))
         print(f"Title: {title}")
         print(f"Media URLs: {len(media_urls)}")
-        #input("Press Enter to continue...")
     except (TypeError, ValueError) as e:
         print(f"Failed to process album: {e}. Retrying...")
         return await process_album(
@@ -93,18 +93,6 @@ async def process_album(
         progress,
         task,
     )
-
-
-def extract_images(html_page: BeautifulSoup, base_url: str) -> list[str]:
-    return [img["src"] for img in html_page.find_all("img") if base_url in img["src"]]
-
-
-def extract_videos(html_page: BeautifulSoup, base_url: str) -> list[str]:
-    return [
-        video["src"]
-        for video in html_page.find_all("video")
-        if base_url in video["src"]
-    ]
 
 
 def search_ososedki_title(
@@ -185,3 +173,102 @@ def _get_article_title(soup: BeautifulSoup) -> str:
                 return tag_content.replace(tag_suffix, "")
 
     return "Unknown"
+
+
+async def fetch_page_albums(
+    session: ClientSession,
+    page_url: str,
+    album_href_filter: Callable[[str], bool],
+    download_url: str,
+) -> list[str]:
+    soup: BeautifulSoup | None = await fetch_soup(session, page_url)
+    if not soup:
+        return []
+
+    albums: list[str] = [
+        f"{download_url}{a['href']}" for a in soup.find_all("a", href=album_href_filter)
+    ]
+    return list(set(albums))
+
+
+async def find_model_albums(
+    session: ClientSession,
+    model_url: str,
+    album_fetcher: Callable[[ClientSession, str], Awaitable[list[str]]],
+    title_extractor: Callable[[BeautifulSoup], str],
+) -> AsyncGenerator[tuple[list[str], str], None]:
+    # Clean the URL removing the query parameters
+    model_url = model_url.split("?")[0]
+
+    soup: BeautifulSoup | None = await fetch_soup(session, model_url)
+    if not soup:
+        return
+    model_name: str = title_extractor(soup)
+
+    i = 1
+    albums_found = True
+
+    while albums_found:
+        page_url: str = f"{model_url}?page={i}"
+        albums_extracted: list[str] = await album_fetcher(session, page_url)
+        if not albums_extracted:
+            albums_found = False
+            continue
+
+        yield albums_extracted, model_name
+        i += 1
+
+        # Sleep for a while to avoid being banned
+        await asyncio.sleep(1)
+
+
+async def process_model_album(
+    session: ClientSession,
+    album_url: str,
+    model_url: Optional[str],
+    download_path: Path,
+    progress: Progress,
+    task: TaskID,
+    album_fetcher: Callable[[ClientSession, str], Awaitable[list[str]]],
+    title_extractor: Callable[[BeautifulSoup], str],
+    media_filter: Callable[[BeautifulSoup], list[str]],
+) -> list[dict[str, str]]:
+    if model_url and album_url.startswith(model_url):
+        results: list[dict[str, str]] = []
+
+        # Find all the albums for the model incrementally
+        async for albums, model in find_model_albums(
+            session=session,
+            model_url=album_url,
+            album_fetcher=album_fetcher,
+            title_extractor=title_extractor,
+        ):
+            tasks: list[Coroutine[Any, Any, list[dict[str, str]]]] = [
+                process_album(
+                    session=session,
+                    album_url=album,
+                    download_path=download_path,
+                    progress=progress,
+                    task=task,
+                    media_filter=media_filter,
+                    # title=model,
+                    title_extractor=title_extractor,
+                )
+                for album in albums
+            ]
+
+            # Process the tasks for this chunk and collect results
+            chunk_results: list[dict[str, str]] = sum(await asyncio.gather(*tasks), [])
+            results.extend(chunk_results)
+
+        return results
+
+    return await process_album(
+        session=session,
+        album_url=album_url,
+        download_path=download_path,
+        progress=progress,
+        task=task,
+        media_filter=media_filter,
+        title_extractor=title_extractor,
+    )
