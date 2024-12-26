@@ -23,7 +23,6 @@ validators = "^0.22.0"
 
 [tool.poetry.group.dev.dependencies]
 
-
 [tool.poetry.scripts]
 ososedki_dl = "ososedki_dl.__main__:main"
 
