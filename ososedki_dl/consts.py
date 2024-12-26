@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from core_helpers.xdg_paths import get_user_path
+from core_helpers.xdg_paths import PathType, get_user_path
 
 try:
     from importlib import metadata
@@ -15,9 +15,9 @@ GITHUB: str = metadata.metadata(__package__ or __name__)["Home-page"]
 PACKAGE: str = metadata.metadata(__package__ or __name__)["Name"]
 
 CACHE_PATH = Path(".cache")
-LOG_PATH: Path = get_user_path(package=PACKAGE, path_type="log")
+LOG_PATH: Path = get_user_path(package=PACKAGE, path_type=PathType.LOG)
 LOG_FILE: Path = Path(LOG_PATH).resolve() / f"{PACKAGE}.log"
-CONFIG_PATH: Path = get_user_path(PACKAGE, "config")
+CONFIG_PATH: Path = get_user_path(PACKAGE, PathType.CONFIG)
 CONFIG_FILE: Path = CONFIG_PATH / f"{PACKAGE}.ini"
 
 MAX_TIMEOUT = 5
