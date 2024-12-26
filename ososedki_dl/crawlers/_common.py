@@ -9,6 +9,7 @@ from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
 from aiohttp import ClientResponseError, ClientSession
 from bs4 import BeautifulSoup, ResultSet
+from bs4.element import NavigableString, Tag
 from rich import print
 from rich.progress import Progress, TaskID
 
@@ -58,7 +59,7 @@ async def process_album(
     if album_url.endswith("/"):
         album_url = album_url[:-1]
 
-    soup: BeautifulSoup = await fetch_soup(session, album_url)
+    soup: BeautifulSoup | None = await fetch_soup(session, album_url)
     if soup is None:
         return []
 
@@ -100,12 +101,15 @@ def search_ososedki_title(
     soup: BeautifulSoup, button_class: Optional[str] = None
 ) -> str:
     if button_class:
-        button_html = soup.find("a", class_=button_class)
+        button_html: Tag | NavigableString | None = soup.find("a", class_=button_class)
         if button_html:
             print(f"Found button: {button_html.text}")
             return button_html.text
 
-    text_div = soup.find("title")
+    text_div: Tag | NavigableString | None = soup.find("title")
+    if not text_div:
+        return "Unknown"
+
     text: str = text_div.text.strip()
     title: str = "Unknown"
 
@@ -165,7 +169,7 @@ def _get_article_title(soup: BeautifulSoup) -> str:
     }
 
     # Get the page article:tag and extract the title
-    article_tags: ResultSet[str] = soup.find_all("meta", {"property": "article:tag"})
+    article_tags: ResultSet[Any] = soup.find_all("meta", {"property": "article:tag"})
     for article_tag in article_tags:
         tag_content: str = article_tag.get("content", "")
         for tag in tags:
@@ -204,8 +208,8 @@ async def find_model_albums(
     soup: BeautifulSoup | None = await fetch_soup(session, model_url)
     if not soup:
         return
-    model_name: str = title_extractor(soup)
 
+    model_name: str = title_extractor(soup)
     i = 1
     albums_found = True
 

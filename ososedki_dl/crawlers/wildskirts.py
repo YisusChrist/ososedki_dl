@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
+from bs4.element import NavigableString, Tag
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import download_media_items, fetch_soup
@@ -16,14 +17,19 @@ BASE_VIDEOS_URL = "https://video.wildskirts.com"
 
 
 def get_total_items(soup: BeautifulSoup, item: str) -> int:
-    try:
-        return int(
-            soup.find("div", class_=f"text-center mx-4 cursor-pointer tab-{item}")
-            .find("p")
-            .text
-        )
-    except AttributeError:
+    content_div: Tag | NavigableString | None = soup.find(
+        "div", class_=f"text-center mx-4 cursor-pointer tab-{item}"
+    )
+    if not content_div:
         return 0
+
+    paragraph: Tag | NavigableString | None | int = content_div.find("p")
+    if not paragraph:
+        return 0
+    if isinstance(paragraph, int):
+        return paragraph
+
+    return int(paragraph.text)
 
 
 def wildskirts_media_filter(soup: BeautifulSoup) -> list[str]:
@@ -43,8 +49,8 @@ def wildskirts_media_filter(soup: BeautifulSoup) -> list[str]:
 
 
 async def fetch_media_urls(session: ClientSession, url: str) -> list[str]:
-    soup: BeautifulSoup = await fetch_soup(session, url)
-    return wildskirts_media_filter(soup)
+    soup: BeautifulSoup | None = await fetch_soup(session, url)
+    return wildskirts_media_filter(soup) if soup else []
 
 
 @main_entry
@@ -61,7 +67,9 @@ async def download_profile(
 
     profile: str = profile_url.split("/")[-1]
 
-    soup: BeautifulSoup = await fetch_soup(session, profile_url)
+    soup: BeautifulSoup | None = await fetch_soup(session, profile_url)
+    if not soup:
+        return []
 
     total_pictures: int = get_total_items(soup, "photos")
     total_videos: int = get_total_items(soup, "videos")

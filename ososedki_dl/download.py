@@ -75,8 +75,10 @@ async def _generic_fetch(
             await sleep(5)
         except ClientResponseError as e:  # 4xx, 5xx errors
             print(f"Failed to fetch {url} with status {e.status}")
-            response = requests.get(url, timeout=MAX_TIMEOUT, **kwargs)
-            response.raise_for_status()
+            response2: requests.Response = requests.get(
+                url, timeout=MAX_TIMEOUT, **kwargs
+            )
+            response2.raise_for_status()
 
             # Dynamically access the specified response property
             if hasattr(response, response_property):
@@ -153,7 +155,7 @@ async def download_and_save_media(
         response: requests.Response = requests.head(
             url, headers=headers, timeout=MAX_TIMEOUT
         )
-        content_type: str = response.headers.get("Content-Type")
+        content_type: str | None = response.headers.get("Content-Type")
         if not content_type:
             print(f"Failed to get content type for {url}")
         else:

@@ -5,6 +5,7 @@ from pathlib import Path
 import tldextract
 from aiohttp import ClientResponseError, ClientSession
 from bs4 import BeautifulSoup
+from bs4.element import NavigableString, Tag
 from rich import print
 from rich.progress import Progress, TaskID
 
@@ -30,8 +31,13 @@ async def download_profile(
     soup: BeautifulSoup = await get_soup(session, profile_url)
 
     # Get the total number of albums
-    header = soup.find("div", class_="header-title")
-    total_albums = int(header.find("span").text.split(" ")[1])
+    header: Tag | NavigableString | None = soup.find("div", class_="header-title")
+    if not header:
+        return []
+    span: Tag | NavigableString | None | int = header.find("span")
+    if not span or isinstance(span, int):
+        return []
+    total_albums = int(span.text.split(" ")[1])
     print(f"Total_albums: {total_albums}")
 
     # Get all album URLs from pagination
@@ -63,7 +69,9 @@ async def find_albums_with_pagination(
 ) -> list:
     soup: BeautifulSoup = await get_soup(session, profile_url)
     # Get pagination items
-    pagination = soup.find("ul", class_="pagination")
+    pagination: Tag | NavigableString | None = soup.find("ul", class_="pagination")
+    if not pagination or isinstance(pagination, NavigableString):
+        return []
     # Get the last page number
     try:
         last_page = int(pagination.find_all("li")[-2].text)

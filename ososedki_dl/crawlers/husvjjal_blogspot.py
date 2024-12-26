@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
+from bs4.element import NavigableString, Tag
 from requests import Response, Session
 from rich import print
 from rich.progress import Progress, TaskID
@@ -131,26 +132,40 @@ def husvjjal_blogspot_media_filter(soup: BeautifulSoup) -> list[str]:
             if img_hostname and img_hostname == "i.postimg.cc":
                 urls.append(img)
                 continue
+
             soup = get_soup(session=session, url=img)
-            download_link = soup.find(
+            download_link: Tag | NavigableString | None = soup.find(
                 "a",
                 {"id": "download"},
             )
-            if download_link:
-                download_href: str = download_link.get("href", "").strip()
-                download_hostname: str | None = urlparse(download_href).hostname
-                if download_hostname and download_href.startswith("https://"):
-                    urls.append(download_href)
+            if not download_link or isinstance(download_link, NavigableString):
+                continue
+
+            download_href: str | list[str] = download_link.get("href", "")
+            if isinstance(download_href, list):
+                download_href = download_href[0]
+            download_href = download_href.strip()
+            download_hostname: str | None = urlparse(download_href).hostname
+            if download_hostname and download_href.startswith("https://"):
+                urls.append(download_href)
 
         for vid in videos:
             soup = get_soup(session=session, url=vid)
-            js_script = soup.find(
+            js_script: Tag | NavigableString | None = soup.find(
                 "script",
                 {"type": "text/javascript"},
             )
-            max_stream: dict[str, str] = get_max_stream(js_script.string)
+            if not js_script or isinstance(js_script, NavigableString):
+                continue
+
+            js_script_str: str | None = js_script.string
+            if not js_script_str:
+                continue
+
+            max_stream: dict[str, str] = get_max_stream(js_script_str)
             if not max_stream:
                 continue
+
             play_url: str = max_stream.get("play_url", "").strip()
             play_hostname: str | None = urlparse(play_url).hostname
             if play_hostname and play_url.startswith("https://"):
@@ -196,7 +211,9 @@ async def download_profile(
             )
         return results
 
-    soup: BeautifulSoup = await fetch_soup(session, profile_url)
+    soup: BeautifulSoup | None = await fetch_soup(session, profile_url)
+    if not soup:
+        return []
 
     album_classes: list[str] = [
         "card-image ratio o-hidden mask ratio-16:9",

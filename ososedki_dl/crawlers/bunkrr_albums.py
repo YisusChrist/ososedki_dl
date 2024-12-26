@@ -31,7 +31,7 @@ async def find_albums(
     progress: Progress,
     task: TaskID,
 ) -> list[dict[str, str]]:
-    soup: BeautifulSoup = await fetch_soup(session, url)
+    soup: BeautifulSoup | None = await fetch_soup(session, url)
     if not soup:
         return []
 
