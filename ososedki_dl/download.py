@@ -6,11 +6,11 @@ from ssl import SSLCertVerificationError
 from typing import Any, Optional
 from urllib.parse import unquote, urlparse
 
-import requests  # type: ignore
+import requests
 from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
                      ClientTimeout, InvalidURL)
-from bs4 import BeautifulSoup  # type: ignore
-from fake_useragent import UserAgent  # type: ignore
+from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
 from rich import print
 
 from ososedki_dl.utils import (get_unique_filename, get_url_hashfile,

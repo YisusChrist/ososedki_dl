@@ -9,10 +9,10 @@ from core_helpers.utils import print_welcome
 from rich.traceback import install
 
 from .cli import exit_session, get_parsed_args
+from .config import configure_paths
 from .consts import EXIT_SUCCESS, GITHUB, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
-from .config import configure_paths
 from .scrapper import generic_download, load_crawler_modules
 from .utils import get_user_input
 

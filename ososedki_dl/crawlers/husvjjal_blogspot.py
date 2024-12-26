@@ -7,8 +7,8 @@ from typing import Any
 from urllib.parse import urlparse
 
 from aiohttp import ClientSession
-from bs4 import BeautifulSoup  # type: ignore
-from requests import Response, Session  # type: ignore
+from bs4 import BeautifulSoup
+from requests import Response, Session
 from rich import print
 from rich.progress import Progress, TaskID
 

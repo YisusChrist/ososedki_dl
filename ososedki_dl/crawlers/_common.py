@@ -8,7 +8,7 @@ from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
 from aiohttp import ClientResponseError, ClientSession
-from bs4 import BeautifulSoup, ResultSet  # type: ignore
+from bs4 import BeautifulSoup, ResultSet
 from rich import print
 from rich.progress import Progress, TaskID
 

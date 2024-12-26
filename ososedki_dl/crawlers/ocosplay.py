@@ -3,14 +3,14 @@
 from pathlib import Path
 
 from aiohttp import ClientSession
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import (fetch_soup, process_model_album,
                                           search_ososedki_media,
                                           search_ososedki_title)
 from ososedki_dl.utils import main_entry
-    
+
 DOWNLOAD_URL = "https://ocosplay.com"
 BASE_URL = DOWNLOAD_URL + "/images/a/"
 

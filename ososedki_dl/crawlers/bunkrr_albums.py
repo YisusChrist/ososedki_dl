@@ -4,7 +4,7 @@ from pathlib import Path
 
 import requests
 from aiohttp import ClientSession
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 from rich import print
 from rich.progress import Progress, TaskID
 

@@ -1,6 +1,7 @@
 """Constants for the package."""
 
 from pathlib import Path
+
 from core_helpers.xdg_paths import get_user_path
 
 try:

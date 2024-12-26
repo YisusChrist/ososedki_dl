@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 
 from aiohttp import ClientSession
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 from rich.progress import Progress, TaskID
 
 from ososedki_dl.crawlers._common import download_media_items, fetch_soup

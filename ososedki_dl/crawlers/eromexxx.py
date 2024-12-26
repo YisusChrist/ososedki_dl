@@ -4,7 +4,7 @@ from pathlib import Path
 
 import tldextract
 from aiohttp import ClientResponseError, ClientSession
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 from rich import print
 from rich.progress import Progress, TaskID
 

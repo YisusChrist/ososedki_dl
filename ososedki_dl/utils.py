@@ -5,8 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-import aiofiles  # type: ignore
-import validators  # type: ignore
+import aiofiles
+import validators
 from rich import print
 from rich.prompt import Prompt
 
