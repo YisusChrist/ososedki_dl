@@ -23,6 +23,12 @@ validators = "^0.22.0"
 
 [tool.poetry.group.dev.dependencies]
 
+[tool.poetry.group.types.dependencies]
+types-aiofiles = "^24.1.0.20241221"
+types-beautifulsoup4 = "^4.12.0.20241020"
+types-pygments = "^2.18.0.20240506"
+types-requests = "^2.32.0.20241016"
+
 [tool.poetry.scripts]
 ososedki_dl = "ososedki_dl.__main__:main"
 
