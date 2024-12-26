@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import aiofiles
-import validators
+import validators  # type: ignore
 from rich import print
 from rich.prompt import Prompt
 

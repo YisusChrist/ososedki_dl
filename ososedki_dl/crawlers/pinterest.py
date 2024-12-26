@@ -1,4 +1,4 @@
-import validators
+import validators  # type: ignore
 import web_scrapper as web_scrapper
 
 # TODO: Set data properly to allow call get(url, data=feed_data)
