@@ -1,13 +1,16 @@
 """Command-line interface for the program."""
 
-import sys
+import configparser
 from argparse import Namespace
-from typing import NoReturn
 
 from core_helpers.cli import setup_parser
 from rich import print
 
-from .consts import EXIT_FAILURE, LOG_PATH, PACKAGE
+from ososedki_dl.config import (print_entire_config,
+                                print_specific_config_field,
+                                update_config_file)
+
+from .consts import CONFIG_FILE, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 
@@ -35,8 +38,8 @@ def get_parsed_args() -> Namespace:
     )
     # Config file argument
     g_main.add_argument(
-        "-c",
-        "--config",
+        "-f",
+        "--config-file",
         dest="config_file",
         type=str,
         help="Specify a configuration file.",
@@ -47,29 +50,67 @@ def get_parsed_args() -> Namespace:
         "--interactive",
         action="store_true",
         default=False,
-        help="Enable interactive mode for the program",
+        help="Enable interactive mode for the program.",
+    )
+
+    g_user = parser.add_argument_group("User Options", argument_default=False)
+    g_user.add_argument(
+        "-cd",
+        "--config-dir",
+        action="store_true",
+        help="Shows config directory path.",
+    )
+    g_user.add_argument(
+        "-ld",
+        "--log-dir",
+        action="store_true",
+        help="Shows log directory path.",
+    )
+    g_user.add_argument(
+        "-pc",
+        "--print-config",
+        nargs="*",
+        metavar=("field", "value"),
+        help=f"""\
+1. Print all config fields and values:
+[green]{PACKAGE} print-config[/]
+
+2. Print one config field's value:
+[green]{PACKAGE} print-config [cyan]<field>[/][/]
+
+Example usage:
+[green]{PACKAGE} print-config destination[/]
+
+3. Change value of one or multiple config fields.
+[green]{PACKAGE} print-config [cyan]<field> <value>[/] [[cyan]<field> <value>[/] ...][/]""",
     )
 
     return parser.parse_args()
 
 
-def exit_session(exit_value: int) -> NoReturn:
+def handle_config_command(args: Namespace) -> None:
     """
-    Exit the program with the given exit value.
+    Handle the 'print-config' command.
 
     Args:
-        exit_value (int): The POSIX exit value to exit with.
+        args (Namespace): The parsed arguments.
     """
-    # logger.info("End of session")
-    # Check if the exit_value is a valid POSIX exit value
-    if not 0 <= exit_value <= 255:
-        exit_value = EXIT_FAILURE
+    # Read both configuration file and command-line arguments
+    config = configparser.ConfigParser()
+    try:
+        config.read(CONFIG_FILE)
 
-    if exit_value == EXIT_FAILURE:
-        print(
-            "\n[red]There were errors during the execution of the script. "
-            f"Check the logs at '{LOG_PATH}' for more information.[/]"
-        )
+        if not args.print_config:
+            print_entire_config(config)
+        elif len(args.print_config) == 1:
+            print_specific_config_field(config, args.print_config[0])
+        else:
+            update_config_file(config, args.print_config)
+            # Save updated config
+            with open(CONFIG_FILE, "w") as f:
+                config.write(f)
 
-    # Exit the program with the given exit value
-    sys.exit(exit_value)
+    except configparser.Error as e:
+        print(f"Error parsing config file: {e}")
+    except IOError as e:
+        print(f"Error accessing config file: {e}")

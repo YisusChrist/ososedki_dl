@@ -6,15 +6,16 @@ from pathlib import Path
 
 from aiohttp import ClientSession
 from core_helpers.utils import print_welcome
+from rich import print
 from rich.traceback import install
 
-from .cli import exit_session, get_parsed_args
+from .cli import get_parsed_args, handle_config_command
 from .config import configure_paths
-from .consts import EXIT_SUCCESS, GITHUB, PACKAGE
+from .consts import CONFIG_FILE, EXIT_SUCCESS, GITHUB, LOG_FILE, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .scrapper import generic_download, load_crawler_modules
-from .utils import get_user_input
+from .utils import exit_session, get_user_input
 
 
 async def run_main_loop(dest_path: Path) -> None:
@@ -36,13 +37,20 @@ def main() -> None:
     args: Namespace = get_parsed_args()
     dest_path: Path = configure_paths(args)
 
-    print_welcome(PACKAGE, VERSION, DESC, GITHUB)
     install()
 
-    try:
-        asyncio.run(run_main_loop(dest_path))
-    except KeyboardInterrupt:
-        pass
+    if args.config_dir:
+        print(CONFIG_FILE)
+    elif args.log_dir:
+        print(LOG_FILE)
+    elif args.print_config is not None:
+        handle_config_command(args)
+    else:
+        print_welcome(PACKAGE, VERSION, DESC, GITHUB)
+        try:
+            asyncio.run(run_main_loop(dest_path))
+        except KeyboardInterrupt:
+            pass
 
     exit_session(EXIT_SUCCESS)
 

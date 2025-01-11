@@ -8,9 +8,9 @@ from tkinter import filedialog
 
 from rich import print
 
-from .cli import exit_session
 from .consts import CONFIG_FILE, DEFAULT_DEST_PATH, EXIT_FAILURE
 from .logs import logger
+from .utils import exit_session
 
 
 def get_path_from_dialog(title: str) -> Path:
@@ -133,3 +133,44 @@ def configure_paths(args: Namespace) -> Path:
     ).resolve()
 
     return dest_path
+
+
+def print_entire_config(config: ConfigParser) -> None:
+    """Print the entire configuration."""
+    for section in config.sections():
+        print(f"[{section}]")
+        for key, value in config[section].items():
+            print(f"{key} = {value}")
+        print()  # Empty line between sections
+
+
+def print_specific_config_field(config: ConfigParser, field: str) -> None:
+    """Print the value of the specific field in the configuration."""
+    # Search for the field in all sections
+    for section in config.sections():
+        if field in config[section]:
+            print(f"{field} = {config[section][field]}")
+            return
+    print(f"Error: Field '{field}' not found in config")
+
+
+def update_config_file(config: ConfigParser, updates: list[str]) -> None:
+    """Update the configuration with the given field-value pairs."""
+    if len(updates) % 2 != 0:
+        print(
+            "Error: Invalid number of arguments. Use field-value pairs for updating config."
+        )
+        return
+
+    for i in range(0, len(updates), 2):
+        field, value = updates[i], updates[i + 1]
+        # Search for the field in all sections and update it
+        field_found = False
+        for section in config.sections():
+            if field in config[section]:
+                config[section][field] = value
+                print(f"Updated {field} = {value}")
+                field_found = True
+                break
+        if not field_found:
+            print(f"Error: Field '{field}' not found in config")

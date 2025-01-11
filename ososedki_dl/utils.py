@@ -2,15 +2,16 @@
 
 import hashlib
 import re
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 import aiofiles
 import validators  # type: ignore
 from rich import print
 from rich.prompt import Prompt
 
-from .consts import CACHE_PATH
+from .consts import CACHE_PATH, EXIT_FAILURE, LOG_PATH
 
 
 def get_valid_url() -> list:
@@ -105,3 +106,25 @@ def get_unique_filename(base_path: Path) -> Path:
 def main_entry(func) -> Any:
     func.is_main_entry = True
     return func
+
+
+def exit_session(exit_value: int) -> NoReturn:
+    """
+    Exit the program with the given exit value.
+
+    Args:
+        exit_value (int): The POSIX exit value to exit with.
+    """
+    # logger.info("End of session")
+    # Check if the exit_value is a valid POSIX exit value
+    if not 0 <= exit_value <= 255:
+        exit_value = EXIT_FAILURE
+
+    if exit_value == EXIT_FAILURE:
+        print(
+            "\n[red]There were errors during the execution of the script. "
+            f"Check the logs at '{LOG_PATH}' for more information.[/]"
+        )
+
+    # Exit the program with the given exit value
+    sys.exit(exit_value)
