@@ -53,17 +53,19 @@ def get_parsed_args() -> Namespace:
         help="Enable interactive mode for the program.",
     )
 
-    g_user = parser.add_argument_group("User Options", argument_default=False)
+    g_user = parser.add_argument_group("User Options")
     g_user.add_argument(
         "-cd",
         "--config-dir",
         action="store_true",
+        default=False,
         help="Shows config directory path.",
     )
     g_user.add_argument(
         "-ld",
         "--log-dir",
         action="store_true",
+        default=False,
         help="Shows log directory path.",
     )
     g_user.add_argument(
