@@ -311,26 +311,22 @@ name = "core-helpers"
 version = "1.2.0"
 description = "A collection of helper functions for all your python projects"
 optional = false
-python-versions = "^3.9"
+python-versions = "<4.0,>=3.9"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "core_helpers-1.2.0-py3-none-any.whl", hash = "sha256:d166cca4743d534d5a838237c7018e92bee3473f3e62bfa7bab950f101c0715a"},
+    {file = "core_helpers-1.2.0.tar.gz", hash = "sha256:fd8a8a3094a793e7e6b17058b71dfb03f1c5fe6aa1d34aef4dd5657f244d0fcf"},
+]
 
 [package.dependencies]
-loguru = "^0.7.2"
-packaging = "^24.1"
-platformdirs = "^4.3.2"
-pyfiglet = "^1.0.2"
-requests = "^2.32.3"
-rich = "^13.7.1"
-rich-argparse-plus = "^0.3.1.4"
-typeguard = "^4.3.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/YisusChrist/core_helpers.git"
-reference = "HEAD"
-resolved_reference = "ba57d78312fc8b8ca8a3011157d48d666f12af2e"
+loguru = ">=0.7.2,<0.8.0"
+packaging = ">=24.1,<25.0"
+platformdirs = ">=4.3.2,<5.0.0"
+pyfiglet = ">=1.0.2,<2.0.0"
+requests = ">=2.32.3,<3.0.0"
+rich = ">=13.7.1,<14.0.0"
+rich-argparse-plus = ">=0.3.1.4,<0.4.0.0"
+typeguard = ">=4.3.0,<5.0.0"
 
 [[package]]
 name = "fake-useragent"
@@ -1192,4 +1188,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "360fcb47c4c5eadcec9b7370339637b74679a4f6fe5c4faa104d6785c5b62e4b"
+content-hash = "73df91c08cfed8daa77dc433f90c5ebffe2e92199ef299bd6bf7ee7b0efb6e90"
