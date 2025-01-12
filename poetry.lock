@@ -328,7 +328,7 @@ typeguard = "^4.3.0"
 
 [package.source]
 type = "git"
-url = "https://github.com/YisusChrist/core_helpers"
+url = "https://github.com/YisusChrist/core_helpers.git"
 reference = "HEAD"
 resolved_reference = "ba57d78312fc8b8ca8a3011157d48d666f12af2e"
 
@@ -1191,5 +1191,5 @@ propcache = ">=0.2.0"
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.12"
-content-hash = "06d6cb708ec575f894bc6f9e293a33cd96584d8e3e2e99e2355a5b03089ce6c1"
+python-versions = ">=3.12,<4.0"
+content-hash = "360fcb47c4c5eadcec9b7370339637b74679a4f6fe5c4faa104d6785c5b62e4b"
