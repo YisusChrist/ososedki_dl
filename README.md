@@ -139,6 +139,8 @@ pipx uninstall ososedki_dl
 > [!TIP]
 > For more information about the usage of the program, run `ososedki_dl --help` or `ososedki_dl -h`.
 
+![Usage](https://i.imgur.com/EQ9whY7.png)
+
 The program can be run from the terminal with the `ososedki_dl` command. It will ask you to introduce the URL of the album you want to download. The program will automatically detect the domain, scrape the media (images and videos) and download them to the path specified by the user.
 
 ### Example of execution
