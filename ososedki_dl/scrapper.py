@@ -3,6 +3,7 @@
 import importlib
 import inspect
 import pkgutil
+from collections import defaultdict
 from pathlib import Path
 from types import ModuleType
 
@@ -14,11 +15,43 @@ console = Console()
 crawler_modules: list[ModuleType] = []
 
 
-def print_errors(results: list[dict[str, str]]) -> None:
-    console.print("Errors:")
+def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
+    """
+    Print a summary of the errors encountered during the download process.
+
+    Args:
+        results (list[dict[str, str]]): The list of results.
+        verbose (bool, optional): Whether to print the full error messages. Defaults to False.
+    """
+
+    # Group errors by error message
+    error_groups = defaultdict(list)
+
     for result in results:
         if "error" in result["status"]:
-            console.print(f"[red]{result['url']}[/]: {result['status']}")
+            # Extract the main error message without the specific URL
+            error_msg: str = result["status"].split("url:", 1)[0].strip()
+            if "Failed to resolve" in error_msg:
+                error_msg = "Name Resolution Error - Failed to resolve host"
+            elif "404 Client Error: Not Found" in error_msg:
+                error_msg = "404 Client Error: Not Found"
+            elif "sun9-" in error_msg:
+                error_msg = "SUN9 Error - Failed to fetch"
+            else:
+                error_msg = error_msg.split(":", 1)[0].strip()
+
+            error_groups[error_msg].append(result["url"])
+
+    # Print grouped errors
+    console.print("[bold yellow]Grouped Errors Summary:[/]")
+    for error_type, urls in error_groups.items():
+        console.print(f"[red]{error_type} - Count: {len(urls)}[/]")
+        if verbose:
+            console.print("Affected URLs:")
+            for url in urls:
+                console.print(f"  • {url}")
+
+    print()
 
 
 def load_crawler_modules() -> None:
