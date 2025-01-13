@@ -144,7 +144,7 @@ async def download(
     headers: dict[str, str] = {
         "Referer": album or f"https://{hostname}",
         "Origin": f"https://{hostname}",
-        "User-Agent": "Mozila/5.0",
+        "User-Agent": "Mozilla/5.0",
     }
 
     return await download_and_save_media(
