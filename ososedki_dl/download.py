@@ -81,10 +81,10 @@ async def _generic_fetch(
             response2.raise_for_status()
 
             # Dynamically access the specified response property
-            if hasattr(response, response_property):
-                return getattr(response, response_property)()
+            if hasattr(response2, response_property):
+                return getattr(response2, response_property)()
             else:
-                return response.content
+                return response2.content
 
 
 async def fetch(
