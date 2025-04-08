@@ -11,7 +11,8 @@ from rich.traceback import install
 
 from .cli import get_parsed_args, handle_config_command
 from .config import configure_paths
-from .consts import CONFIG_FILE, EXIT_SUCCESS, GITHUB, LOG_FILE, PACKAGE
+from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
+                     GITHUB, LOG_FILE, LOG_PATH, PACKAGE)
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .scrapper import generic_download, load_crawler_modules
@@ -38,6 +39,10 @@ def main() -> None:
     dest_path: Path = configure_paths(args)
 
     install()
+
+    CACHE_PATH.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.mkdir(parents=True, exist_ok=True)
+    LOG_PATH.mkdir(parents=True, exist_ok=True)
 
     if args.config_dir:
         print(CONFIG_FILE)
