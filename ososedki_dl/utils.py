@@ -14,9 +14,9 @@ from rich.prompt import Prompt
 from .consts import CACHE_PATH, EXIT_FAILURE, LOG_PATH
 
 
-def get_valid_url() -> list:
+def get_valid_url() -> list[str]:
     while True:
-        result: list = []
+        result: list[str] = []
         urls: str = Prompt.ask("Enter the URL to download from")
         url_list = urls.split(" ")
         for u in url_list:
@@ -40,9 +40,9 @@ def get_valid_path() -> Path:
         return real_path
 
 
-def get_user_input(path: Path) -> tuple[list, Path]:
+def get_user_input(path: Path) -> tuple[list[str], Path]:
     print("\n", end="")
-    url: list = get_valid_url()
+    url: list[str] = get_valid_url()
     if not path:
         path = get_valid_path()
     print("\n", end="")
@@ -103,7 +103,7 @@ def get_unique_filename(base_path: Path) -> Path:
     return new_path
 
 
-def main_entry(func) -> Any:
+def main_entry(func: Any) -> Any:
     func.is_main_entry = True
     return func
 

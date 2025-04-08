@@ -6,6 +6,7 @@ import pkgutil
 from collections import defaultdict
 from pathlib import Path
 from types import ModuleType
+from typing import DefaultDict
 
 from aiohttp import ClientResponse, ClientSession
 from rich.console import Console
@@ -25,7 +26,7 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
     """
 
     # Group errors by error message
-    error_groups = defaultdict(list)
+    error_groups: DefaultDict[str, list[str]] = defaultdict(list)
 
     for result in results:
         if "error" in result["status"]:
