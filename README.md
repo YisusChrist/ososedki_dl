@@ -198,4 +198,4 @@ See [Contributing Guidelines](https://github.com/YisusChrist/.github/blob/main/C
 
 ![preview](https://opengraph.githubassets.com/963eaba4b5ff0640d87891ec7989d89d70dba767722bdf84d19aa46bda3a933b/Jules-WinnfieldX/CyberDropDownloader)
 
-This program is heavily inspired by [Jules-WinnfieldX](https://github.com/Jules-WinnfieldX)'s [CyberDropDownloader](https://github.com/Jules-WinnfieldX/CyberDropDownloader). Sadly, the project is no longer maintained, hence the creation of this project to try bring support for more websites and improve the codebase.
+This program is heavily inspired by [Jules-WinnfieldX](https://github.com/Jules-WinnfieldX)'s [CyberDropDownloader](https://github.com/Jules-WinnfieldX/CyberDropDownloader). Sadly, the project is no longer maintained; hence, the creation of this project to try to bring support for more websites and improve the codebase.
