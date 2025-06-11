@@ -990,7 +990,7 @@ version = "1.1.11.20250516"
 description = "Typing stubs for html5lib"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev", "types"]
+groups = ["types"]
 files = [
     {file = "types_html5lib-1.1.11.20250516-py3-none-any.whl", hash = "sha256:5e407b14b1bd2b9b1107cbd1e2e19d4a0c46d60febd231c7ab7313d7405663c1"},
     {file = "types_html5lib-1.1.11.20250516.tar.gz", hash = "sha256:65043a6718c97f7d52567cc0cdf41efbfc33b1f92c6c0c5e19f60a7ec69ae720"},
@@ -998,19 +998,18 @@ files = [
 
 [[package]]
 name = "types-pygments"
-version = "2.19.0.20250107"
+version = "2.19.0.20250516"
 description = "Typing stubs for Pygments"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["types"]
 files = [
-    {file = "types_Pygments-2.19.0.20250107-py3-none-any.whl", hash = "sha256:34a555ed327f249daed18c6309e6e62770cdb8b9c321029ba7fd852d10b16f10"},
-    {file = "types_pygments-2.19.0.20250107.tar.gz", hash = "sha256:94de72c7f09b956c518f566e056812c698272a7a03a9cd81f0065576c6bd3219"},
+    {file = "types_pygments-2.19.0.20250516-py3-none-any.whl", hash = "sha256:db27de8b59591389cd7d14792483892c021c73b8389ef55fef40a48aa371fbcc"},
+    {file = "types_pygments-2.19.0.20250516.tar.gz", hash = "sha256:b53fd07e197f0e7be38ee19598bd99c78be5ca5f9940849c843be74a2f81ab58"},
 ]
 
 [package.dependencies]
 types-docutils = "*"
-types-setuptools = "*"
 
 [[package]]
 name = "types-requests"
@@ -1026,18 +1025,6 @@ files = [
 
 [package.dependencies]
 urllib3 = ">=2"
-
-[[package]]
-name = "types-setuptools"
-version = "75.8.0.20250110"
-description = "Typing stubs for setuptools"
-optional = false
-python-versions = ">=3.8"
-groups = ["types"]
-files = [
-    {file = "types_setuptools-75.8.0.20250110-py3-none-any.whl", hash = "sha256:a9f12980bbf9bcdc23ecd80755789085bad6bfce4060c2275bc2b4ca9f2bc480"},
-    {file = "types_setuptools-75.8.0.20250110.tar.gz", hash = "sha256:96f7ec8bbd6e0a54ea180d66ad68ad7a1d7954e7281a710ea2de75e355545271"},
-]
 
 [[package]]
 name = "typing-extensions"
