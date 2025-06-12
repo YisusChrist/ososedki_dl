@@ -340,14 +340,14 @@ typeguard = ">=4.3.0,<5.0.0"
 
 [[package]]
 name = "fake-useragent"
-version = "2.0.3"
+version = "2.2.0"
 description = "Up-to-date simple useragent faker with real world database"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "fake_useragent-2.0.3-py3-none-any.whl", hash = "sha256:8bae50abb72c309a5b3ae2f01a0b82426613fd5c4e2a04dca9332399ec44daa1"},
-    {file = "fake_useragent-2.0.3.tar.gz", hash = "sha256:af86a26ef8229efece8fed529b4aeb5b73747d889b60f01cd477b6f301df46e6"},
+    {file = "fake_useragent-2.2.0-py3-none-any.whl", hash = "sha256:67f35ca4d847b0d298187443aaf020413746e56acd985a611908c73dba2daa24"},
+    {file = "fake_useragent-2.2.0.tar.gz", hash = "sha256:4e6ab6571e40cc086d788523cf9e018f618d07f9050f822ff409a4dfe17c16b2"},
 ]
 
 [[package]]
