@@ -870,20 +870,20 @@ requests = ">=1.0.0"
 
 [[package]]
 name = "requests-pprint"
-version = "1.2.2"
+version = "1.2.3"
 description = "Pretty print your python HTTP requests"
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "requests_pprint-1.2.2-py3-none-any.whl", hash = "sha256:65e4a57ae0c0c5097509b80e519c8e5ad6ae68a819705cd076f8ae8813facd64"},
-    {file = "requests_pprint-1.2.2.tar.gz", hash = "sha256:b46ce127a1c833573b5c8843c7d9fea16795c6043ec8fe08c049830173b95c1f"},
+    {file = "requests_pprint-1.2.3-py3-none-any.whl", hash = "sha256:c44cc333dbd99423b199ce5f438b10146b70e9b3681470c87f86c79b95c46e12"},
+    {file = "requests_pprint-1.2.3.tar.gz", hash = "sha256:c3a91898605aedacf8c4e2237d21448ac777f2592824654d2b98b83d8fd1f52a"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.9.5,<4.0.0"
 requests = ">=2.31.0,<3.0.0"
-rich = ">=13.7.1,<14.0.0"
+rich = ">=13.7.1"
 
 [[package]]
 name = "rich"
