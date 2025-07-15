@@ -1008,14 +1008,14 @@ types-html5lib = "*"
 
 [[package]]
 name = "types-docutils"
-version = "0.21.0.20250710"
+version = "0.21.0.20250715"
 description = "Typing stubs for docutils"
 optional = false
 python-versions = ">=3.9"
-groups = ["types"]
+groups = ["dev", "types"]
 files = [
-    {file = "types_docutils-0.21.0.20250710-py3-none-any.whl", hash = "sha256:922d96912c1ca51285e294ce77a2f03db48405c9fcc92d594c5746268905d84a"},
-    {file = "types_docutils-0.21.0.20250710.tar.gz", hash = "sha256:9561d834b3a6b0c99ebd62f956eb5a2ea7d9b7401ba0d97df3194865126431c4"},
+    {file = "types_docutils-0.21.0.20250715-py3-none-any.whl", hash = "sha256:f254ab9aa46cfd4dce07034dc224db25a55452380ed3df156d9ce5589811c261"},
+    {file = "types_docutils-0.21.0.20250715.tar.gz", hash = "sha256:f7beb7d136cfbbc456e4a33f45eb367c7a5338b591c57a6555c821f85238a7fb"},
 ]
 
 [[package]]
