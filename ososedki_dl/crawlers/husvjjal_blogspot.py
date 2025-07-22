@@ -192,7 +192,7 @@ async def download_profile(
             download_path=download_path,
             progress=progress,
             task=task,
-            title_extractor=lambda _: "husvjjal",
+            title="husvjjal",
             media_filter=husvjjal_blogspot_media_filter,
         )
         related_albums: list[str] = await get_related_albums(
@@ -206,7 +206,7 @@ async def download_profile(
                 download_path=download_path,
                 progress=progress,
                 task=task,
-                title_extractor=lambda _: "husvjjal",
+                title="husvjjal",
                 media_filter=husvjjal_blogspot_media_filter,
             )
         return results
