@@ -56,9 +56,6 @@ async def process_album(
     title_extractor: Optional[Callable[[BeautifulSoup], str]] = None,
     title: Optional[str] = None,
 ) -> list[dict[str, str]]:
-    if album_url.endswith("/"):
-        album_url = album_url[:-1]
-
     soup: BeautifulSoup | None = await fetch_soup(session, album_url)
     if soup is None:
         return []
