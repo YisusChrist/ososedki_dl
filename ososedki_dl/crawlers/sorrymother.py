@@ -21,7 +21,7 @@ def sorrymother_title_extractor(soup: BeautifulSoup) -> str:
 
 
 def sorrymother_media_filter(soup: BeautifulSoup) -> list[str]:
-    images_list: list = [
+    images_list: list[str] = [
         img["src"] for img in soup.find_all("img") if BASE_URL in img["src"]
     ]
     # Remove the resolution from the image name
@@ -30,7 +30,7 @@ def sorrymother_media_filter(soup: BeautifulSoup) -> list[str]:
         parts: list[str] = image.split("-")
         new_name: str = "-".join(parts[:-1]) + "." + parts[-1].split(".")[-1]
         images.append(new_name)
-    videos: list = [
+    videos: list[str] = [
         video["src"].split("?")[0]
         for video in soup.find_all("source", {"type": "video/mp4"})
     ]

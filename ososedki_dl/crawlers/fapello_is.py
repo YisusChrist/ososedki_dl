@@ -13,7 +13,9 @@ DOWNLOAD_URL = "https://fapello.is"
 BASE_URL = DOWNLOAD_URL + "//api/media"
 
 
-async def fetch_media_urls(session: ClientSession, url: str) -> list[dict] | str:
+async def fetch_media_urls(
+    session: ClientSession, url: str
+) -> list[dict[str, str]] | str:
     async with session.get(url) as response:
         if response.status != 200:
             return []
@@ -35,11 +37,11 @@ async def download_profile(
     i = 1
 
     title: str = ""
-    urls: list = []
+    urls: list[str] = []
     print(f"Fetching data from profile {profile_id}...")
     while True:
         url: str = f"{BASE_URL}/{profile_id}/{i}/1/0"
-        album: list[dict] | str = await fetch_media_urls(session, url)
+        album: list[dict[str, str]] | str = await fetch_media_urls(session, url)
         if not album or album == "null":
             break
 
