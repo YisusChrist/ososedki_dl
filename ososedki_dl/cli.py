@@ -52,6 +52,13 @@ def get_parsed_args() -> Namespace:
         default=False,
         help="Enable interactive mode for the program.",
     )
+    g_main.add_argument(
+        "-l",
+        "--list-supported-sites",
+        action="store_true",
+        default=False,
+        help="List all the supported sites and exit."
+    )
 
     g_user = parser.add_argument_group("User Options")
     g_user.add_argument(

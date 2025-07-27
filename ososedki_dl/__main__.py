@@ -3,6 +3,7 @@
 import asyncio
 from argparse import Namespace
 from pathlib import Path
+from types import ModuleType
 
 from aiohttp import ClientSession
 from core_helpers.utils import print_welcome
@@ -15,7 +16,8 @@ from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
                      GITHUB, LOG_FILE, LOG_PATH, PACKAGE)
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
-from .scrapper import generic_download, load_crawler_modules
+from .scrapper import (generic_download, get_crawler_modules,
+                       load_crawler_modules)
 from .utils import exit_session, get_user_input
 
 
@@ -50,6 +52,11 @@ def main() -> None:
         print(LOG_FILE)
     elif args.print_config is not None:
         handle_config_command(args)
+    elif args.list_supported_sites:
+        load_crawler_modules()
+        crawler_modules: list[ModuleType] = get_crawler_modules()
+        for module in crawler_modules:
+            print(module.DOWNLOAD_URL)
     else:
         print_welcome(PACKAGE, VERSION, DESC, GITHUB)
         try:

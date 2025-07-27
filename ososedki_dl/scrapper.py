@@ -16,6 +16,10 @@ console = Console()
 crawler_modules: list[ModuleType] = []
 
 
+def get_crawler_modules() -> list[ModuleType]:
+    return crawler_modules
+
+
 def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
     """
     Print a summary of the errors encountered during the download process.
