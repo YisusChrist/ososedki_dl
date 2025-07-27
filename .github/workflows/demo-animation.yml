@@ -44,7 +44,6 @@ jobs:
       - name: 🧪 Generate the gif with vhs
         if: github.actor != 'dependabot[bot]'
         run: |
-          sudo apt update
           sudo apt install -y ffmpeg ttyd
           go install github.com/charmbracelet/vhs@latest
           vhs .github/demo.tape
