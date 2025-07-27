@@ -14,10 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: 🚀 Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: 🚀 Setup Go
+        uses: actions/setup-go@v5.5.0
 
       - uses: actions/cache@v4
         with:
@@ -29,21 +32,22 @@ jobs:
       - name: Install the package
         run: pip install .
 
-      - uses: charmbracelet/vhs-action@v2.1.0
-        with:
-          path: ".github/demo.tape"
+      - name: 🧪 Generate the gif with vhs
+        if: github.actor != 'dependabot[bot]'
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg ttyd
+          go install github.com/charmbracelet/vhs@latest
+          vhs .github/demo.tape
 
       - name: Commit and push generated GIF
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add *.gif
-
-          # Only commit if there are changes (i.e. updated gif)
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: update demo animation"
-            git push
-          fi
+        uses: stefanzweifel/git-auto-commit-action@v6
+        if: github.actor != 'dependabot[bot]'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commit_message: "chore: update demo animation"
+          commit_user_name: vhs-action 📼
+          commit_user_email: actions@github.com
+          commit_author: vhs-action 📼 <actions@github.com>
+          file_pattern: "*.gif"
