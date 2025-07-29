@@ -6,6 +6,7 @@ from pathlib import Path
 from types import ModuleType
 
 from aiohttp import ClientSession
+from aiohttp_client_cache.session import CachedSession
 from core_helpers.utils import print_welcome
 from rich import print
 from rich.traceback import install
@@ -16,13 +17,19 @@ from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
                      GITHUB, LOG_FILE, LOG_PATH, PACKAGE)
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
+from .logs import logger
 from .scrapper import (generic_download, get_crawler_modules,
                        load_crawler_modules)
 from .utils import exit_session, get_user_input
 
 
-async def run_main_loop(dest_path: Path) -> None:
-    async with ClientSession() as session:
+async def run_main_loop(dest_path: Path, cache: bool) -> None:
+    SessionType = CachedSession if cache else ClientSession
+    session_type_name = "cached" if cache else "non-cached"
+    print(f"Using {session_type_name} session for downloads.")
+    logger.info(f"Using {session_type_name} session for downloads.")
+
+    async with SessionType() as session:
         # Dynamically load all crawler modules
         load_crawler_modules()
         while True:
@@ -60,7 +67,7 @@ def main() -> None:
     else:
         print_welcome(PACKAGE, VERSION, DESC, GITHUB)
         try:
-            asyncio.run(run_main_loop(dest_path))
+            asyncio.run(run_main_loop(dest_path, args.cache))
         except KeyboardInterrupt:
             pass
 

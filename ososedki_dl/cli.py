@@ -42,7 +42,6 @@ def get_parsed_args() -> Namespace:
         "--config-file",
         dest="config_file",
         type=str,
-        default=CONFIG_FILE,
         help="Specify a configuration file to use instead of the default one.",
     )
     # Create config file interactive
@@ -53,12 +52,13 @@ def get_parsed_args() -> Namespace:
         default=False,
         help="Enable interactive mode during the creation of the config file.",
     )
+    # Enable cached requests
     g_main.add_argument(
-        "-l",
-        "--list-supported-sites",
+        "-c",
+        "--cache",
         action="store_true",
         default=False,
-        help="List all the supported sites and exit.",
+        help="Enable caching support for the requests.",
     )
 
     g_user = parser.add_argument_group("User Options")
@@ -93,6 +93,13 @@ Example usage:
 
 3. Change value of one or multiple config fields.
 [green]{PACKAGE} print-config [cyan]<field> <value>[/] [[cyan]<field> <value>[/] ...][/]""",
+    )
+    g_user.add_argument(
+        "-l",
+        "--list-supported-sites",
+        action="store_true",
+        default=False,
+        help="List all the supported sites and exit.",
     )
 
     return parser.parse_args()
