@@ -42,7 +42,8 @@ def get_parsed_args() -> Namespace:
         "--config-file",
         dest="config_file",
         type=str,
-        help="Specify a configuration file.",
+        default=CONFIG_FILE,
+        help="Specify a configuration file to use instead of the default one.",
     )
     # Create config file interactive
     g_main.add_argument(
@@ -50,14 +51,14 @@ def get_parsed_args() -> Namespace:
         "--interactive",
         action="store_true",
         default=False,
-        help="Enable interactive mode for the program.",
+        help="Enable interactive mode during the creation of the config file.",
     )
     g_main.add_argument(
         "-l",
         "--list-supported-sites",
         action="store_true",
         default=False,
-        help="List all the supported sites and exit."
+        help="List all the supported sites and exit.",
     )
 
     g_user = parser.add_argument_group("User Options")
@@ -66,14 +67,14 @@ def get_parsed_args() -> Namespace:
         "--config-dir",
         action="store_true",
         default=False,
-        help="Shows config directory path.",
+        help="Show config directory path and exit.",
     )
     g_user.add_argument(
         "-ld",
         "--log-dir",
         action="store_true",
         default=False,
-        help="Shows log directory path.",
+        help="Shows log directory path and exit.",
     )
     g_user.add_argument(
         "-pc",
