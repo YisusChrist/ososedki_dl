@@ -54,7 +54,12 @@ async def process_album(
     media_filter: Callable[[BeautifulSoup], list[str]],
     title_extractor: Optional[Callable[[BeautifulSoup], str]] = None,
     title: Optional[str] = None,
+    retries: int = 0,
 ) -> list[dict[str, str]]:
+    if retries > 5:
+        print(f"Max depth reached for {album_url}. Skipping...")
+        return []
+
     if album_url.endswith("/"):
         album_url = album_url[:-1]
 
@@ -83,6 +88,7 @@ async def process_album(
             media_filter=media_filter,
             title_extractor=title_extractor,
             title=title,
+            retries=retries + 1,
         )
 
     album_path: Path = get_final_path(download_path, title)
