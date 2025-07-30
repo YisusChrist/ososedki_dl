@@ -9,12 +9,17 @@ try:
 except ImportError:  # for Python < 3.8
     import importlib_metadata as metadata  # type: ignore
 
-__version__: str = metadata.version(__package__ or __name__)
-__desc__: str = metadata.metadata(__package__ or __name__)["Summary"]
-GITHUB: str = metadata.metadata(__package__ or __name__)["Home-page"]
-PACKAGE: str = metadata.metadata(__package__ or __name__)["Name"]
+metadata_info = metadata.metadata(__package__ or __name__)
 
-CACHE_PATH = Path(".cache")
+__version__: str = metadata.version(__package__ or __name__)
+__desc__: str = metadata_info["Summary"]
+if metadata_info["Home-page"]:
+    GITHUB: str = metadata_info["Home-page"]
+else:
+    GITHUB = metadata_info["Project-URL"].split(",")[1].strip()
+PACKAGE: str = metadata_info["Name"]
+
+CACHE_PATH: Path = Path(".cache").resolve()
 LOG_PATH: Path = get_user_path(package=PACKAGE, path_type=PathType.LOG)
 LOG_FILE: Path = Path(LOG_PATH).resolve() / f"{PACKAGE}.log"
 CONFIG_PATH: Path = get_user_path(PACKAGE, PathType.CONFIG)

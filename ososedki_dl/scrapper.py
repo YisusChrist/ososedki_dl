@@ -8,9 +8,12 @@ from pathlib import Path
 from types import ModuleType
 from typing import DefaultDict
 
-from aiohttp import ClientResponse, ClientSession
+from aiohttp import ClientResponse
+from aiohttp_client_cache.response import CachedResponse
 from rich.console import Console
 from rich.progress import Progress, TaskID
+
+from ososedki_dl.download import SessionType
 
 console = Console()
 crawler_modules: list[ModuleType] = []
@@ -61,8 +64,6 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
 
 def load_crawler_modules() -> None:
     """Dynamically load all modules in the given package."""
-    global crawler_modules
-
     crawlers_package: str = "ososedki_dl.crawlers"
     package: ModuleType = importlib.import_module(crawlers_package)
 
@@ -75,7 +76,7 @@ def load_crawler_modules() -> None:
 
 
 async def generic_download(
-    session: ClientSession, urls: list[str], download_path: Path
+    session: SessionType, urls: list[str], download_path: Path
 ) -> None:
     with Progress() as progress:
         task: TaskID = progress.add_task("[cyan]Downloading...", total=len(urls))
@@ -109,15 +110,13 @@ async def generic_download(
 
 
 async def handle_downloader(
-    session: ClientSession,
+    session: SessionType,
     download_path: Path,
     progress: Progress,
     task: TaskID,
     results: list[dict[str, str]],
     url: str,
 ) -> None:
-    global crawler_modules
-
     for module in crawler_modules:
         download_url: str = module.DOWNLOAD_URL
         if download_url and url.startswith(download_url):
@@ -136,7 +135,7 @@ async def handle_downloader(
 
 
 async def dynamic_download(
-    session: ClientSession,
+    session: SessionType,
     album_url: str,
     download_path: Path,
     progress: Progress,
@@ -158,7 +157,7 @@ async def dynamic_download(
 
     # Check if the URL is valid
     try:
-        response: ClientResponse = await session.get(album_url)
+        response: ClientResponse | CachedResponse = await session.get(album_url)
         response.raise_for_status()
     except Exception as e:
         return [{"url": album_url, "status": f"error: {e}"}]

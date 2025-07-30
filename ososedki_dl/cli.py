@@ -124,7 +124,7 @@ def handle_config_command(args: Namespace) -> None:
         else:
             update_config_file(config, args.print_config)
             # Save updated config
-            with open(CONFIG_FILE, "w") as f:
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 config.write(f)
 
     except configparser.Error as e:

@@ -223,7 +223,7 @@ async def download_profile(
     ]
 
     albums_html = soup.find_all("a", class_=album_classes)
-    albums = list(set([album["href"] for album in albums_html]))
+    albums = list({album["href"] for album in albums_html})
 
     results = []
     index = 0

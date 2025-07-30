@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlparse
 import requests
 from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
                      ClientTimeout, InvalidURL)
+from aiohttp_client_cache.session import CachedSession
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
@@ -23,6 +24,9 @@ ua = UserAgent(min_version=120.0)
 _user_agent: str = ""
 
 
+SessionType = CachedSession | ClientSession
+
+
 def get_user_agent() -> str:
     global _user_agent
 
@@ -31,13 +35,13 @@ def get_user_agent() -> str:
     return _user_agent
 
 
-async def get_soup(session: ClientSession, url: str) -> BeautifulSoup:
+async def get_soup(session: SessionType, url: str) -> BeautifulSoup:
     html_content: str = await fetch(session, url)
     return BeautifulSoup(html_content, "html.parser")
 
 
 async def _generic_fetch(
-    session: ClientSession,
+    session: SessionType,
     url: str,
     response_property: str = "text",
     **kwargs: Any,
@@ -53,9 +57,8 @@ async def _generic_fetch(
             async with session.get(
                 url=url, timeout=client_timeout, **kwargs
             ) as response:
-                if (
-                    response.status == 429 or response.status == 503
-                ):  # Too Many Requests or Service Unavailable
+                if response.status in (429, 503):
+                    # Too Many Requests or Service Unavailable
                     await sleep(5)
                     continue
                 response.raise_for_status()
@@ -63,10 +66,9 @@ async def _generic_fetch(
                 # Dynamically access the specified response property
                 if hasattr(response, response_property):
                     return await getattr(response, response_property)()
-                else:
-                    raise ValueError(
-                        f"Response object has no property '{response_property}'"
-                    )
+                raise ValueError(
+                    f"Response object has no property '{response_property}'"
+                )
 
         except SSLCertVerificationError as e:
             raise e
@@ -83,12 +85,11 @@ async def _generic_fetch(
             # Dynamically access the specified response property
             if hasattr(response2, response_property):
                 return getattr(response2, response_property)()
-            else:
-                return response2.content
+            return response2.content
 
 
 async def fetch(
-    session: ClientSession,
+    session: SessionType,
     url: str,
     property: str = "text",
     **kwargs: Optional[dict[str, str]],
@@ -99,7 +100,7 @@ async def fetch(
 
 
 async def download_and_compare(
-    session: ClientSession,
+    session: SessionType,
     url: str,
     media_path: Path,
     headers: Optional[dict[str, str]] = None,
@@ -132,9 +133,8 @@ async def download_and_compare(
         if file_content == image_content:
             print(f"Skipping {url}")
             return {"url": url, "status": "skipped"}
-        else:
-            new_path: Path = get_unique_filename(media_path)
-            await write_media(new_path, image_content, url)
+        new_path: Path = get_unique_filename(media_path)
+        await write_media(new_path, image_content, url)
     else:
         await write_media(media_path, image_content, url)
 
@@ -143,7 +143,7 @@ async def download_and_compare(
 
 
 async def download_and_save_media(
-    session: ClientSession,
+    session: SessionType,
     url: str,
     album_path: Path,
     headers: Optional[dict[str, str]] = None,

@@ -7,17 +7,17 @@ from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
                     Optional)
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientResponseError
 from bs4 import BeautifulSoup, ResultSet
 from bs4.element import NavigableString, Tag
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.download import download_and_save_media, get_soup
+from ososedki_dl.download import SessionType, download_and_save_media, get_soup
 from ososedki_dl.utils import get_final_path
 
 
-async def fetch_soup(session: ClientSession, url: str) -> BeautifulSoup | None:
+async def fetch_soup(session: SessionType, url: str) -> BeautifulSoup | None:
     print(f"Fetching {url}")
     try:
         return await get_soup(session, url)
@@ -27,19 +27,18 @@ async def fetch_soup(session: ClientSession, url: str) -> BeautifulSoup | None:
 
 
 async def download_media_items(
-    session: ClientSession,
+    session: SessionType,
     media_urls: list[str],
     album_path: Path,
     progress: Progress,
     task: TaskID,
 ) -> list[dict[str, str]]:
-    tasks: list = [
+    tasks: list[Any] = [
         download_and_save_media(session=session, url=url, album_path=album_path)
         for url in media_urls
     ]
 
     results: list[dict[str, str]] = await asyncio.gather(*tasks)
-
     for _ in media_urls:
         progress.advance(task)
 
@@ -47,7 +46,7 @@ async def download_media_items(
 
 
 async def process_album(
-    session: ClientSession,
+    session: SessionType,
     album_url: str,
     download_path: Path,
     progress: Progress,
@@ -70,7 +69,7 @@ async def process_album(
         if not title:
             raise ValueError("Title could not be determined")
 
-        media_urls: list = list(set(media_filter(soup)))
+        media_urls: list[str] = list(set(media_filter(soup)))
         print(f"Title: {title}")
         print(f"Media URLs: {len(media_urls)}")
     except (TypeError, ValueError) as e:
@@ -181,7 +180,7 @@ def _get_article_title(soup: BeautifulSoup) -> str:
 
 
 async def fetch_page_albums(
-    session: ClientSession,
+    session: SessionType,
     page_url: str,
     album_href_filter: Callable[[str], bool],
     download_url: str,
@@ -197,9 +196,9 @@ async def fetch_page_albums(
 
 
 async def find_model_albums(
-    session: ClientSession,
+    session: SessionType,
     model_url: str,
-    album_fetcher: Callable[[ClientSession, str], Awaitable[list[str]]],
+    album_fetcher: Callable[[SessionType, str], Awaitable[list[str]]],
     title_extractor: Callable[[BeautifulSoup], str],
 ) -> AsyncGenerator[tuple[list[str], str], None]:
     # Clean the URL removing the query parameters
@@ -228,14 +227,14 @@ async def find_model_albums(
 
 
 async def process_model_album(
-    session: ClientSession,
+    session: SessionType,
     album_url: str,
     model_url: Optional[str],
     cosplay_url: Optional[str],
     download_path: Path,
     progress: Progress,
     task: TaskID,
-    album_fetcher: Callable[[ClientSession, str], Awaitable[list[str]]],
+    album_fetcher: Callable[[SessionType, str], Awaitable[list[str]]],
     title_extractor: Callable[[BeautifulSoup], str],
     media_filter: Callable[[BeautifulSoup], list[str]],
 ) -> list[dict[str, str]]:
@@ -245,7 +244,7 @@ async def process_model_album(
         results: list[dict[str, str]] = []
 
         # Find all the albums for the model incrementally
-        async for albums, model in find_model_albums(
+        async for albums, _ in find_model_albums(
             session=session,
             model_url=album_url,
             album_fetcher=album_fetcher,

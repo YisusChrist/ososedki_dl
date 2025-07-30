@@ -25,15 +25,14 @@ def get_valid_url() -> list[str]:
                 result.append(url)
         if result:
             return result
-        else:
-            print("[bold red]Error:[/] Please enter a valid URL.")
+        print("[bold red]Error:[/] Please enter a valid URL.")
 
 
 def get_valid_path() -> Path:
     default_path = "downloads"
     while True:
         path: str = Prompt.ask(
-            f"Enter the download path",
+            "Enter the download path",
             default=default_path,
         )
         real_path: Path = Path(path).resolve()
@@ -90,7 +89,7 @@ def get_url_hashfile(url: str) -> Path:
 
 def write_to_cache(url: str) -> None:
     cache_filename: Path = get_url_hashfile(url)
-    with open(cache_filename, "w"):
+    with open(cache_filename, "w", encoding="utf-8"):
         pass
 
 
