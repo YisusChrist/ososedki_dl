@@ -1,0 +1,11 @@
+"""Downloader for https://vipthots.com"""
+
+from ososedki_dl.crawlers.base_crawler import BaseCrawler
+
+
+class VipThotsCrawler(BaseCrawler):
+    site_url = "https://vipthots.com"
+    base_image_path = "/images/a/"
+    model_url = None
+    cosplay_url = None
+    button_class = None
