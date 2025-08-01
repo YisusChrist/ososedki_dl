@@ -40,12 +40,6 @@ async def _generic_fetch(
     response_property: str = "text",
     **kwargs: Any,
 ) -> Any:
-    if not kwargs.get("headers"):
-        headers: dict[str, str] = {"User-Agent": get_user_agent()}
-
-        # Update the headers from the kwargs
-        kwargs["headers"] = headers
-
     while True:
         try:
             async with session.get(

@@ -10,6 +10,8 @@ from core_helpers.utils import print_welcome
 from rich import print
 from rich.traceback import install
 
+from ososedki_dl.download import get_user_agent
+
 from .cli import get_parsed_args, handle_config_command
 from .config import configure_paths
 from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
@@ -29,7 +31,8 @@ async def run_main_loop(dest_path: Path, cache: bool) -> None:
     print(msg)
     logger.info(msg)
 
-    async with SessionType() as session:
+    headers: dict[str, str] = {"User-Agent": get_user_agent()}
+    async with SessionType(headers=headers) as session:
         # Dynamically load all crawler modules
         while True:
             urls, download_path = get_user_input(dest_path)
