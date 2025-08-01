@@ -1,26 +1,18 @@
 """Scrapper module for downloading images from various websites."""
 
-import importlib
-import inspect
-import pkgutil
 from collections import defaultdict
 from pathlib import Path
-from types import ModuleType
 from typing import DefaultDict
 
 from aiohttp import ClientResponse
 from aiohttp_client_cache.response import CachedResponse
-from rich.console import Console
 from rich.progress import Progress, TaskID
+from rich import print
 
+from ososedki_dl.crawlers import CrawlerType
+from ososedki_dl.crawlers import crawlers as crawler_modules
+from ososedki_dl.crawlers._common import CrawlerContext
 from ososedki_dl.download import SessionType
-
-console = Console()
-crawler_modules: list[ModuleType] = []
-
-
-def get_crawler_modules() -> list[ModuleType]:
-    return crawler_modules
 
 
 def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
@@ -51,28 +43,15 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
             error_groups[error_msg].append(result["url"])
 
     # Print grouped errors
-    console.print("[bold yellow]Grouped Errors Summary:[/]")
+    print("[bold yellow]Grouped Errors Summary:[/]")
     for error_type, urls in error_groups.items():
-        console.print(f"[red]{error_type} - Count: {len(urls)}[/]")
+        print(f"[red]{error_type} - Count: {len(urls)}[/]")
         if verbose:
-            console.print("Affected URLs:")
+            print("Affected URLs:")
             for url in urls:
-                console.print(f"  • {url}")
+                print(f"  • {url}")
 
     print()
-
-
-def load_crawler_modules() -> None:
-    """Dynamically load all modules in the given package."""
-    crawlers_package: str = "ososedki_dl.crawlers"
-    package: ModuleType = importlib.import_module(crawlers_package)
-
-    for _, module_name, _ in pkgutil.iter_modules(package.__path__):
-        if module_name.startswith("_") or module_name == "pinterest":
-            continue
-        full_module_name: str = f"{crawlers_package}.{module_name}"
-        module: ModuleType = importlib.import_module(full_module_name)
-        crawler_modules.append(module)
 
 
 async def generic_download(
@@ -80,14 +59,12 @@ async def generic_download(
 ) -> None:
     with Progress() as progress:
         task: TaskID = progress.add_task("[cyan]Downloading...", total=len(urls))
+        context = CrawlerContext(session, download_path, progress, task)
 
         results: list[dict[str, str]] = []
         for url in urls:
             await handle_downloader(
-                session=session,
-                download_path=download_path,
-                progress=progress,
-                task=task,
+                context=context,
                 results=results,
                 url=url,
             )
@@ -98,7 +75,7 @@ async def generic_download(
         )
         error_count: int = sum(1 for result in results if "error" in result["status"])
 
-        console.print(
+        print(
             f"""\n
 [green]Downloaded: {ok_count}[/]
 [yellow]Skipped: {skipped_count}[/]
@@ -110,61 +87,29 @@ async def generic_download(
 
 
 async def handle_downloader(
-    session: SessionType,
-    download_path: Path,
-    progress: Progress,
-    task: TaskID,
-    results: list[dict[str, str]],
-    url: str,
+    context: CrawlerContext, results: list[dict[str, str]], url: str
 ) -> None:
-    for module in crawler_modules:
-        download_url: str = module.DOWNLOAD_URL
-        if download_url and url.startswith(download_url):
-            result: list[dict[str, str]] = await dynamic_download(
-                session=session,
-                album_url=url,
-                download_path=download_path,
-                progress=progress,
-                task=task,
-                module=module,
-            )
+    for CrawlerClass in crawler_modules:
+        if url.startswith(CrawlerClass.site_url):
+            crawler: CrawlerType = CrawlerClass()
+            result: list[dict[str, str]] = await dynamic_download(context, url, crawler)
             results.extend(result)
             break
     else:
-        console.print(f"[yellow]No downloader found for URL: {url}[/]")
+        print(f"[yellow]No downloader found for URL: {url}[/]")
 
 
 async def dynamic_download(
-    session: SessionType,
-    album_url: str,
-    download_path: Path,
-    progress: Progress,
-    task: TaskID,
-    module: ModuleType,
+    context: CrawlerContext, album_url: str, crawler: CrawlerType
 ) -> list[dict[str, str]]:
-    # Use inspect.getmembers to find the function marked with is_main_entry
-    download_func = next(
-        (
-            func
-            for _, func in inspect.getmembers(module, inspect.isfunction)
-            if getattr(func, "is_main_entry", False)
-        ),
-        None,
-    )
-
-    if not download_func:
-        raise ValueError(f"No main entry function found in module {module.__name__}")
-
     # Check if the URL is valid
     try:
-        response: ClientResponse | CachedResponse = await session.get(album_url)
+        response: ClientResponse | CachedResponse = await context.session.get(album_url)
         response.raise_for_status()
     except Exception as e:
         return [{"url": album_url, "status": f"error: {e}"}]
 
-    result: list[dict[str, str]] = await download_func(
-        session, album_url, download_path, progress, task
-    )
+    result: list[dict[str, str]] = await crawler.download(context, album_url)
 
-    progress.advance(task)
+    context.progress.advance(context.task)
     return result

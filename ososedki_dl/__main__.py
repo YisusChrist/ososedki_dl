@@ -3,7 +3,6 @@
 import asyncio
 from argparse import Namespace
 from pathlib import Path
-from types import ModuleType
 
 from aiohttp import ClientSession
 from aiohttp_client_cache.session import CachedSession
@@ -17,21 +16,21 @@ from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
                      GITHUB, LOG_FILE, LOG_PATH, PACKAGE)
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
+from .crawlers import crawlers as crawler_modules
 from .logs import logger
-from .scrapper import (generic_download, get_crawler_modules,
-                       load_crawler_modules)
+from .scrapper import generic_download
 from .utils import exit_session, get_user_input
 
 
 async def run_main_loop(dest_path: Path, cache: bool) -> None:
     SessionType = CachedSession if cache else ClientSession
     session_type_name = "cached" if cache else "non-cached"
-    print(f"Using {session_type_name} session for downloads.")
-    logger.info(f"Using {session_type_name} session for downloads.")
+    msg = f"Using {session_type_name} session for downloads."
+    print(msg)
+    logger.info(msg)
 
     async with SessionType() as session:
         # Dynamically load all crawler modules
-        load_crawler_modules()
         while True:
             urls, download_path = get_user_input(dest_path)
 
@@ -60,10 +59,9 @@ def main() -> None:
     elif args.print_config is not None:
         handle_config_command(args)
     elif args.list_supported_sites:
-        load_crawler_modules()
-        crawler_modules: list[ModuleType] = get_crawler_modules()
-        for module in crawler_modules:
-            print(module.DOWNLOAD_URL)
+        urls: list[str] = sorted(crawler.site_url for crawler in crawler_modules)
+        for url in urls:
+            print(url)
     else:
         print_welcome(PACKAGE, VERSION, DESC, GITHUB)
         try:

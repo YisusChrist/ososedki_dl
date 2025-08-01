@@ -10,7 +10,6 @@ import requests
 from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
                      ClientTimeout, InvalidURL)
 from aiohttp_client_cache.session import CachedSession
-from bs4 import BeautifulSoup
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
 
@@ -33,11 +32,6 @@ def get_user_agent() -> str:
     if _user_agent == "":
         _user_agent = ua.random
     return _user_agent
-
-
-async def get_soup(session: SessionType, url: str) -> BeautifulSoup:
-    html_content: str = await fetch(session, url)
-    return BeautifulSoup(html_content, "html.parser")
 
 
 async def _generic_fetch(
