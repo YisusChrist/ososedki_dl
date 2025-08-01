@@ -16,9 +16,10 @@ class FapelloIsCrawler(SimpleCrawler):
     download_url: str = site_url + "/api/media"
 
     async def fetch_media_urls(
-        self, session: SessionType, url: str
+        self, session: SessionType, url: str, referer_url: str
     ) -> list[dict[str, str]] | str:
-        async with session.get(url) as response:
+        headers: dict[str, str] = {"Referer": referer_url}
+        async with session.get(url, headers=headers) as response:
             if response.status != 200:
                 return []
             return await response.json()
@@ -36,9 +37,10 @@ class FapelloIsCrawler(SimpleCrawler):
         urls: list[str] = []
         print(f"Fetching data from profile {profile_id}...")
         while True:
-            fetch_url: str = f"{self.download_url}/{profile_id}/{i}/1/0"
+            print(f"Fetching page {i} for profile {profile_id}...")
+            fetch_url: str = f"{self.download_url}/{profile_id}/{i}/1"
             album: list[dict[str, str]] | str = await self.fetch_media_urls(
-                context.session, fetch_url
+                context.session, fetch_url, url
             )
             if not album or album == "null":
                 break
