@@ -158,6 +158,8 @@ async def download_and_save_media(
             "Range": "bytes=0-",
             "Referer": "https://sorrymother.to/",
         }
+    elif "nice-try.fckthots.xyz" in url:
+        headers = {"Referer": "https://fapello.is/"}
 
     return await download_and_compare(
         session,
