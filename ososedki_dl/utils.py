@@ -4,7 +4,7 @@ import hashlib
 import re
 import sys
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import NoReturn
 
 import aiofiles
 import validators  # type: ignore
@@ -100,11 +100,6 @@ def get_unique_filename(base_path: Path) -> Path:
         suffix += 1
         new_path = base_path.with_stem(f"{base_path.stem}_{suffix}")
     return new_path
-
-
-def main_entry(func: Any) -> Any:
-    func.is_main_entry = True
-    return func
 
 
 def exit_session(exit_value: int) -> NoReturn:
