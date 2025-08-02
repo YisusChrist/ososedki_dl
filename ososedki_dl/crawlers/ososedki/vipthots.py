@@ -1,6 +1,6 @@
 """Downloader for https://vipthots.com"""
 
-from ososedki_dl.crawlers.base_crawler import BaseCrawler
+from ..base_crawler import BaseCrawler
 
 
 class VipThotsCrawler(BaseCrawler):

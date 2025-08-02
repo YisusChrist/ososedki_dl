@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 from rich import print
 from rich.progress import Progress, TaskID
 
-from ososedki_dl.download import SessionType, download_and_save_media, fetch
-from ososedki_dl.utils import get_final_path
+from ..download import SessionType, download_and_save_media, fetch
+from ..utils import get_final_path
 
 # region Context class
 

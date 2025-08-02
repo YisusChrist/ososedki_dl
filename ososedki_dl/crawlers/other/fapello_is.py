@@ -5,10 +5,10 @@ from typing import override
 
 from rich import print
 
-from ososedki_dl.crawlers._common import CrawlerContext, download_media_items
-from ososedki_dl.crawlers.simple_crawler import SimpleCrawler
-from ososedki_dl.download import SessionType
-from ososedki_dl.utils import get_final_path
+from ...download import SessionType
+from ...utils import get_final_path
+from .._common import CrawlerContext, download_media_items
+from ..simple_crawler import SimpleCrawler
 
 
 class FapelloIsCrawler(SimpleCrawler):

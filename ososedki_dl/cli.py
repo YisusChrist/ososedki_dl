@@ -6,10 +6,8 @@ from argparse import Namespace
 from core_helpers.cli import setup_parser
 from rich import print
 
-from ososedki_dl.config import (print_entire_config,
-                                print_specific_config_field,
-                                update_config_file)
-
+from .config import (print_entire_config, print_specific_config_field,
+                     update_config_file)
 from .consts import CONFIG_FILE, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION

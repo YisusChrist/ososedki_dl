@@ -1,6 +1,6 @@
 """Downloader for https://cosplayasian.com"""
 
-from ososedki_dl.crawlers.base_crawler import BaseCrawler
+from ..base_crawler import BaseCrawler
 
 
 class CosplayAsianCrawler(BaseCrawler):

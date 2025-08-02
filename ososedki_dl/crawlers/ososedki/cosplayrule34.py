@@ -1,6 +1,6 @@
 """Downloader for https://cosplayrule34.com"""
 
-from ososedki_dl.crawlers.base_crawler import BaseCrawler
+from ..base_crawler import BaseCrawler
 
 
 class CosplayRule34Crawler(BaseCrawler):

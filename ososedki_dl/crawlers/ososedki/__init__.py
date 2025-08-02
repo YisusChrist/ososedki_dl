@@ -1,11 +1,11 @@
-from ososedki_dl.crawlers.ososedki.cosplayasian import CosplayAsianCrawler
-from ososedki_dl.crawlers.ososedki.cosplayboobs import CosplayBoobsCrawler
-from ososedki_dl.crawlers.ososedki.cosplayrule34 import CosplayRule34Crawler
-from ososedki_dl.crawlers.ososedki.cosplaythots import CosplayThotsCrawler
-from ososedki_dl.crawlers.ososedki.ocosplay import OCosplayCrawler
-from ososedki_dl.crawlers.ososedki.ososedki import OsosedkiCrawler
-from ososedki_dl.crawlers.ososedki.vipthots import VipThotsCrawler
-from ososedki_dl.crawlers.ososedki.waifubitches import WaifuBitchesCrawler
+from .cosplayasian import CosplayAsianCrawler
+from .cosplayboobs import CosplayBoobsCrawler
+from .cosplayrule34 import CosplayRule34Crawler
+from .cosplaythots import CosplayThotsCrawler
+from .ocosplay import OCosplayCrawler
+from .ososedki import OsosedkiCrawler
+from .vipthots import VipThotsCrawler
+from .waifubitches import WaifuBitchesCrawler
 
 crawlers = [
     CosplayAsianCrawler,

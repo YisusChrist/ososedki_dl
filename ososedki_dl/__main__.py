@@ -10,8 +10,6 @@ from core_helpers.utils import print_welcome
 from rich import print
 from rich.traceback import install
 
-from ososedki_dl.download import get_user_agent
-
 from .cli import get_parsed_args, handle_config_command
 from .config import configure_paths
 from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
@@ -19,6 +17,7 @@ from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .crawlers import crawlers as crawler_modules
+from .download import get_user_agent
 from .logs import logger
 from .scrapper import generic_download
 from .utils import exit_session, get_user_input

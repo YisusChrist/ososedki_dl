@@ -4,8 +4,8 @@ from typing import override
 
 from bs4 import BeautifulSoup
 
-from ososedki_dl.crawlers._common import CrawlerContext, process_album
-from ososedki_dl.crawlers.simple_crawler import SimpleCrawler
+from .._common import CrawlerContext, process_album
+from ..simple_crawler import SimpleCrawler
 
 
 class SorryMotherCrawler(SimpleCrawler):

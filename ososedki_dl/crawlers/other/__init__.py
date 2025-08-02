@@ -1,11 +1,10 @@
-from ososedki_dl.crawlers.other.bunkrr_albums import BunkrAlbumsCrawler
-from ososedki_dl.crawlers.other.cosxuxi_club import CosxuxiClubCrawler
-from ososedki_dl.crawlers.other.eromexxx import EromeXXXCrawler
-from ososedki_dl.crawlers.other.fapello_is import FapelloIsCrawler
-from ososedki_dl.crawlers.other.husvjjal_blogspot import \
-    HusvjjalBlogspotCrawler
-from ososedki_dl.crawlers.other.sorrymother import SorryMotherCrawler
-from ososedki_dl.crawlers.other.wildskirts import WildskirtsCrawler
+from .bunkrr_albums import BunkrAlbumsCrawler
+from .cosxuxi_club import CosxuxiClubCrawler
+from .eromexxx import EromeXXXCrawler
+from .fapello_is import FapelloIsCrawler
+from .husvjjal_blogspot import HusvjjalBlogspotCrawler
+from .sorrymother import SorryMotherCrawler
+from .wildskirts import WildskirtsCrawler
 
 crawlers = [
     BunkrAlbumsCrawler,
@@ -14,5 +13,5 @@ crawlers = [
     FapelloIsCrawler,
     HusvjjalBlogspotCrawler,
     SorryMotherCrawler,
-    WildskirtsCrawler
+    WildskirtsCrawler,
 ]

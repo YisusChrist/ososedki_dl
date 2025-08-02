@@ -10,10 +10,9 @@ from bs4.element import NavigableString, Tag
 from requests import Response, Session
 from rich import print
 
-from ososedki_dl.crawlers._common import (CrawlerContext, fetch_soup,
-                                          process_album)
-from ososedki_dl.crawlers.simple_crawler import SimpleCrawler
-from ososedki_dl.download import fetch
+from ...download import fetch
+from .._common import CrawlerContext, fetch_soup, process_album
+from ..simple_crawler import SimpleCrawler
 
 
 class HusvjjalBlogspotCrawler(SimpleCrawler):
@@ -168,9 +167,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         return urls
 
     @override
-    async def download(
-        self, context: CrawlerContext, url: str
-    ) -> list[dict[str, str]]:
+    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]

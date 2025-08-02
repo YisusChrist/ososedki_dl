@@ -7,9 +7,9 @@ import requests
 from bs4 import BeautifulSoup
 from rich import print
 
-from ososedki_dl.consts import MAX_TIMEOUT
-from ososedki_dl.crawlers._common import CrawlerContext, fetch_soup
-from ososedki_dl.crawlers.simple_crawler import SimpleCrawler
+from ...consts import MAX_TIMEOUT
+from .._common import CrawlerContext, fetch_soup
+from ..simple_crawler import SimpleCrawler
 
 
 class BunkrAlbumsCrawler(SimpleCrawler):

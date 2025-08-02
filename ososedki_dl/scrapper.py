@@ -6,13 +6,12 @@ from typing import DefaultDict
 
 from aiohttp import ClientResponse
 from aiohttp_client_cache.response import CachedResponse
-from rich.progress import Progress, TaskID
 from rich import print
+from rich.progress import Progress, TaskID
 
-from ososedki_dl.crawlers import CrawlerType
-from ososedki_dl.crawlers import crawlers as crawler_modules
-from ososedki_dl.crawlers._common import CrawlerContext
-from ososedki_dl.download import SessionType
+from .crawlers import CrawlerContext, CrawlerInstance
+from .crawlers import crawlers as crawler_modules
+from .download import SessionType
 
 
 def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
@@ -91,7 +90,7 @@ async def handle_downloader(
 ) -> None:
     for CrawlerClass in crawler_modules:
         if url.startswith(CrawlerClass.site_url):
-            crawler: CrawlerType = CrawlerClass()
+            crawler: CrawlerInstance = CrawlerClass()
             result: list[dict[str, str]] = await dynamic_download(context, url, crawler)
             results.extend(result)
             break
@@ -100,7 +99,7 @@ async def handle_downloader(
 
 
 async def dynamic_download(
-    context: CrawlerContext, album_url: str, crawler: CrawlerType
+    context: CrawlerContext, album_url: str, crawler: CrawlerInstance
 ) -> list[dict[str, str]]:
     # Check if the URL is valid
     try:

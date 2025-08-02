@@ -13,10 +13,9 @@ from aiohttp_client_cache.session import CachedSession
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
 
-from ososedki_dl.utils import (get_unique_filename, get_url_hashfile,
-                               sanitize_path, write_media)
-
 from .consts import CHECK_CACHE, MAX_TIMEOUT
+from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
+                    write_media)
 
 client_timeout = ClientTimeout()
 ua = UserAgent(min_version=120.0)

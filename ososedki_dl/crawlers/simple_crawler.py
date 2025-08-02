@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from ososedki_dl.crawlers._common import CrawlerContext
+from ._common import CrawlerContext
 
 
 class SimpleCrawler(ABC):

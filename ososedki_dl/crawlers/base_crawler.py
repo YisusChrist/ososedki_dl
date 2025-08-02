@@ -12,10 +12,9 @@ from bs4 import BeautifulSoup, ResultSet
 from bs4.element import NavigableString, Tag
 from rich import print
 
-from ososedki_dl.crawlers._common import (CrawlerContext, fetch_soup,
-                                          process_album)
-from ososedki_dl.download import SessionType
-from ososedki_dl.logs import logger
+from ..download import SessionType
+from ..logs import logger
+from ._common import CrawlerContext, fetch_soup, process_album
 
 
 class BaseCrawler(ABC):
@@ -29,7 +28,9 @@ class BaseCrawler(ABC):
     button_class: Optional[str] = None
 
     def __init__(self) -> None:
-        logger.debug(f"Initialized {self.__class__.__name__} with site URL: {self.site_url}")
+        logger.debug(
+            f"Initialized {self.__class__.__name__} with site URL: {self.site_url}"
+        )
         self.base_media_url: str = self.site_url + self.base_image_path
 
     async def fetch_page_albums(
@@ -164,17 +165,15 @@ class BaseCrawler(ABC):
             # Sleep for a while to avoid being banned
             await asyncio.sleep(1)
 
-    async def download(
-        self, context: CrawlerContext, album_url: str
-    ) -> list[dict[str, str]]:
-        if (self.model_url and album_url.startswith(self.model_url)) or (
-            self.cosplay_url and album_url.startswith(self.cosplay_url)
+    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+        if (self.model_url and url.startswith(self.model_url)) or (
+            self.cosplay_url and url.startswith(self.cosplay_url)
         ):
             results: list[dict[str, str]] = []
 
             # Find all the albums for the model incrementally
             async for albums, _ in self._find_model_albums(
-                context.session, album_url, self.fetch_page_albums, self.extract_title
+                context.session, url, self.fetch_page_albums, self.extract_title
             ):
                 tasks: list[Coroutine[Any, Any, list[dict[str, str]]]] = [
                     process_album(
@@ -191,6 +190,4 @@ class BaseCrawler(ABC):
 
             return results
 
-        return await process_album(
-            context, album_url, self.extract_media, self.extract_title
-        )
+        return await process_album(context, url, self.extract_media, self.extract_title)
