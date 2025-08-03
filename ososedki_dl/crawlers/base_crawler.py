@@ -27,6 +27,7 @@ class BaseCrawler(ABC):
     cosplay_url: Optional[str] = None
     button_class: Optional[str] = None
     context: CrawlerContext
+    pagination: bool
 
     def __init__(self, context: CrawlerContext):
         logger.debug(
@@ -45,7 +46,9 @@ class BaseCrawler(ABC):
         return list(
             {
                 f"{self.site_url}{a['href']}"
-                for a in soup.find_all("a", href=lambda x: x and self.album_path in x)
+                for a in soup.find_all(
+                    "a", href=lambda x: x and x.startswith(self.album_path)
+                )
             }
         )
 
@@ -152,17 +155,18 @@ class BaseCrawler(ABC):
 
     def _extract_album_info(self, soup: BeautifulSoup) -> tuple[str, str]:
         """Extract owner_id and album_id from the soup."""
-        preload: Tag | None = soup.find("link", {"rel": "preload", "as": "image"})
+        preload= soup.find("link", {"rel": "preload", "as": "image"})
         if preload and isinstance(preload, Tag):
             href: str = preload.get("href", "")
             if href:
-                return href.split("/")[-3:-1]
+                parts: list[str] = href.split("/")[-3:-1]
+                return parts[0], parts[1]
 
-        og_image: Tag | None = soup.find("meta", {"property": "og:image"})
+        og_image = soup.find("meta", {"property": "og:image"})
         if og_image and isinstance(og_image, Tag):
             content: str = og_image.get("content", "")
             if content:
-                parts: list[str] = content.split("/")
+                parts = content.split("/")
                 return parts[-2], parts[-1].split(".")[0]
 
         return "", ""
