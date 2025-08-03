@@ -6,6 +6,7 @@ from pathlib import Path
 
 from aiohttp import ClientSession
 from aiohttp_client_cache.session import CachedSession
+from core_helpers.logs import logger
 from core_helpers.utils import print_welcome
 from rich import print
 from rich.traceback import install
@@ -18,7 +19,6 @@ from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .crawlers import crawlers as crawler_modules
 from .download import get_user_agent
-from .logs import logger
 from .scrapper import generic_download
 from .utils import exit_session, get_user_input
 
@@ -46,6 +46,7 @@ def main() -> None:
     Main function
     """
     args: Namespace = get_parsed_args()
+    logger.setup_logger(PACKAGE, LOG_FILE, args.debug, args.verbose)
     dest_path: Path = configure_paths(args)
 
     install()
@@ -55,16 +56,21 @@ def main() -> None:
     LOG_PATH.mkdir(parents=True, exist_ok=True)
 
     if args.config_dir:
+        logger.info("User requested config directory.")
         print(CONFIG_FILE)
     elif args.log_dir:
+        logger.info("User requested log directory.")
         print(LOG_FILE)
     elif args.print_config is not None:
+        logger.info("User requested config file content.")
         handle_config_command(args)
     elif args.list_supported_sites:
+        logger.info("User requested list of supported sites.")
         urls: list[str] = sorted(crawler.site_url for crawler in crawler_modules)
         for url in urls:
             print(url)
     else:
+        logger.info("Starting main loop.")
         print_welcome(PACKAGE, VERSION, DESC, GITHUB)
         try:
             asyncio.run(run_main_loop(dest_path, args.cache))

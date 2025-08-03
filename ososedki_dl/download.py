@@ -10,6 +10,7 @@ import requests
 from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
                      ClientTimeout, InvalidURL)
 from aiohttp_client_cache.session import CachedSession
+from core_helpers.logs import logger
 from fake_useragent import UserAgent  # type: ignore
 from rich import print
 
@@ -135,6 +136,8 @@ async def download_and_save_media(
     album_path: Path,
     headers: Optional[dict[str, str]] = None,
 ) -> dict[str, str]:
+    logger.debug(f"Downloading media from URL: {url}")
+
     # Use urlparse to extract the media name from the URL
     media_name: str = unquote(urlparse(url).path).split("/")[-1]
     if not Path(media_name).suffix:

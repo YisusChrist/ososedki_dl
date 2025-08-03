@@ -6,10 +6,10 @@ from configparser import ConfigParser
 from pathlib import Path
 from tkinter import filedialog
 
+from core_helpers.logs import logger
 from rich import print
 
 from .consts import CONFIG_FILE, DEFAULT_DEST_PATH, EXIT_FAILURE
-from .logs import logger
 from .utils import exit_session
 
 

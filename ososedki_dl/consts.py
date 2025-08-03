@@ -31,5 +31,5 @@ DEFAULT_DEST_PATH: Path = Path("downloads")
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
-DEBUG = False
+DEBUG = True
 CHECK_CACHE = False

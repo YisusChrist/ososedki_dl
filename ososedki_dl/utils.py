@@ -8,6 +8,7 @@ from typing import NoReturn
 
 import aiofiles
 import validators  # type: ignore
+from core_helpers.logs import logger
 from rich import print
 from rich.prompt import Prompt
 
@@ -15,12 +16,14 @@ from .consts import CACHE_PATH, EXIT_FAILURE, LOG_PATH
 
 
 def get_valid_url() -> list[str]:
+    logger.debug("Getting a valid URL from user")
+
     while True:
         result: list[str] = []
         urls: str = Prompt.ask("Enter the URL to download from")
-        url_list = urls.split(" ")
+        url_list: list[str] = urls.split(" ")
         for u in url_list:
-            url = u.strip()
+            url: str = u.strip()
             if validators.url(url):
                 result.append(url)
         if result:
@@ -28,8 +31,9 @@ def get_valid_url() -> list[str]:
         print("[bold red]Error:[/] Please enter a valid URL.")
 
 
-def get_valid_path() -> Path:
-    default_path = "downloads"
+def get_valid_path(default_path: str = "downloads") -> Path:
+    logger.debug("Getting a valid download path from user")
+
     while True:
         path: str = Prompt.ask(
             "Enter the download path",
@@ -40,6 +44,8 @@ def get_valid_path() -> Path:
 
 
 def get_user_input(path: Path) -> tuple[list[str], Path]:
+    logger.debug("Getting user input for URL and path")
+
     print("\n", end="")
     url: list[str] = get_valid_url()
     if not path:
@@ -50,6 +56,8 @@ def get_user_input(path: Path) -> tuple[list[str], Path]:
 
 
 def sanitize_path(path: Path, title: str) -> Path:
+    logger.debug(f"Sanitizing path for title: {title}")
+
     # Define a regular expression pattern to match invalid characters
     invalid_chars = r'[<>:"/\\|?*]'
     # Replace invalid characters with an underscore or another safe character
@@ -63,6 +71,8 @@ def sanitize_path(path: Path, title: str) -> Path:
 
 
 def get_final_path(download_path: Path, title: str) -> Path:
+    logger.debug(f"Getting final path for title: {title}")
+
     final_path: Path = sanitize_path(download_path, title)
     # Sanitize the path
     if final_path.parent != download_path.resolve():
@@ -72,7 +82,8 @@ def get_final_path(download_path: Path, title: str) -> Path:
 
 
 async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
-    # print(f"[green]Downloading [/]{url}")
+    logger.debug(f"Writing media to {media_path} from URL: {url}")
+
     try:
         async with aiofiles.open(media_path, "wb") as f:
             await f.write(image_content)
@@ -83,17 +94,24 @@ async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
 
 
 def get_url_hashfile(url: str) -> Path:
+    logger.debug(f"Generating cache filename for URL: {url}")
+
     url_hash: str = hashlib.sha256(url.encode("utf-8")).hexdigest()
     return CACHE_PATH / url_hash
 
 
 def write_to_cache(url: str) -> None:
+    logger.debug(f"Writing to cache for URL: {url}")
+
     cache_filename: Path = get_url_hashfile(url)
+    logger.debug(f"Cache filename: {cache_filename}")
     with open(cache_filename, "w", encoding="utf-8"):
         pass
 
 
 def get_unique_filename(base_path: Path) -> Path:
+    logger.debug(f"Generating unique filename for base path: {base_path}")
+
     suffix: int = 1
     new_path: Path = base_path.with_stem(f"{base_path.stem}_{suffix}")
     while new_path.exists():
@@ -109,7 +127,7 @@ def exit_session(exit_value: int) -> NoReturn:
     Args:
         exit_value (int): The POSIX exit value to exit with.
     """
-    # logger.info("End of session")
+    logger.info("End of session")
     # Check if the exit_value is a valid POSIX exit value
     if not 0 <= exit_value <= 255:
         exit_value = EXIT_FAILURE

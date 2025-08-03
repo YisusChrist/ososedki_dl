@@ -6,6 +6,7 @@ from typing import DefaultDict
 
 from aiohttp import ClientResponse
 from aiohttp_client_cache.response import CachedResponse
+from core_helpers.logs import logger
 from rich import print
 from rich.progress import Progress, TaskID
 
@@ -22,6 +23,7 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
         results (list[dict[str, str]]): The list of results.
         verbose (bool, optional): Whether to print the full error messages. Defaults to False.
     """
+    logger.debug("Printing errors from results...")
 
     # Group errors by error message
     error_groups: DefaultDict[str, list[str]] = defaultdict(list)
@@ -56,6 +58,8 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
 async def generic_download(
     session: SessionType, urls: list[str], download_path: Path
 ) -> None:
+    logger.debug("Starting generic download...")
+
     with Progress() as progress:
         task: TaskID = progress.add_task("[cyan]Downloading...", total=len(urls))
         context = CrawlerContext(session, download_path, progress, task)
@@ -88,24 +92,32 @@ async def generic_download(
 async def handle_downloader(
     context: CrawlerContext, results: list[dict[str, str]], url: str
 ) -> None:
+    logger.debug("Handling downloader for URL: %s", url)
+
     for CrawlerClass in crawler_modules:
         if url.startswith(CrawlerClass.site_url):
+            logger.info("Found crawler %s for URL: %s", CrawlerClass.__name__, url)
             crawler: CrawlerInstance = CrawlerClass()
             result: list[dict[str, str]] = await dynamic_download(context, url, crawler)
             results.extend(result)
             break
     else:
+        logger.warning("No downloader found for URL: %s", url)
         print(f"[yellow]No downloader found for URL: {url}[/]")
 
 
 async def dynamic_download(
     context: CrawlerContext, album_url: str, crawler: CrawlerInstance
 ) -> list[dict[str, str]]:
+    crawler_name: str = crawler.__class__.__name__
+    logger.debug("Downloading for URL: %s using crawler: %s", album_url, crawler_name)
+
     # Check if the URL is valid
     try:
         response: ClientResponse | CachedResponse = await context.session.get(album_url)
         response.raise_for_status()
     except Exception as e:
+        logger.exception("Failed to fetch URL %s", album_url)
         return [{"url": album_url, "status": f"error: {e}"}]
 
     result: list[dict[str, str]] = await crawler.download(context, album_url)
