@@ -10,3 +10,4 @@ class VipThotsCrawler(BaseCrawler):
     model_url = None
     cosplay_url = None
     button_class = None
+    pagination = True

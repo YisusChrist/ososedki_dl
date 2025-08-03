@@ -3,8 +3,8 @@
 import asyncio
 import re
 from abc import ABC
-from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
-                    Optional)
+from types import CoroutineType
+from typing import Any, AsyncGenerator, Awaitable, Callable, Optional
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
 from aiohttp import ClientSession
@@ -38,9 +38,6 @@ class BaseCrawler(ABC):
     async def fetch_page_albums(
         self, session: ClientSession, page_url: str
     ) -> list[str]:
-        if not self.album_path:
-            return []
-
         soup: BeautifulSoup | None = await fetch_soup(session, page_url)
         if not soup:
             return []
@@ -113,7 +110,72 @@ class BaseCrawler(ABC):
 
         return title
 
-    def extract_media(self, soup: BeautifulSoup) -> list[str]:
+    async def _extract_paginated_images(
+        self, owner_id: str, album_id: str
+    ) -> list[str]:
+        images: list[str] = []
+        url: str = self.site_url + "/cms/load-more-photos.php"
+        pagination_size: int = 100
+
+        payload: dict[str, str | int] = {
+            "album_id": album_id,
+            "owner_id": owner_id,
+            "download": 1,
+            "download_id": 0,
+            "offset": 0,
+            "limit": pagination_size,
+        }
+
+        while True:
+            response = await self.context.session.post(url, json=payload)
+            response.raise_for_status()
+            response_json: dict[str, Any] = await response.json()
+            photos: list[str] = response_json["photos"]
+            if not photos:
+                break
+
+            images.extend(
+                [
+                    BeautifulSoup(photo["html"], "html.parser")
+                    .find("a", href=lambda href: self.base_media_url in href)
+                    .get("href")
+                    for photo in photos
+                ]
+            )
+
+            if len(photos) < pagination_size:
+                break
+
+            payload["offset"] += pagination_size
+
+        return images
+
+    def _extract_album_info(self, soup: BeautifulSoup) -> tuple[str, str]:
+        """Extract owner_id and album_id from the soup."""
+        preload: Tag | None = soup.find("link", {"rel": "preload", "as": "image"})
+        if preload and isinstance(preload, Tag):
+            href: str = preload.get("href", "")
+            if href:
+                return href.split("/")[-3:-1]
+
+        og_image: Tag | None = soup.find("meta", {"property": "og:image"})
+        if og_image and isinstance(og_image, Tag):
+            content: str = og_image.get("content", "")
+            if content:
+                parts: list[str] = content.split("/")
+                return parts[-2], parts[-1].split(".")[0]
+
+        return "", ""
+
+    async def extract_media(self, soup: BeautifulSoup) -> list[str]:
+        if self.pagination:
+            owner_id, album_id = self._extract_album_info(soup)
+            if not owner_id or not album_id:
+                print("Could not find album information in the page.")
+                return []
+
+            return await self._extract_paginated_images(owner_id, album_id)
+
         # ? If images under a tag return 404, use tag img and get src
         images: list[str] = [
             tag.get("href").replace("/604/", "/1280/")
@@ -168,7 +230,11 @@ class BaseCrawler(ABC):
             await asyncio.sleep(1)
 
     async def download(self, url: str) -> list[dict[str, str]]:
-        if (self.model_url and url.startswith(self.model_url)) or (
+        if url.startswith(self.site_url + self.album_path):
+            return await process_album(
+                self.context, url, self.extract_media, self.extract_title
+            )
+        elif (self.model_url and url.startswith(self.model_url)) or (
             self.cosplay_url and url.startswith(self.cosplay_url)
         ):
             results: list[dict[str, str]] = []
@@ -191,5 +257,6 @@ class BaseCrawler(ABC):
                 results.extend(chunk_results)
 
             return results
-
-        return await process_album(context, url, self.extract_media, self.extract_title)
+        else:
+            print(f"Unknown URL format: {url}")
+            return []

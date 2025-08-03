@@ -10,3 +10,4 @@ class CosplayAsianCrawler(BaseCrawler):
     model_url = None
     cosplay_url = f"{site_url}/cos/"
     button_class = None
+    pagination = True

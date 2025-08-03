@@ -10,3 +10,4 @@ class CosplayRule34Crawler(BaseCrawler):
     model_url = f"{site_url}/model/"
     cosplay_url = f"{site_url}/cosplay/"
     button_class = "btn btn-sm bg-pink-pink"
+    pagination = True

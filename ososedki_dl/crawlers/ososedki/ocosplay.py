@@ -10,3 +10,4 @@ class OCosplayCrawler(BaseCrawler):
     model_url = f"{site_url}/m/"
     cosplay_url = f"{site_url}/c/"
     button_class = "btn btn-sm bg-pink"
+    pagination = False

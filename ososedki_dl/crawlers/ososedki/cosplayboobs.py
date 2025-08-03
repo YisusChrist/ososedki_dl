@@ -10,3 +10,4 @@ class CosplayBoobsCrawler(BaseCrawler):
     model_url = f"{site_url}/model/"
     cosplay_url = f"{site_url}/cosplay/"
     button_class = "btn btn-sm bg-model"
+    pagination = True

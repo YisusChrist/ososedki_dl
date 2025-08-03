@@ -10,3 +10,4 @@ class CosplayThotsCrawler(BaseCrawler):
     model_url = None
     cosplay_url = f"{site_url}/c/"
     button_class = None
+    pagination = True
