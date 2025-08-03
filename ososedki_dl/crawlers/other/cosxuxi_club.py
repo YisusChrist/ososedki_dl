@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
 from ...utils import get_final_path
-from .._common import CrawlerContext, download_media_items, fetch_soup
+from .._common import download_media_items, fetch_soup
 from ..simple_crawler import SimpleCrawler
 
 
@@ -41,7 +41,7 @@ class CosxuxiClubCrawler(SimpleCrawler):
         ]
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         album_url: str = url
         if album_url.endswith("/"):
             album_url = album_url[:-1]
@@ -50,7 +50,7 @@ class CosxuxiClubCrawler(SimpleCrawler):
         urls: list[str] = []
 
         while True:
-            soup: BeautifulSoup | None = await fetch_soup(context.session, album_url)
+            soup: BeautifulSoup | None = await fetch_soup(self.context.session, album_url)
             if not soup:
                 break
             page_urls: list[str] = self.cosxuxi_club_media_filter(soup) if soup else []
@@ -75,8 +75,8 @@ class CosxuxiClubCrawler(SimpleCrawler):
                 next_page_url = next_page_url[0]
             album_url = self.site_url + next_page_url
 
-        album_path: Path = get_final_path(context.download_path, title)
+        album_path: Path = get_final_path(self.context.download_path, title)
 
         return await download_media_items(
-            context.session, urls, album_path, context.progress, context.task
+            self.context.session, urls, album_path, self.context.progress, self.context.task
         )

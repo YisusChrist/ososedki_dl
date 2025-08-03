@@ -10,7 +10,7 @@ from rich import print
 
 from ...download import SessionType, download_and_save_media
 from ...utils import get_final_path
-from .._common import CrawlerContext, fetch_soup
+from .._common import fetch_soup
 from ..simple_crawler import SimpleCrawler
 
 
@@ -18,14 +18,14 @@ class EromeXXXCrawler(SimpleCrawler):
     site_url = "https://eromexxx.com"
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]
 
         profile: str = profile_url.split("/")[-1]
 
-        soup: BeautifulSoup | None = await fetch_soup(context.session, profile_url)
+        soup: BeautifulSoup | None = await fetch_soup(self.context.session, profile_url)
         if not soup:
             return []
 
@@ -41,7 +41,7 @@ class EromeXXXCrawler(SimpleCrawler):
 
         # Get all album URLs from pagination
         albums: list[str] = await self.find_albums_with_pagination(
-            context.session, soup, profile_url, profile
+            self.context.session, soup, profile_url, profile
         )
         if not albums:
             print("No albums found.")
@@ -56,7 +56,7 @@ class EromeXXXCrawler(SimpleCrawler):
 
         results: list[dict[str, str]] = []
         for i in range(1, highest_offset + 1):
-            results += await self.download_album(context, f"{base_url}-{i}", profile)
+            results += await self.download_album(f"{base_url}-{i}", profile)
 
         return results
 
@@ -94,11 +94,11 @@ class EromeXXXCrawler(SimpleCrawler):
                 albums.append(album["href"])
         return albums
 
-    async def download_album(
-        self, context: CrawlerContext, album_url: str, title: str
-    ) -> list[dict[str, str]]:
+    async def download_album(self, album_url: str, title: str) -> list[dict[str, str]]:
         try:
-            soup: BeautifulSoup | None = await fetch_soup(context.session, album_url)
+            soup: BeautifulSoup | None = await fetch_soup(
+                self.context.session, album_url
+            )
         except ValueError:
             return []
 
@@ -114,15 +114,15 @@ class EromeXXXCrawler(SimpleCrawler):
         ]
         urls: list[str] = list(set(images + videos))
 
-        album_path: Path = get_final_path(context.download_path, title)
+        album_path: Path = get_final_path(self.context.download_path, title)
 
         results: list[dict[str, str]] = []
         for url in urls:
             result: dict[str, str] = await self.download_media(
-                context.session, url, album_path, album_url
+                self.context.session, url, album_path, album_url
             )
             results.append(result)
-            context.progress.advance(context.task)
+            self.context.progress.advance(self.context.task)
 
         return results
 

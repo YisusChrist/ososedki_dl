@@ -7,7 +7,7 @@ from rich import print
 
 from ...download import SessionType
 from ...utils import get_final_path
-from .._common import CrawlerContext, download_media_items
+from .._common import download_media_items
 from ..simple_crawler import SimpleCrawler
 
 
@@ -25,7 +25,7 @@ class FapelloIsCrawler(SimpleCrawler):
             return await response.json()
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]
@@ -40,7 +40,7 @@ class FapelloIsCrawler(SimpleCrawler):
             print(f"Fetching page {i} for profile {profile_id}...")
             fetch_url: str = f"{self.download_url}/{profile_id}/{i}/1"
             album: list[dict[str, str]] | str = await self.fetch_media_urls(
-                context.session, fetch_url, url
+                self.context.session, fetch_url, url
             )
             if not album or album == "null":
                 break
@@ -56,12 +56,12 @@ class FapelloIsCrawler(SimpleCrawler):
 
         print(f"Found {len(urls)} media items in profile {profile_id}")
 
-        album_path: Path = get_final_path(context.download_path, title)
+        album_path: Path = get_final_path(self.context.download_path, title)
 
         return await download_media_items(
-            session=context.session,
+            session=self.context.session,
             media_urls=urls,
             album_path=album_path,
-            progress=context.progress,
-            task=context.task,
+            progress=self.context.progress,
+            task=self.context.task,
         )

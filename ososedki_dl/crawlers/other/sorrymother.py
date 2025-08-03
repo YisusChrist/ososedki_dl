@@ -4,7 +4,7 @@ from typing import override
 
 from bs4 import BeautifulSoup
 
-from .._common import CrawlerContext, process_album
+from .._common import process_album
 from ..simple_crawler import SimpleCrawler
 
 
@@ -18,7 +18,7 @@ class SorryMotherCrawler(SimpleCrawler):
         tags = soup.find_all("a", class_="entry-tag")
         return tags[0].text if tags else "Untitled"
 
-    def sorrymother_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    async def sorrymother_media_filter(self, soup: BeautifulSoup) -> list[str]:
         images_list: list[str] = [
             img["src"] for img in soup.find_all("img") if self.base_url in img["src"]
         ]
@@ -35,9 +35,9 @@ class SorryMotherCrawler(SimpleCrawler):
         return images + videos
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         return await process_album(
-            context,
+            self.context,
             url,
             self.sorrymother_media_filter,
             self.sorrymother_title_extractor,

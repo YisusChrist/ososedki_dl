@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
 from ...utils import get_final_path
-from .._common import CrawlerContext, download_media_items, fetch_soup
+from .._common import download_media_items, fetch_soup
 from ..simple_crawler import SimpleCrawler
 
 
@@ -54,7 +54,7 @@ class WildskirtsCrawler(SimpleCrawler):
         return self.wildskirts_media_filter(soup) if soup else []
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         profile_url: str = url
         # ! Beware, the trailing slash may return different results
         if profile_url.endswith("/"):
@@ -62,7 +62,7 @@ class WildskirtsCrawler(SimpleCrawler):
 
         profile: str = profile_url.split("/")[-1]
 
-        soup: BeautifulSoup | None = await fetch_soup(context.session, profile_url)
+        soup: BeautifulSoup | None = await fetch_soup(self.context.session, profile_url)
         if not soup:
             return []
 
@@ -75,15 +75,19 @@ class WildskirtsCrawler(SimpleCrawler):
         urls: list[str] = [f"{profile_url}/{i}" for i in range(1, total_items + 1)]
         # Fetch media URLs concurrently
         media_urls_lists: list[list[str]] = await asyncio.gather(
-            *[self.fetch_media_urls(context.session, url) for url in urls]
+            *[self.fetch_media_urls(self.context.session, url) for url in urls]
         )
         # Flatten the list of lists into a single list
         media_urls: list[str] = [url for sublist in media_urls_lists for url in sublist]
 
         print("Retrieved media URLs")
 
-        album_path: Path = get_final_path(context.download_path, profile)
+        album_path: Path = get_final_path(self.context.download_path, profile)
 
         return await download_media_items(
-            context.session, media_urls, album_path, context.progress, context.task
+            self.context.session,
+            media_urls,
+            album_path,
+            self.context.progress,
+            self.context.task,
         )

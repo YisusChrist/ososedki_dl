@@ -90,7 +90,7 @@ async def handle_downloader(
 ) -> None:
     for CrawlerClass in crawler_modules:
         if url.startswith(CrawlerClass.site_url):
-            crawler: CrawlerInstance = CrawlerClass()
+            crawler: CrawlerInstance = CrawlerClass(context)
             result: list[dict[str, str]] = await dynamic_download(context, url, crawler)
             results.extend(result)
             break
@@ -108,7 +108,7 @@ async def dynamic_download(
     except Exception as e:
         return [{"url": album_url, "status": f"error: {e}"}]
 
-    result: list[dict[str, str]] = await crawler.download(context, album_url)
+    result: list[dict[str, str]] = await crawler.download(album_url)
 
     context.progress.advance(context.task)
     return result

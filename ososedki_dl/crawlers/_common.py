@@ -3,7 +3,7 @@
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 from aiohttp import ClientResponseError
 from bs4 import BeautifulSoup
@@ -66,7 +66,7 @@ async def download_media_items(
 async def process_album(
     context: CrawlerContext,
     album_url: str,
-    media_filter: Callable[[BeautifulSoup], list[str]],
+    media_filter: Callable[[BeautifulSoup], Awaitable[list[str]]],
     title_extractor: Optional[Callable[[BeautifulSoup], str]] = None,
     title: Optional[str] = None,
     retries: int = 0,
@@ -89,7 +89,7 @@ async def process_album(
         if not title:
             raise ValueError("Title could not be determined")
 
-        media_urls: list[str] = list(set(media_filter(soup)))
+        media_urls: list[str] = list(set(await media_filter(soup)))
         print(f"Title: {title}")
         print(f"Media URLs: {len(media_urls)}")
     except (TypeError, ValueError) as e:

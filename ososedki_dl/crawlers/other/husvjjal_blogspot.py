@@ -11,7 +11,7 @@ from requests import Response, Session
 from rich import print
 
 from ...download import fetch
-from .._common import CrawlerContext, fetch_soup, process_album
+from .._common import fetch_soup, process_album
 from ..simple_crawler import SimpleCrawler
 
 
@@ -19,14 +19,12 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
     site_url = "https://husvjjal.blogspot.com"
 
     # @lru_cache
-    async def download_album(
-        self, context: CrawlerContext, album_url: str
-    ) -> list[dict[str, str]]:
+    async def download_album(self, album_url: str) -> list[dict[str, str]]:
         return await process_album(
-            context=context,
-            album_url=album_url,
-            title_extractor=lambda _: "husvjjal",
-            media_filter=self.husvjjal_blogspot_media_filter,
+            self.context,
+            album_url,
+            self.husvjjal_blogspot_media_filter,
+            title="husvjjal",
         )
 
     async def get_related_albums(
@@ -91,7 +89,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
 
         return max_stream
 
-    def husvjjal_blogspot_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    async def husvjjal_blogspot_media_filter(self, soup: BeautifulSoup) -> list[str]:
         # Define allowed hostnames
         allowed_img_hostnames: set[str] = {"i.postimg.cc", "postimg.cc"}
 
@@ -167,32 +165,31 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         return urls
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]
 
         if profile_url.endswith(".html"):
             results: list[dict[str, str]] = await process_album(
-                context=context,
-                album_url=profile_url,
+                self.context,
+                profile_url,
+                self.husvjjal_blogspot_media_filter,
                 title="husvjjal",
-                media_filter=self.husvjjal_blogspot_media_filter,
             )
             related_albums: list[str] = await self.get_related_albums(
-                context.session,
-                profile_url,
+                self.context.session, profile_url
             )
             for related_album in related_albums:
                 results += await process_album(
-                    context=context,
-                    album_url=related_album,
+                    self.context,
+                    related_album,
+                    self.husvjjal_blogspot_media_filter,
                     title="husvjjal",
-                    media_filter=self.husvjjal_blogspot_media_filter,
                 )
             return results
 
-        soup: BeautifulSoup | None = await fetch_soup(context.session, profile_url)
+        soup: BeautifulSoup | None = await fetch_soup(self.context.session, profile_url)
         if not soup:
             return []
 
@@ -210,8 +207,8 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         index = 0
         while index < len(albums):
             album: str = albums[index]
-            results += await self.download_album(context, album)
-            related_albums = await self.get_related_albums(context.session, album)
+            results += await self.download_album(album)
+            related_albums = await self.get_related_albums(self.context.session, album)
             for related_album in related_albums:
                 if related_album not in albums:
                     albums.append(related_album)

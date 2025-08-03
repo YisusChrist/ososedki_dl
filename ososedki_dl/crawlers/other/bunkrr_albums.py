@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from rich import print
 
 from ...consts import MAX_TIMEOUT
-from .._common import CrawlerContext, fetch_soup
+from .._common import fetch_soup
 from ..simple_crawler import SimpleCrawler
 
 
@@ -23,8 +23,8 @@ class BunkrAlbumsCrawler(SimpleCrawler):
         return response.url
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
-        soup: BeautifulSoup | None = await fetch_soup(context.session, url)
+    async def download(self, url: str) -> list[dict[str, str]]:
+        soup: BeautifulSoup | None = await fetch_soup(self.context.session, url)
         if not soup:
             return []
 

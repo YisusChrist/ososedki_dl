@@ -22,16 +22,18 @@ class BaseCrawler(ABC):
 
     site_url: str
     base_image_path: str
-    album_path: Optional[str] = None
+    album_path: str
     model_url: Optional[str] = None
     cosplay_url: Optional[str] = None
     button_class: Optional[str] = None
+    context: CrawlerContext
 
-    def __init__(self) -> None:
+    def __init__(self, context: CrawlerContext):
         logger.debug(
             f"Initialized {self.__class__.__name__} with site URL: {self.site_url}"
         )
         self.base_media_url: str = self.site_url + self.base_image_path
+        self.context = context
 
     async def fetch_page_albums(
         self, session: ClientSession, page_url: str
@@ -165,7 +167,7 @@ class BaseCrawler(ABC):
             # Sleep for a while to avoid being banned
             await asyncio.sleep(1)
 
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
         if (self.model_url and url.startswith(self.model_url)) or (
             self.cosplay_url and url.startswith(self.cosplay_url)
         ):
@@ -173,11 +175,11 @@ class BaseCrawler(ABC):
 
             # Find all the albums for the model incrementally
             async for albums, _ in self._find_model_albums(
-                context.session, url, self.fetch_page_albums, self.extract_title
+                self.context.session, url, self.fetch_page_albums, self.extract_title
             ):
-                tasks: list[Coroutine[Any, Any, list[dict[str, str]]]] = [
+                tasks: list[CoroutineType[Any, Any, list[dict[str, str]]]] = [
                     process_album(
-                        context, album, self.extract_media, self.extract_title
+                        self.context, album, self.extract_media, self.extract_title
                     )
                     for album in albums
                 ]
