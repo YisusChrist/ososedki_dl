@@ -36,6 +36,15 @@ class CosxuxiClubCrawler(SimpleCrawler):
 
     def cosxuxi_club_media_filter(self, soup: BeautifulSoup) -> list[str]:
         # Find all the images inside the div with the class 'contentme'
+        """
+        Extracts and returns a list of image URLs from the 'contentme' div that contain the specified base URL fragment.
+        
+        Parameters:
+            soup (BeautifulSoup): Parsed HTML content of the page.
+        
+        Returns:
+            list[str]: List of image source URLs matching the base URL filter, or an empty list if no valid images are found.
+        """
         content_div: Tag | NavigableString | None = soup.find("div", class_="contentme")
         if not content_div or isinstance(content_div, NavigableString):
             return []
@@ -48,6 +57,15 @@ class CosxuxiClubCrawler(SimpleCrawler):
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Asynchronously downloads all media items from a Cosxuxi Club album, following pagination if present.
+        
+        Parameters:
+            url (str): The URL of the Cosxuxi Club album to download.
+        
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing information about each downloaded media item.
+        """
         album_url: str = url
         if album_url.endswith("/"):
             album_url = album_url[:-1]

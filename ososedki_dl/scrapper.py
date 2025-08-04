@@ -98,6 +98,11 @@ async def generic_download(
 async def handle_downloader(
     context: CrawlerContext, results: list[dict[str, str]], url: str
 ) -> None:
+    """
+    Selects and invokes the appropriate crawler to download content from the given URL.
+    
+    If a matching crawler is found based on the URL prefix, it instantiates the crawler with the provided context and performs the download, appending the results to the shared results list. If no suitable crawler is found, a warning is printed.
+    """
     for CrawlerClass in crawler_modules:
         if url.startswith(CrawlerClass.site_url):
             crawler: CrawlerInstance = CrawlerClass(context)
@@ -112,6 +117,18 @@ async def dynamic_download(
     context: CrawlerContext, album_url: str, crawler: CrawlerInstance
 ) -> list[dict[str, str]]:
     # Check if the URL is valid
+    """
+    Download images from the specified album URL using the provided crawler.
+    
+    Attempts to fetch the album URL to ensure it is accessible before invoking the crawler's download method. If the URL is invalid or the request fails, returns an error result. Advances the progress bar after completion.
+    
+    Parameters:
+    	album_url (str): The URL of the album to download.
+    	crawler (CrawlerInstance): The crawler instance responsible for downloading from the album URL.
+    
+    Returns:
+    	list[dict[str, str]]: A list of result dictionaries indicating the outcome of the download operation.
+    """
     try:
         response: ClientResponse | CachedResponse = await context.session.get(album_url)
         response.raise_for_status()
