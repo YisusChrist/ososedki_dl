@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from bs4.element import NavigableString, Tag
 
     from ...download import SessionType
-    from .._common import CrawlerContext
 
 
 class EromeXXXCrawler(SimpleCrawler):

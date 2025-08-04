@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from ...download import SessionType
-    from .._common import CrawlerContext
 
 
 class FapelloIsCrawler(SimpleCrawler):

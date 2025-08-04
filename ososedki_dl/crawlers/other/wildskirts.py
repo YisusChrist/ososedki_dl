@@ -18,8 +18,6 @@ if TYPE_CHECKING:
     from bs4 import BeautifulSoup
     from bs4.element import NavigableString, Tag
 
-    from .._common import CrawlerContext
-
 
 class WildskirtsCrawler(SimpleCrawler):
     site_url = "https://wildskirts.com"

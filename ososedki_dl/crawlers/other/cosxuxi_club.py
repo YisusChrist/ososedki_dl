@@ -16,8 +16,6 @@ if TYPE_CHECKING:
     from bs4 import BeautifulSoup
     from bs4.element import NavigableString, Tag
 
-    from .._common import CrawlerContext
-
 
 class CosxuxiClubCrawler(SimpleCrawler):
     site_url = "https://cosxuxi.club"
@@ -58,7 +56,9 @@ class CosxuxiClubCrawler(SimpleCrawler):
         urls: list[str] = []
 
         while True:
-            soup: BeautifulSoup | None = await fetch_soup(self.context.session, album_url)
+            soup: BeautifulSoup | None = await fetch_soup(
+                self.context.session, album_url
+            )
             if not soup:
                 break
             page_urls: list[str] = self.cosxuxi_club_media_filter(soup) if soup else []
@@ -86,5 +86,9 @@ class CosxuxiClubCrawler(SimpleCrawler):
         album_path: Path = get_final_path(self.context.download_path, title)
 
         return await download_media_items(
-            self.context.session, urls, album_path, self.context.progress, self.context.task
+            self.context.session,
+            urls,
+            album_path,
+            self.context.progress,
+            self.context.task,
         )
