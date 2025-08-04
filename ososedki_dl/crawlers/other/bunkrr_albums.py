@@ -25,7 +25,7 @@ class BunkrAlbumsCrawler(SimpleCrawler):
         response = await self.context.session.head(
             url, allow_redirects=True, timeout=MAX_TIMEOUT
         )
-        return response.url
+        return str(response.url)
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -43,10 +43,10 @@ class BunkrAlbumsCrawler(SimpleCrawler):
         urls = list(set(urls))
         # Every url inside the list redirects to a different domain
         # so we need to resolve the real domain
-        #real_urls: list[str] = [await self.get_real_url(u) for u in urls]
+        real_urls: list[str] = [await self.get_real_url(u) for u in urls]
 
-        print(f"Found {len(urls)} albums on {url}")
-        print(urls)
+        print(f"Found {len(real_urls)} albums on {url}")
+        print(real_urls)
 
         # TODO: Try to call the cyberdrop_dl program to download the albums
 
