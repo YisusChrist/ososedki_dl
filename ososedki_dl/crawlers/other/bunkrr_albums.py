@@ -22,11 +22,12 @@ class BunkrAlbumsCrawler(SimpleCrawler):
 
     async def get_real_url(self, url: str) -> str:
         """
-        Resolve and return the final destination URL after following any redirects.
-        
-        Parameters:
+        Resolve and return the final destination URL after following any
+        redirects.
+
+        Args:
             url (str): The initial URL to resolve.
-        
+
         Returns:
             str: The fully resolved URL after all redirects.
         """
@@ -40,12 +41,15 @@ class BunkrAlbumsCrawler(SimpleCrawler):
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Extracts and resolves all unique Bunkr album URLs from the given page.
-        
-        Fetches the HTML content of the specified URL, identifies all anchor tags with hrefs starting with "https://bunkr", removes duplicates, and resolves each to its final destination URL. Returns an empty list; downloading functionality is not yet implemented.
-        
-        Parameters:
+
+        Fetches the HTML content of the specified URL, identifies all anchor
+        tags with hrefs starting with "https://bunkr", removes duplicates, and
+        resolves each to its final destination URL. Returns an empty list;
+        downloading functionality is not yet implemented.
+
+        Args:
             url (str): The URL of the page to scan for Bunkr album links.
-        
+
         Returns:
             list[dict[str, str]]: Currently always returns an empty list.
         """

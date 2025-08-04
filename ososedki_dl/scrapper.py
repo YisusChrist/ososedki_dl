@@ -23,14 +23,14 @@ if TYPE_CHECKING:
     from .download import SessionType
 
 
-
 def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
     """
     Print a summary of the errors encountered during the download process.
 
     Args:
         results (list[dict[str, str]]): The list of results.
-        verbose (bool, optional): Whether to print the full error messages. Defaults to False.
+        verbose (bool, optional): Whether to print the full error messages.
+            Defaults to False.
     """
 
     # Group errors by error message
@@ -99,9 +99,19 @@ async def handle_downloader(
     context: CrawlerContext, results: list[dict[str, str]], url: str
 ) -> None:
     """
-    Selects and invokes the appropriate crawler to download content from the given URL.
-    
-    If a matching crawler is found based on the URL prefix, it instantiates the crawler with the provided context and performs the download, appending the results to the shared results list. If no suitable crawler is found, a warning is printed.
+    Selects and invokes the appropriate crawler to download content from the
+    given URL.
+
+    If a matching crawler is found based on the URL prefix, it instantiates the
+    crawler with the provided context and performs the download, appending the
+    results to the shared results list. If no suitable crawler is found, a
+    warning is printed.
+
+    Args:
+        context (CrawlerContext): The context containing session, download
+            path, progress bar, and task ID.
+        results (list[dict[str, str]]): The list to append download results to.
+        url (str): The URL to download from.
     """
     for CrawlerClass in crawler_modules:
         if url.startswith(CrawlerClass.site_url):
@@ -116,19 +126,23 @@ async def handle_downloader(
 async def dynamic_download(
     context: CrawlerContext, album_url: str, crawler: CrawlerInstance
 ) -> list[dict[str, str]]:
-    # Check if the URL is valid
     """
     Download images from the specified album URL using the provided crawler.
-    
-    Attempts to fetch the album URL to ensure it is accessible before invoking the crawler's download method. If the URL is invalid or the request fails, returns an error result. Advances the progress bar after completion.
-    
-    Parameters:
-    	album_url (str): The URL of the album to download.
-    	crawler (CrawlerInstance): The crawler instance responsible for downloading from the album URL.
-    
+
+    Attempts to fetch the album URL to ensure it is accessible before invoking
+    the crawler's download method. If the URL is invalid or the request fails,
+    returns an error result. Advances the progress bar after completion.
+
+    Args:
+        album_url (str): The URL of the album to download.
+        crawler (CrawlerInstance): The crawler instance responsible for
+            downloading from the album URL.
+
     Returns:
-    	list[dict[str, str]]: A list of result dictionaries indicating the outcome of the download operation.
+        list[dict[str, str]]: A list of result dictionaries indicating the
+        outcome of the download operation.
     """
+    # Check if the URL is valid
     try:
         response: ClientResponse | CachedResponse = await context.session.get(album_url)
         response.raise_for_status()

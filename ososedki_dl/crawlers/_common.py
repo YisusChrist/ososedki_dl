@@ -81,18 +81,27 @@ async def process_album(
     retries: int = 0,
 ) -> list[dict[str, str]]:
     """
-    Asynchronously processes an album page by extracting media URLs, determining the album title, and downloading all associated media items.
-    
-    Attempts to fetch and parse the album page, extract the album title (using a provided extractor or fallback), and filter media URLs asynchronously. Retries up to five times on extraction errors. Downloads all found media items to a computed album path and returns a list of download results.
-    
-    Parameters:
+    Asynchronously processes an album page by extracting media URLs,
+    determining the album title, and downloading all associated media items.
+
+    Attempts to fetch and parse the album page, extract the album title (using
+    a provided extractor or fallback), and filter media URLs asynchronously.
+    Retries up to five times on extraction errors. Downloads all found media
+    items to a computed album path and returns a list of download results.
+
+    Args:
+        context (CrawlerContext): The context containing session, download
+            path, progress, and task information.
         album_url (str): The URL of the album page to process.
-        media_filter (Callable[[BeautifulSoup], Awaitable[list[str]]]): Asynchronous function to extract media URLs from the parsed HTML.
-        title_extractor (Optional[Callable[[BeautifulSoup], str]]): Optional function to extract the album title from the parsed HTML.
+        media_filter (Callable[[BeautifulSoup], Awaitable[list[str]]]):
+            Asynchronous function to extract media URLs from the parsed HTML.
+        title_extractor (Optional[Callable[[BeautifulSoup], str]]): Optional
+            function to extract the album title from the parsed HTML.
         title (Optional[str]): Optional fallback title for the album.
-    
+
     Returns:
-        list[dict[str, str]]: A list of dictionaries containing the results of each media download. Returns an empty list if the album cannot be processed.
+        list[dict[str, str]]: A list of dictionaries containing the results of
+        each media download or an empty list otherwise.
     """
     if retries > 5:
         print(f"Max depth reached for {album_url}. Skipping...")

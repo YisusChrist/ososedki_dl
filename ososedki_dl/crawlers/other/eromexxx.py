@@ -29,14 +29,19 @@ class EromeXXXCrawler(SimpleCrawler):
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Download all media from a given EromeXXX profile URL.
-        
-        Fetches the profile page, determines the total number of albums, retrieves all album URLs across paginated pages, and downloads media from each album. Returns a list of dictionaries containing the results of each media download. Returns an empty list if the profile page or required elements are missing, or if no albums are found.
-        
-        Parameters:
+
+        Fetches the profile page, determines the total number of albums,
+        retrieves all album URLs across paginated pages, and downloads media
+        from each album. Returns a list of dictionaries containing the results
+        of each media download. Returns an empty list if the profile page or
+        required elements are missing, or if no albums are found.
+
+        Args:
             url (str): The URL of the EromeXXX profile to download media from.
-        
+
         Returns:
-            list[dict[str, str]]: A list of dictionaries with information about each downloaded media item.
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
         """
         profile_url: str = url
         if profile_url.endswith("/"):
@@ -108,12 +113,15 @@ class EromeXXXCrawler(SimpleCrawler):
 
     def find_albums_in_soup(self, soup: BeautifulSoup, profile: str) -> list[str]:
         """
-        Extract album URLs from the provided BeautifulSoup object that belong to the specified profile.
-        
-        Parameters:
-            soup (BeautifulSoup): Parsed HTML content of a profile or album listing page.
-            profile (str): Profile identifier used to filter relevant album URLs.
-        
+        Extract album URLs from the provided BeautifulSoup object that belong
+        to the specified profile.
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content of a profile or album
+                listing page.
+            profile (str): Profile identifier used to filter relevant album
+                URLs.
+
         Returns:
             list[str]: List of album URLs associated with the given profile.
         """
@@ -125,16 +133,21 @@ class EromeXXXCrawler(SimpleCrawler):
 
     async def download_album(self, album_url: str, title: str) -> list[dict[str, str]]:
         """
-        Download all media files from a specified album URL and return the results.
-        
-        Fetches the album page, extracts all video and image URLs, downloads each media file to a local directory named after the album title, and returns a list of dictionaries describing the download results. Returns an empty list if the album page cannot be fetched or contains no media.
-         
-        Parameters:
+        Download all media files from a specified album URL and return the
+        results.
+
+        Fetches the album page, extracts all video and image URLs, downloads
+        each media file to a local directory named after the album title, and
+        returns a list of dictionaries describing the download results. Returns
+        an empty list if the album page cannot be fetched or contains no media.
+
+        Args:
             album_url (str): The URL of the album to download.
             title (str): The title used to name the local download directory.
-        
+
         Returns:
-            list[dict[str, str]]: A list of dictionaries with information about each downloaded media file.
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media file.
         """
         try:
             soup: BeautifulSoup | None = await fetch_soup(

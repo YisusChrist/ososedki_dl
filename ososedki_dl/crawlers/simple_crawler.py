@@ -14,9 +14,10 @@ class SimpleCrawler(ABC):
     def __init__(self, context: CrawlerContext) -> None:
         """
         Initialize the SimpleCrawler with a given crawling context.
-        
-        Parameters:
-            context (CrawlerContext): The context containing configuration and state for the crawler instance.
+
+        Args:
+            context (CrawlerContext): The context containing configuration and
+                state for the crawler instance.
         """
         self.context = context
 
@@ -24,14 +25,16 @@ class SimpleCrawler(ABC):
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Asynchronously downloads and parses content from the specified URL.
-        
-        Parameters:
+
+        Args:
             url (str): The URL to crawl and extract data from.
-        
+
         Returns:
-            list[dict[str, str]]: A list of dictionaries containing extracted data.
-        
+            list[dict[str, str]]: A list of dictionaries containing extracted
+            data.
+
         Raises:
-            NotImplementedError: If the method is not implemented by a subclass.
+            NotImplementedError: If the method is not implemented by a
+                subclass.
         """
         raise NotImplementedError("Each crawler must implement its own download method")

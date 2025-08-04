@@ -18,26 +18,34 @@ class SorryMotherCrawler(SimpleCrawler):
     base_url: str = "https://pics.sorrymother.video/"
 
     def sorrymother_title_extractor(self, soup: BeautifulSoup) -> str:
+        """
+        Extracts the content title from the HTML soup by locating the first <a>
+        tag with class "entry-tag".
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content of the page.
+
+        Returns:
+            The text of the first matching tag, or "Untitled" if no such tag is
+            found.
+        """
         # TODO: Add a better way to get the title, this fails if there is no tag
         # or if the first tag is not the correct title
-        """
-        Extracts the content title from the HTML soup by locating the first <a> tag with class "entry-tag".
-        
-        Returns:
-            The text of the first matching tag, or "Untitled" if no such tag is found.
-        """
         tags = soup.find_all("a", class_="entry-tag")
         return tags[0].text if tags else "Untitled"
 
     async def sorrymother_media_filter(self, soup: BeautifulSoup) -> list[str]:
         """
         Extracts and normalizes media URLs from the provided HTML soup.
-        
-        Finds all image and video sources relevant to the site, removes resolution suffixes from image filenames, and strips query parameters from video URLs.
-        
-        Parameters:
-            soup (BeautifulSoup): Parsed HTML content to search for media elements.
-        
+
+        Finds all image and video sources relevant to the site, removes
+        resolution suffixes from image filenames, and strips query parameters
+        from video URLs.
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content to search for media
+                elements.
+
         Returns:
             list[str]: List of cleaned image and video URLs found in the soup.
         """
@@ -60,12 +68,13 @@ class SorryMotherCrawler(SimpleCrawler):
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Download and process media content from the specified URL.
-        
-        Parameters:
+
+        Args:
             url (str): The target page URL to download media from.
-        
+
         Returns:
-            list[dict[str, str]]: A list of dictionaries containing information about each downloaded media item.
+            list[dict[str, str]]: A list of dictionaries containing information
+            about each downloaded media item.
         """
         return await process_album(
             self.context,

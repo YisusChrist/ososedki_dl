@@ -38,12 +38,14 @@ class BaseCrawler(ABC):
     context: CrawlerContext
     pagination: bool
 
-    def __init__(self, context: CrawlerContext):
+    def __init__(self, context: CrawlerContext) -> None:
         """
-        Initialize the crawler with the provided context and set up the base media URL.
-        
-        Parameters:
-            context (CrawlerContext): The crawler context containing configuration and session information.
+        Initialize the crawler with the provided context and set up the base
+        media URL.
+
+        Args:
+            context (CrawlerContext): The crawler context containing
+                configuration and session information.
         """
         logger.debug(
             f"Initialized {self.__class__.__name__} with site URL: {self.site_url}"
@@ -55,13 +57,18 @@ class BaseCrawler(ABC):
         self, session: ClientSession, page_url: str
     ) -> list[str]:
         """
-        Asynchronously fetches a page and returns a list of unique album URLs found on that page.
-        
-        Parameters:
+        Asynchronously fetches a page and returns a list of unique album URLs
+        found on that page.
+
+        Args:
+            session (ClientSession): The aiohttp session to use for the
+                request.
             page_url (str): The URL of the page to fetch.
-        
+
         Returns:
-            list[str]: A list of absolute album URLs extracted from anchor tags whose href starts with the configured album path. Returns an empty list if the page cannot be fetched or no albums are found.
+            list[str]: A list of absolute album URLs extracted from anchor tags
+            whose href starts with the configured album path. Returns an empty
+            list if the page cannot be fetched or no albums are found.
         """
         soup: BeautifulSoup | None = await fetch_soup(session, page_url)
         if not soup:
@@ -110,9 +117,19 @@ class BaseCrawler(ABC):
 
     def extract_title(self, soup: BeautifulSoup) -> str:
         """
-        Extracts the title of an album or model page from the provided BeautifulSoup object.
-        
-        Attempts to find a title by checking for an anchor tag with a specific button class, parsing the <title> tag for known patterns, or falling back to meta tags. Returns "Unknown" if no suitable title is found.
+        Extracts the title of an album or model page from the provided
+        BeautifulSoup object.
+
+        Attempts to find a title by checking for an anchor tag with a specific
+        button class, parsing the "title" tag for known patterns, or falling
+        back to meta tags. Returns "Unknown" if no suitable title is found.
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content of the page.
+
+        Returns:
+            str: The extracted title of the album or model, or "Unknown" if no
+            title
         """
         title: str = "Unknown"
 
@@ -146,14 +163,16 @@ class BaseCrawler(ABC):
         self, owner_id: str, album_id: str
     ) -> list[str]:
         """
-        Asynchronously retrieves all image URLs from a paginated album using the site's API.
-        
-        Parameters:
+        Asynchronously retrieves all image URLs from a paginated album using
+        the site's API.
+
+        Args:
             owner_id (str): The owner ID of the album.
             album_id (str): The album ID to fetch images from.
-        
+
         Returns:
-            list[str]: A list of image URLs extracted from all pages of the album.
+            list[str]: A list of image URLs extracted from all pages of the
+            album.
         """
         images: list[str] = []
         url: str = self.site_url + "/cms/load-more-photos.php"
@@ -198,15 +217,21 @@ class BaseCrawler(ABC):
 
     def _extract_album_info(self, soup: BeautifulSoup) -> tuple[str, str]:
         """
-        Extracts the owner ID and album ID from the provided BeautifulSoup object.
-        
-        Attempts to locate these IDs by first searching for a preload link tag with rel="preload" and as="image", extracting the relevant path segments from its href. If not found, it falls back to parsing the content of the og:image meta tag. Returns empty strings if neither method yields valid IDs.
-        
-        Parameters:
+        Extracts the owner ID and album ID from the provided BeautifulSoup
+        object.
+
+        Attempts to locate these IDs by first searching for a preload link tag
+        with rel="preload" and as="image", extracting the relevant path
+        segments from its href. If not found, it falls back to parsing the
+        content of the og:image meta tag. Returns empty strings if neither
+        method yields valid IDs.
+
+        Args:
             soup (BeautifulSoup): Parsed HTML content of the album page.
-        
+
         Returns:
-            tuple[str, str]: A tuple containing the owner ID and album ID, or empty strings if not found.
+            tuple[str, str]: A tuple containing the owner ID and album ID, or
+            empty strings if not found.
         """
         preload = soup.find("link", {"rel": "preload", "as": "image"})
         if preload and isinstance(preload, Tag):
@@ -227,12 +252,16 @@ class BaseCrawler(ABC):
     async def extract_media(self, soup: BeautifulSoup) -> list[str]:
         """
         Asynchronously extracts all media (image) URLs from an album or page.
-        
-        If pagination is enabled, retrieves images using paginated API requests based on album and owner IDs extracted from the page. Otherwise, collects image URLs from anchor tags referencing the base media URL, or, if none are found, from links starting with "https://sun". Cleans and normalizes URLs as needed.
-        
-        Parameters:
+
+        If pagination is enabled, retrieves images using paginated API requests
+        based on album and owner IDs extracted from the page. Otherwise,
+        collects image URLs from anchor tags referencing the base media URL,
+        or, if none are found, from links starting with "https://sun". Cleans
+        and normalizes URLs as needed.
+
+        Args:
             soup (BeautifulSoup): Parsed HTML content of the album or page.
-        
+
         Returns:
             list[str]: List of extracted image URLs.
         """
@@ -275,10 +304,20 @@ class BaseCrawler(ABC):
     ) -> AsyncGenerator[tuple[list[str], str], None]:
         # Clean the URL removing the query parameters
         """
-        Asynchronously iterates through paginated model pages to yield album URLs and the model name.
-        
+        Asynchronously iterates through paginated model pages to yield album
+        URLs and the model name.
+
+        Args:
+            session (SessionType): The session to use for fetching pages.
+            model_url (str): The URL of the model page to start from.
+            album_fetcher (Callable): A function that fetches album URLs from a
+                page.
+            title_extractor (Callable): A function that extracts the model name
+                from the page.
+
         Yields:
-            Tuples containing a list of album URLs and the model name for each page with albums found.
+            Tuples containing a list of album URLs and the model name for each
+            page with albums found.
         """
         model_url = model_url.split("?")[0]
 
@@ -305,15 +344,20 @@ class BaseCrawler(ABC):
 
     async def download(self, url: str) -> list[dict[str, str]]:
         """
-        Download and extract media and metadata from a given album or model URL.
-        
-        If the URL corresponds to an album, processes and returns its media and metadata. If the URL matches a model or cosplay section, finds all associated albums and processes them concurrently, aggregating their results. Returns an empty list for unknown URL formats.
-        
-        Parameters:
+        Download and extract media and metadata from a given album or model
+        URL.
+
+        If the URL corresponds to an album, processes and returns its media and
+        metadata. If the URL matches a model or cosplay section, finds all
+        associated albums and processes them concurrently, aggregating their
+        results. Returns an empty list for unknown URL formats.
+
+        Args:
             url (str): The album, model, or cosplay URL to process.
-        
+
         Returns:
-            list[dict[str, str]]: A list of dictionaries containing media URLs and associated metadata.
+            list[dict[str, str]]: A list of dictionaries containing media URLs
+            and associated metadata.
         """
         if url.startswith(self.site_url + self.album_path):
             return await process_album(
