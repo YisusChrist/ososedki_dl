@@ -1,20 +1,29 @@
 """Base crawler for ososedki and clone sites."""
 
+from __future__ import annotations
+
 import asyncio
 import re
 from abc import ABC
-from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
-                    Optional)
-from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
+from typing import TYPE_CHECKING
+from urllib.parse import parse_qs, urlencode, urlparse
 
-from aiohttp import ClientSession
-from bs4 import BeautifulSoup, ResultSet
-from bs4.element import NavigableString, Tag
 from rich import print
 
-from ..download import SessionType
 from ..logs import logger
-from ._common import CrawlerContext, fetch_soup, process_album
+from ._common import fetch_soup, process_album
+
+if TYPE_CHECKING:
+    from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
+                        Optional)
+    from urllib.parse import ParseResult
+
+    from aiohttp import ClientSession
+    from bs4 import BeautifulSoup, ResultSet
+    from bs4.element import NavigableString, Tag
+
+    from ..download import SessionType
+    from ._common import CrawlerContext
 
 
 class BaseCrawler(ABC):

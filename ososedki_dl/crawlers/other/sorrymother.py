@@ -1,11 +1,18 @@
 """Downloader for https://sorrymother.to"""
 
-from typing import override
+from __future__ import annotations
 
-from bs4 import BeautifulSoup
+from typing import TYPE_CHECKING
 
-from .._common import CrawlerContext, process_album
+from typing_extensions import override
+
+from .._common import process_album
 from ..simple_crawler import SimpleCrawler
+
+if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
+
+    from .._common import CrawlerContext
 
 
 class SorryMotherCrawler(SimpleCrawler):

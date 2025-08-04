@@ -1,17 +1,26 @@
 """Common functions for crawlers."""
 
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING
 
 from aiohttp import ClientResponseError
 from bs4 import BeautifulSoup
 from rich import print
-from rich.progress import Progress, TaskID
 
-from ..download import SessionType, download_and_save_media, fetch
+from ..download import download_and_save_media, fetch
 from ..utils import get_final_path
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Any, Callable, Optional
+
+    from rich.progress import Progress, TaskID
+
+    from ..download import SessionType
+
 
 # region Context class
 

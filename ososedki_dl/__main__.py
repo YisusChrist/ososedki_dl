@@ -1,8 +1,9 @@
 """Main module for the package."""
 
+from __future__ import annotations
+
 import asyncio
-from argparse import Namespace
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from aiohttp import ClientSession
 from aiohttp_client_cache.session import CachedSession
@@ -21,6 +22,10 @@ from .download import get_user_agent
 from .logs import logger
 from .scrapper import generic_download
 from .utils import exit_session, get_user_input
+
+if TYPE_CHECKING:
+    from argparse import Namespace
+    from pathlib import Path
 
 
 async def run_main_loop(dest_path: Path, cache: bool) -> None:

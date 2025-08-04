@@ -1,16 +1,21 @@
 """Configuration module for the project."""
 
+from __future__ import annotations
+
 import tkinter as tk
-from argparse import Namespace
 from configparser import ConfigParser
 from pathlib import Path
 from tkinter import filedialog
+from typing import TYPE_CHECKING
 
 from rich import print
 
 from .consts import CONFIG_FILE, DEFAULT_DEST_PATH, EXIT_FAILURE
 from .logs import logger
 from .utils import exit_session
+
+if TYPE_CHECKING:
+    from argparse import Namespace
 
 
 def get_path_from_dialog(title: str) -> Path:

@@ -1,10 +1,12 @@
 """Utility functions for the application."""
 
+from __future__ import annotations
+
 import hashlib
 import re
 import sys
 from pathlib import Path
-from typing import NoReturn
+from typing import TYPE_CHECKING
 
 import aiofiles
 import validators  # type: ignore
@@ -12,6 +14,9 @@ from rich import print
 from rich.prompt import Prompt
 
 from .consts import CACHE_PATH, EXIT_FAILURE, LOG_PATH
+
+if TYPE_CHECKING:
+    from typing import NoReturn
 
 
 def get_valid_url() -> list[str]:
