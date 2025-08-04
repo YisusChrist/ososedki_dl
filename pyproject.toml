@@ -15,9 +15,7 @@ dependencies = [
   "beautifulsoup4 (>=4.12.2,<5.0.0)",
   "core-helpers (>=1.3.1,<2.0.0)",
   "fake-useragent (>=1.5.1,<3.0.0)",
-  "platformdirs (>=4.2.2,<5.0.0)",
   "requests (>=2.31.0,<3.0.0)",
-  "requests-pprint (>=1.0.1,<2.0.0)",
   "rich>=13.5.3",
   "tldextract (>=5.1.2,<6.0.0)",
   "validators>=0.*",
@@ -28,6 +26,9 @@ repository = "https://github.com/YisusChrist/ososedki_dl"
 
 [project.scripts]
 ososedki_dl = "ososedki_dl.__main__:main"
+
+[tool.poetry.group.dev.dependencies]
+requests-pprint = "^1.0.1"
 
 [tool.poetry.group.types.dependencies]
 types-aiofiles = "^24.1.0.20241221"
