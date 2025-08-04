@@ -56,11 +56,31 @@ class WildskirtsCrawler(SimpleCrawler):
         return images + videos
 
     async def fetch_media_urls(self, session: ClientSession, url: str) -> list[str]:
+        """
+        Asynchronously fetches and returns a list of media URLs from the specified page URL.
+        
+        Parameters:
+            url (str): The URL of the page to extract media URLs from.
+        
+        Returns:
+            list[str]: A list of media URLs found on the page, or an empty list if the page could not be fetched or parsed.
+        """
         soup: BeautifulSoup | None = await fetch_soup(session, url)
         return self.wildskirts_media_filter(soup) if soup else []
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Downloads all media items from a Wildskirts profile URL.
+        
+        Fetches the profile page, determines the total number of photos and videos, constructs URLs for each media item, retrieves all media URLs concurrently, and downloads the media to a local album path.
+        
+        Parameters:
+            url (str): The Wildskirts profile URL to download media from.
+        
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing information about each downloaded media item.
+        """
         profile_url: str = url
         # ! Beware, the trailing slash may return different results
         if profile_url.endswith("/"):

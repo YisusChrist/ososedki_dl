@@ -24,6 +24,17 @@ class FapelloIsCrawler(SimpleCrawler):
     async def fetch_media_urls(
         self, session: SessionType, url: str, referer_url: str
     ) -> list[dict[str, str]] | str:
+        """
+        Asynchronously retrieves media metadata from the specified API URL with a custom referer header.
+        
+        Parameters:
+            session: An asynchronous HTTP session used to make the request.
+            url (str): The API endpoint to fetch media data from.
+            referer_url (str): The referer URL to include in the request headers.
+        
+        Returns:
+            list[dict[str, str]] | str: A list of media metadata dictionaries if the response is successful, or the raw JSON string if the response is not a list.
+        """
         headers: dict[str, str] = {"Referer": referer_url}
         async with session.get(url, headers=headers) as response:
             if response.status != 200:
@@ -32,6 +43,17 @@ class FapelloIsCrawler(SimpleCrawler):
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Asynchronously downloads all media items from a given Fapello profile URL.
+        
+        Iterates through paginated API endpoints to collect media URLs, determines the album title, and downloads all found media items to the resolved album path.
+        
+        Parameters:
+            url (str): The Fapello profile URL to download media from.
+        
+        Returns:
+            list[dict[str, str]]: A list of dictionaries representing the downloaded media items.
+        """
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]

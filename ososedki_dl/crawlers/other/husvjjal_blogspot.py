@@ -28,6 +28,15 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
 
     # @lru_cache
     async def download_album(self, album_url: str) -> list[dict[str, str]]:
+        """
+        Download all media items from a specified album URL.
+        
+        Parameters:
+            album_url (str): The URL of the album to download media from.
+        
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing media metadata and URLs extracted from the album.
+        """
         return await process_album(
             self.context,
             album_url,
@@ -38,6 +47,15 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
     async def get_related_albums(
         self, session: ClientSession, album_url: str
     ) -> list[str]:
+        """
+        Fetches related album URLs for a given album by querying the site's JSON feed endpoint.
+        
+        Parameters:
+        	album_url (str): The URL of the album for which to find related albums.
+        
+        Returns:
+        	list[str]: A list of related album URLs extracted from the feed.
+        """
         print(f"Fetching related albums for {album_url}")
 
         headers: dict[str, str] = {"Referer": album_url}
@@ -72,6 +90,15 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         return related_albums
 
     def get_max_stream(self, js_script: str) -> dict[str, str]:
+        """
+        Extracts the video stream with the highest format ID from a JavaScript VIDEO_CONFIG snippet.
+        
+        Parameters:
+            js_script (str): JavaScript code containing a VIDEO_CONFIG variable assignment.
+        
+        Returns:
+            dict[str, str]: The stream dictionary with the highest format ID, or an empty dictionary if not found.
+        """
         if not js_script:
             print("No js_script found")
             return {}
@@ -94,6 +121,14 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
 
     async def husvjjal_blogspot_media_filter(self, soup: BeautifulSoup) -> list[str]:
         # Define allowed hostnames
+        """
+        Asynchronously extracts downloadable image and video URLs from a BeautifulSoup-parsed album page.
+        
+        Scans anchor tags for images hosted on allowed domains and resolves indirect image links by fetching their download pages. Identifies embedded video iframes, fetches their pages, and extracts the highest quality video stream URL. Returns a list of validated HTTPS URLs for all found media.
+         
+        Returns:
+            List of HTTPS URLs pointing to downloadable images and videos found on the album page.
+        """
         allowed_img_hostnames: set[str] = {"i.postimg.cc", "postimg.cc"}
 
         images: list[str] = []
@@ -174,6 +209,17 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Download all media items from a given Husvjjal Blogspot URL, including related albums.
+        
+        If the URL points to a single album, downloads its media and recursively processes related albums. If the URL is a profile or index page, finds all album links, downloads their media, and also processes related albums not already included. Returns a combined list of media dictionaries from all processed albums.
+        
+        Parameters:
+            url (str): The album, profile, or index page URL to process.
+        
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing media information from all discovered albums.
+        """
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]
