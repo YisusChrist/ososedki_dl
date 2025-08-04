@@ -15,8 +15,7 @@ from ._common import fetch_soup, process_album
 
 if TYPE_CHECKING:
     from types import CoroutineType
-    from typing import (Any, AsyncGenerator, Awaitable, Callable,
-                        Optional)
+    from typing import Any, AsyncGenerator, Awaitable, Callable, Optional
     from urllib.parse import ParseResult
 
     from aiohttp import ClientSession
@@ -140,9 +139,13 @@ class BaseCrawler(ABC):
         }
 
         while True:
-            response = await self.context.session.post(url, json=payload)
-            response.raise_for_status()
-            response_json: dict[str, Any] = await response.json()
+            try:
+                response = await self.context.session.post(url, json=payload)
+                response.raise_for_status()
+                response_json: dict[str, Any] = await response.json()
+            except Exception as e:
+                print(f"Failed to fetch paginated images: {e}")
+                break
             photos: list[str] = response_json["photos"]
             if not photos:
                 break
@@ -165,7 +168,7 @@ class BaseCrawler(ABC):
 
     def _extract_album_info(self, soup: BeautifulSoup) -> tuple[str, str]:
         """Extract owner_id and album_id from the soup."""
-        preload= soup.find("link", {"rel": "preload", "as": "image"})
+        preload = soup.find("link", {"rel": "preload", "as": "image"})
         if preload and isinstance(preload, Tag):
             href: str = preload.get("href", "")
             if href:
