@@ -1,9 +1,11 @@
 """Download module for the application."""
 
+from __future__ import annotations
+
 from asyncio import sleep
 from pathlib import Path
 from ssl import SSLCertVerificationError
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Union
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -17,12 +19,14 @@ from .consts import CHECK_CACHE, MAX_TIMEOUT
 from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
                     write_media)
 
+if TYPE_CHECKING:
+    from typing import Any, Optional
+
+
 client_timeout = ClientTimeout()
 ua = UserAgent(min_version=120.0)
 _user_agent: str = ""
-
-
-SessionType = CachedSession | ClientSession
+SessionType = Union[CachedSession, ClientSession]
 
 
 def get_user_agent() -> str:

@@ -1,14 +1,21 @@
 """Downloader for https://fapello.is"""
 
-from pathlib import Path
-from typing import override
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from rich import print
+from typing_extensions import override
 
-from ...download import SessionType
 from ...utils import get_final_path
 from .._common import download_media_items
 from ..simple_crawler import SimpleCrawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from ...download import SessionType
+    from .._common import CrawlerContext
 
 
 class FapelloIsCrawler(SimpleCrawler):

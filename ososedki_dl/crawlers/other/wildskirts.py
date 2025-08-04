@@ -1,16 +1,24 @@
 """Downloader for https://wildskirts.com"""
 
-import asyncio
-from pathlib import Path
-from typing import override
+from __future__ import annotations
 
-from aiohttp import ClientSession
-from bs4 import BeautifulSoup
-from bs4.element import NavigableString, Tag
+import asyncio
+from typing import TYPE_CHECKING
+
+from typing_extensions import override
 
 from ...utils import get_final_path
 from .._common import download_media_items, fetch_soup
 from ..simple_crawler import SimpleCrawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from aiohttp import ClientSession
+    from bs4 import BeautifulSoup
+    from bs4.element import NavigableString, Tag
+
+    from .._common import CrawlerContext
 
 
 class WildskirtsCrawler(SimpleCrawler):

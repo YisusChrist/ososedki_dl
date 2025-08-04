@@ -1,17 +1,27 @@
 """Scrapper module for downloading images from various websites."""
 
+from __future__ import annotations
+
 from collections import defaultdict
-from pathlib import Path
-from typing import DefaultDict
+from typing import TYPE_CHECKING
 
-from aiohttp import ClientResponse
-from aiohttp_client_cache.response import CachedResponse
 from rich import print
-from rich.progress import Progress, TaskID
+from rich.progress import Progress
 
-from .crawlers import CrawlerContext, CrawlerInstance
+from .crawlers import CrawlerContext
 from .crawlers import crawlers as crawler_modules
-from .download import SessionType
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import DefaultDict
+
+    from aiohttp import ClientResponse
+    from aiohttp_client_cache.response import CachedResponse
+    from rich.progress import TaskID
+
+    from .crawlers import CrawlerInstance
+    from .download import SessionType
+
 
 
 def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:

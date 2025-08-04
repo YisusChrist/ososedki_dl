@@ -1,17 +1,26 @@
 """Downloader for https://eromexxx.com"""
 
-from pathlib import Path
-from typing import override
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import tldextract
-from bs4 import BeautifulSoup
-from bs4.element import NavigableString, Tag
 from rich import print
+from typing_extensions import override
 
-from ...download import SessionType, download_and_save_media
+from ...download import download_and_save_media
 from ...utils import get_final_path
 from .._common import fetch_soup
 from ..simple_crawler import SimpleCrawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from bs4 import BeautifulSoup
+    from bs4.element import NavigableString, Tag
+
+    from ...download import SessionType
+    from .._common import CrawlerContext
 
 
 class EromeXXXCrawler(SimpleCrawler):

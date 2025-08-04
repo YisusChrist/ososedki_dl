@@ -1,17 +1,26 @@
 """Downloader for https://husvjjal.blogspot.com"""
 
+from __future__ import annotations
+
 import json
-from typing import Any, override
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from aiohttp import ClientSession
-from bs4 import BeautifulSoup, ResultSet
-from bs4.element import NavigableString, Tag
+from bs4 import BeautifulSoup, NavigableString
 from rich import print
+from typing_extensions import override
 
 from ...download import fetch
 from .._common import fetch_soup, process_album
 from ..simple_crawler import SimpleCrawler
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from aiohttp import ClientSession
+    from bs4 import ResultSet
+    from bs4.element import Tag
+    from requests import Response
 
 
 class HusvjjalBlogspotCrawler(SimpleCrawler):

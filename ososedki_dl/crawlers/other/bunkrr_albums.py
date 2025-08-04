@@ -1,14 +1,20 @@
 """Downloader for https://bunkr-albums.io"""
 
-from pathlib import Path
-from typing import override
+from __future__ import annotations
 
-from bs4 import BeautifulSoup
+from typing import TYPE_CHECKING
+
 from rich import print
+from typing_extensions import override
 
 from ...consts import MAX_TIMEOUT
 from .._common import fetch_soup
 from ..simple_crawler import SimpleCrawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from bs4 import BeautifulSoup
 
 
 class BunkrAlbumsCrawler(SimpleCrawler):
