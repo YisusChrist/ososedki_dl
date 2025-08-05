@@ -8,6 +8,7 @@ from abc import ABC
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from bs4 import BeautifulSoup, Tag
 from rich import print
 
 from ..logs import logger
@@ -18,11 +19,8 @@ if TYPE_CHECKING:
     from typing import Any, AsyncGenerator, Awaitable, Callable, Optional
     from urllib.parse import ParseResult
 
-    from aiohttp import ClientSession
-    from bs4 import BeautifulSoup, ResultSet
-    from bs4.element import NavigableString, Tag
+    from bs4 import NavigableString, ResultSet
 
-    from ..download import SessionType
     from ._common import CrawlerContext
 
 
@@ -53,16 +51,12 @@ class BaseCrawler(ABC):
         self.base_media_url: str = self.site_url + self.base_image_path
         self.context = context
 
-    async def fetch_page_albums(
-        self, session: ClientSession, page_url: str
-    ) -> list[str]:
+    async def fetch_page_albums(self, page_url: str) -> list[str]:
         """
         Asynchronously fetches a page and returns a list of unique album URLs
         found on that page.
 
         Args:
-            session (ClientSession): The aiohttp session to use for the
-                request.
             page_url (str): The URL of the page to fetch.
 
         Returns:
@@ -70,7 +64,7 @@ class BaseCrawler(ABC):
             whose href starts with the configured album path. Returns an empty
             list if the page cannot be fetched or no albums are found.
         """
-        soup: BeautifulSoup | None = await fetch_soup(session, page_url)
+        soup: BeautifulSoup | None = await fetch_soup(self.context.session, page_url)
         if not soup:
             return []
 
@@ -78,7 +72,7 @@ class BaseCrawler(ABC):
             {
                 f"{self.site_url}{a['href']}"
                 for a in soup.find_all(
-                    "a", href=lambda x: x and x.startswith(self.album_path)
+                    "a", href=lambda href: href and href.startswith(self.album_path)
                 )
             }
         )
@@ -195,18 +189,23 @@ class BaseCrawler(ABC):
             except Exception as e:
                 print(f"Failed to fetch paginated images: {e}")
                 break
-            photos: list[str] = response_json["photos"]
+            photos: list[dict[str, str]] = response_json["photos"]
             if not photos:
                 break
 
-            images.extend(
-                [
-                    BeautifulSoup(photo["html"], "html.parser")
-                    .find("a", href=lambda href: self.base_media_url in href)
-                    .get("href")
-                    for photo in photos
-                ]
-            )
+            for photo in photos:
+                soup = BeautifulSoup(photo["html"], "html.parser")
+                anchor: Tag | NavigableString | None = soup.find(
+                    "a", href=lambda href: self.base_media_url in href
+                )
+                if not anchor or not isinstance(anchor, Tag):
+                    continue
+                href: str | list[str] | None = anchor.get("href")
+                if not href:
+                    continue
+                if isinstance(href, list):
+                    href = href[0]
+                images.append(href)
 
             if len(photos) < pagination_size:
                 break
@@ -233,16 +232,24 @@ class BaseCrawler(ABC):
             tuple[str, str]: A tuple containing the owner ID and album ID, or
             empty strings if not found.
         """
-        preload = soup.find("link", {"rel": "preload", "as": "image"})
+        preload: Tag | NavigableString | None = soup.find(
+            "link", {"rel": "preload", "as": "image"}
+        )
         if preload and isinstance(preload, Tag):
-            href: str = preload.get("href", "")
+            href: str | list[str] = preload.get("href", "")
+            if isinstance(href, list):
+                href = href[0]
             if href:
                 parts: list[str] = href.split("/")[-3:-1]
                 return parts[0], parts[1]
 
-        og_image = soup.find("meta", {"property": "og:image"})
+        og_image: Tag | NavigableString | None = soup.find(
+            "meta", {"property": "og:image"}
+        )
         if og_image and isinstance(og_image, Tag):
-            content: str = og_image.get("content", "")
+            content: str | list[str] = og_image.get("content", "")
+            if isinstance(content, list):
+                content = content[0]
             if content:
                 parts = content.split("/")
                 return parts[-2], parts[-1].split(".")[0]
@@ -282,7 +289,9 @@ class BaseCrawler(ABC):
             return images
 
         # ? If no images are found, search for "https://sun9-" in img_url
-        for tag in soup.find_all("a", href=lambda href: href.startswith("https://sun")):
+        for tag in soup.find_all(
+            "a", href=lambda href: href and href.startswith("https://sun")
+        ):
             href: str = tag.get("href")
             print(f"Found sun9 image: {href}")
             parsed_url: ParseResult = urlparse(href)
@@ -297,18 +306,15 @@ class BaseCrawler(ABC):
 
     async def _find_model_albums(
         self,
-        session: SessionType,
         model_url: str,
-        album_fetcher: Callable[[SessionType, str], Awaitable[list[str]]],
+        album_fetcher: Callable[[str], Awaitable[list[str]]],
         title_extractor: Callable[[BeautifulSoup], str],
     ) -> AsyncGenerator[tuple[list[str], str], None]:
-        # Clean the URL removing the query parameters
         """
         Asynchronously iterates through paginated model pages to yield album
         URLs and the model name.
 
         Args:
-            session (SessionType): The session to use for fetching pages.
             model_url (str): The URL of the model page to start from.
             album_fetcher (Callable): A function that fetches album URLs from a
                 page.
@@ -319,9 +325,10 @@ class BaseCrawler(ABC):
             Tuples containing a list of album URLs and the model name for each
             page with albums found.
         """
+        # Clean the URL removing the query parameters
         model_url = model_url.split("?")[0]
 
-        soup: BeautifulSoup | None = await fetch_soup(session, model_url)
+        soup: BeautifulSoup | None = await fetch_soup(self.context.session, model_url)
         if not soup:
             return
 
@@ -331,7 +338,7 @@ class BaseCrawler(ABC):
 
         while albums_found:
             page_url: str = f"{model_url}?page={i}"
-            albums_extracted: list[str] = await album_fetcher(session, page_url)
+            albums_extracted: list[str] = await album_fetcher(page_url)
             if not albums_extracted:
                 albums_found = False
                 continue
@@ -370,7 +377,7 @@ class BaseCrawler(ABC):
 
             # Find all the albums for the model incrementally
             async for albums, _ in self._find_model_albums(
-                self.context.session, url, self.fetch_page_albums, self.extract_title
+                url, self.fetch_page_albums, self.extract_title
             ):
                 tasks: list[CoroutineType[Any, Any, list[dict[str, str]]]] = [
                     process_album(
