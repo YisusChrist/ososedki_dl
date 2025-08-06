@@ -5,13 +5,13 @@ from __future__ import annotations
 import asyncio
 import re
 from abc import ABC
+from itertools import chain
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlencode, urlparse
 
-from typing_extensions import override
-
 from bs4 import BeautifulSoup, Tag
 from rich import print
+from typing_extensions import override
 
 from .base_crawler import BaseCrawler
 
@@ -380,8 +380,8 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                 ]
 
                 # Process the tasks for this chunk and collect results
-                chunk_results: list[dict[str, str]] = sum(
-                    await asyncio.gather(*tasks), []
+                chunk_results: list[dict[str, str]] = list(
+                    chain.from_iterable(await asyncio.gather(*tasks))
                 )
                 results.extend(chunk_results)
 
