@@ -5,36 +5,49 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import tldextract
+from bs4 import NavigableString
 from rich import print
 from typing_extensions import override
 
 from ...download import download_and_save_media
 from ...utils import get_final_path
-from .._common import fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from bs4 import BeautifulSoup
-    from bs4.element import NavigableString, Tag
-
-    from ...download import SessionType
-    from .._common import CrawlerContext
+    from bs4.element import Tag
 
 
-class EromeXXXCrawler(SimpleCrawler):
+class EromeXXXCrawler(BaseCrawler):
     site_url = "https://eromexxx.com"
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Download all media from a given EromeXXX profile URL.
+
+        Fetches the profile page, determines the total number of albums,
+        retrieves all album URLs across paginated pages, and downloads media
+        from each album. Returns a list of dictionaries containing the results
+        of each media download. Returns an empty list if the profile page or
+        required elements are missing, or if no albums are found.
+
+        Args:
+            url (str): The URL of the EromeXXX profile to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
+        """
         profile_url: str = url
         if profile_url.endswith("/"):
             profile_url = profile_url[:-1]
 
         profile: str = profile_url.split("/")[-1]
 
-        soup: BeautifulSoup | None = await fetch_soup(context.session, profile_url)
+        soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
         if not soup:
             return []
 
@@ -50,7 +63,7 @@ class EromeXXXCrawler(SimpleCrawler):
 
         # Get all album URLs from pagination
         albums: list[str] = await self.find_albums_with_pagination(
-            context.session, soup, profile_url, profile
+            soup, profile_url, profile
         )
         if not albums:
             print("No albums found.")
@@ -65,12 +78,12 @@ class EromeXXXCrawler(SimpleCrawler):
 
         results: list[dict[str, str]] = []
         for i in range(1, highest_offset + 1):
-            results += await self.download_album(context, f"{base_url}-{i}", profile)
+            results += await self.download_album(f"{base_url}-{i}", profile)
 
         return results
 
     async def find_albums_with_pagination(
-        self, session: SessionType, soup: BeautifulSoup, profile_url: str, profile: str
+        self, soup: BeautifulSoup, profile_url: str, profile: str
     ) -> list[str]:
         # Get pagination items
         pagination: Tag | NavigableString | None = soup.find("ul", class_="pagination")
@@ -87,7 +100,7 @@ class EromeXXXCrawler(SimpleCrawler):
         albums: list[str] = []
         for page in range(1, last_page + 1):
             page_url: str = f"{profile_url}/page/{page}"
-            page_soup: BeautifulSoup | None = await fetch_soup(session, page_url)
+            page_soup: BeautifulSoup | None = await self.fetch_soup(page_url)
             if not page_soup:
                 break
             page_albums: list[str] = self.find_albums_in_soup(page_soup, profile)
@@ -97,17 +110,45 @@ class EromeXXXCrawler(SimpleCrawler):
         return albums
 
     def find_albums_in_soup(self, soup: BeautifulSoup, profile: str) -> list[str]:
+        """
+        Extract album URLs from the provided BeautifulSoup object that belong
+        to the specified profile.
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content of a profile or album
+                listing page.
+            profile (str): Profile identifier used to filter relevant album
+                URLs.
+
+        Returns:
+            list[str]: List of album URLs associated with the given profile.
+        """
         albums: list[str] = []
         for album in soup.find_all("a", class_="athumb thumb-link"):
             if profile in album["href"]:
                 albums.append(album["href"])
         return albums
 
-    async def download_album(
-        self, context: CrawlerContext, album_url: str, title: str
-    ) -> list[dict[str, str]]:
+    async def download_album(self, album_url: str, title: str) -> list[dict[str, str]]:
+        """
+        Download all media files from a specified album URL and return the
+        results.
+
+        Fetches the album page, extracts all video and image URLs, downloads
+        each media file to a local directory named after the album title, and
+        returns a list of dictionaries describing the download results. Returns
+        an empty list if the album page cannot be fetched or contains no media.
+
+        Args:
+            album_url (str): The URL of the album to download.
+            title (str): The title used to name the local download directory.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media file.
+        """
         try:
-            soup: BeautifulSoup | None = await fetch_soup(context.session, album_url)
+            soup: BeautifulSoup | None = await self.fetch_soup(album_url)
         except ValueError:
             return []
 
@@ -123,20 +164,20 @@ class EromeXXXCrawler(SimpleCrawler):
         ]
         urls: list[str] = list(set(images + videos))
 
-        album_path: Path = get_final_path(context.download_path, title)
+        album_path: Path = get_final_path(self.context.download_path, title)
 
         results: list[dict[str, str]] = []
         for url in urls:
             result: dict[str, str] = await self.download_media(
-                context.session, url, album_path, album_url
+                url, album_path, album_url
             )
             results.append(result)
-            context.progress.advance(context.task)
+            self.context.progress.advance(self.context.task)
 
         return results
 
     async def download_media(
-        self, session: SessionType, url: str, download_path: Path, album: str = ""
+        self, url: str, download_path: Path, album: str = ""
     ) -> dict[str, str]:
         hostname: str = tldextract.extract(url).fqdn
 
@@ -147,7 +188,7 @@ class EromeXXXCrawler(SimpleCrawler):
         }
 
         return await download_and_save_media(
-            session,
+            self.context.session,
             url,
             download_path,
             headers,

@@ -1,11 +1,13 @@
 """Downloader for https://ososedki.com"""
 
-from ..base_crawler import BaseCrawler
+from ..ososedki_crawler import OsosedkiBaseCrawler
 
 
-class OsosedkiCrawler(BaseCrawler):
+class OsosedkiCrawler(OsosedkiBaseCrawler):
     site_url = "https://ososedki.com"
     base_image_path = "/images/a/"
+    album_path = "/photos/"
     model_url = None
     cosplay_url = None
     button_class = None
+    pagination = False

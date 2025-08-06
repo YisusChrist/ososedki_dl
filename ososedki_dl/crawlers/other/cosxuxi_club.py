@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import override
 
 from ...utils import get_final_path
-from .._common import download_media_items, fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -16,10 +15,8 @@ if TYPE_CHECKING:
     from bs4 import BeautifulSoup
     from bs4.element import NavigableString, Tag
 
-    from .._common import CrawlerContext
 
-
-class CosxuxiClubCrawler(SimpleCrawler):
+class CosxuxiClubCrawler(BaseCrawler):
     site_url = "https://cosxuxi.club"
     base_url: str = ".wp.com/img.nungvl.net/"
 
@@ -38,6 +35,17 @@ class CosxuxiClubCrawler(SimpleCrawler):
 
     def cosxuxi_club_media_filter(self, soup: BeautifulSoup) -> list[str]:
         # Find all the images inside the div with the class 'contentme'
+        """
+        Extracts and returns a list of image URLs from the 'contentme' div that
+        contain the specified base URL fragment.
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content of the page.
+
+        Returns:
+            list[str]: List of image source URLs matching the base URL filter,
+            or an empty list if no valid images are found.
+        """
         content_div: Tag | NavigableString | None = soup.find("div", class_="contentme")
         if not content_div or isinstance(content_div, NavigableString):
             return []
@@ -49,7 +57,18 @@ class CosxuxiClubCrawler(SimpleCrawler):
         ]
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Asynchronously downloads all media items from a Cosxuxi Club album,
+        following pagination if present.
+
+        Args:
+            url (str): The URL of the Cosxuxi Club album to download.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing information
+            about each downloaded media item.
+        """
         album_url: str = url
         if album_url.endswith("/"):
             album_url = album_url[:-1]
@@ -58,7 +77,7 @@ class CosxuxiClubCrawler(SimpleCrawler):
         urls: list[str] = []
 
         while True:
-            soup: BeautifulSoup | None = await fetch_soup(context.session, album_url)
+            soup: BeautifulSoup | None = await self.fetch_soup(album_url)
             if not soup:
                 break
             page_urls: list[str] = self.cosxuxi_club_media_filter(soup) if soup else []
@@ -83,8 +102,6 @@ class CosxuxiClubCrawler(SimpleCrawler):
                 next_page_url = next_page_url[0]
             album_url = self.site_url + next_page_url
 
-        album_path: Path = get_final_path(context.download_path, title)
+        album_path: Path = get_final_path(self.context.download_path, title)
 
-        return await download_media_items(
-            context.session, urls, album_path, context.progress, context.task
-        )
+        return await self.download_media_items(urls, album_path)

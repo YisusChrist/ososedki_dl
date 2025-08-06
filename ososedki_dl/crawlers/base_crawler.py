@@ -1,202 +1,168 @@
-"""Base crawler for ososedki and clone sites."""
+"""Base crawler class for handling common crawling tasks."""
 
 from __future__ import annotations
 
 import asyncio
-import re
-from abc import ABC
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from urllib.parse import parse_qs, urlencode, urlparse
 
+from aiohttp import ClientResponseError
+from bs4 import BeautifulSoup
 from rich import print
 
+from ..download import download_and_save_media, fetch
 from ..logs import logger
-from ._common import fetch_soup, process_album
+from ..utils import get_final_path
 
 if TYPE_CHECKING:
-    from typing import (Any, AsyncGenerator, Awaitable, Callable, Coroutine,
-                        Optional)
-    from urllib.parse import ParseResult
+    from pathlib import Path
+    from typing import Any, Awaitable, Callable, Optional
 
-    from aiohttp import ClientSession
-    from bs4 import BeautifulSoup, ResultSet
-    from bs4.element import NavigableString, Tag
+    from rich.progress import Progress, TaskID
 
     from ..download import SessionType
-    from ._common import CrawlerContext
+
+# region Context class
+
+
+@dataclass
+class CrawlerContext:
+    session: SessionType
+    download_path: Path
+    progress: Progress
+    task: TaskID
+
+
+# endregion Context class
 
 
 class BaseCrawler(ABC):
-    """Base class for crawlers of ososedki and clone sites."""
+    """Abstract base class for crawlers, providing common functionality."""
 
     site_url: str
-    base_image_path: str
-    album_path: Optional[str] = None
-    model_url: Optional[str] = None
-    cosplay_url: Optional[str] = None
-    button_class: Optional[str] = None
+    context: CrawlerContext
 
-    def __init__(self) -> None:
+    def __init__(self, context: CrawlerContext) -> None:
+        """
+        Initialize the BaseCrawler with a given crawling context.
+
+        Args:
+            context (CrawlerContext): The context containing configuration and
+                state for the crawler instance.
+        """
         logger.debug(
             f"Initialized {self.__class__.__name__} with site URL: {self.site_url}"
         )
-        self.base_media_url: str = self.site_url + self.base_image_path
+        self.context = context
 
-    async def fetch_page_albums(
-        self, session: ClientSession, page_url: str
-    ) -> list[str]:
-        if not self.album_path:
+    @abstractmethod
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Asynchronously downloads and parses content from the specified URL.
+
+        Args:
+            url (str): The URL to crawl and extract data from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing extracted
+            data.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a
+                subclass.
+        """
+        raise NotImplementedError("Each crawler must implement its own download method")
+
+    # region Fetching functions
+
+    async def fetch_soup(self, url: str) -> BeautifulSoup | None:
+        print(f"Fetching {url}")
+        try:
+            html_content: str = await fetch(self.context.session, url)
+            return BeautifulSoup(html_content, "html.parser")
+        except ClientResponseError as e:
+            print(f"Failed to fetch {url} with status {e.status}")
+            return None
+
+    async def download_media_items(
+        self,
+        media_urls: list[str],
+        album_path: Path,
+    ) -> list[dict[str, str]]:
+        tasks: list[Any] = [
+            download_and_save_media(self.context.session, url, album_path)
+            for url in media_urls
+        ]
+
+        results: list[dict[str, str]] = await asyncio.gather(*tasks)
+        for _ in media_urls:
+            self.context.progress.advance(self.context.task)
+
+        return results
+
+    # endregion Fetching functions
+
+    # region Core album logic
+
+    async def process_album(
+        self,
+        album_url: str,
+        media_filter: Callable[[BeautifulSoup], Awaitable[list[str]]],
+        title_extractor: Optional[Callable[[BeautifulSoup], str]] = None,
+        title: Optional[str] = None,
+        retries: int = 0,
+    ) -> list[dict[str, str]]:
+        """
+        Asynchronously processes an album page by extracting media URLs,
+        determining the album title, and downloading all associated media items.
+
+        Attempts to fetch and parse the album page, extract the album title (using
+        a provided extractor or fallback), and filter media URLs asynchronously.
+        Retries up to five times on extraction errors. Downloads all found media
+        items to a computed album path and returns a list of download results.
+
+        Args:
+            album_url (str): The URL of the album page to process.
+            media_filter (Callable[[BeautifulSoup], Awaitable[list[str]]]):
+                Asynchronous function to extract media URLs from the parsed HTML.
+            title_extractor (Optional[Callable[[BeautifulSoup], str]]): Optional
+                function to extract the album title from the parsed HTML.
+            title (Optional[str]): Optional fallback title for the album.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing the results of
+            each media download or an empty list otherwise.
+        """
+        if retries > 5:
+            print(f"Max depth reached for {album_url}. Skipping...")
             return []
 
-        soup: BeautifulSoup | None = await fetch_soup(session, page_url)
-        if not soup:
+        if album_url.endswith("/"):
+            album_url = album_url[:-1]
+
+        soup: BeautifulSoup | None = await self.fetch_soup(album_url)
+        if soup is None:
             return []
-
-        return list(
-            {
-                f"{self.site_url}{a['href']}"
-                for a in soup.find_all("a", href=lambda x: x and self.album_path in x)
-            }
-        )
-
-    def _get_article_title(self, soup: BeautifulSoup) -> str:
-        tags: set[str] = {
-            "leak",
-            "leaked",
-            "leaks",
-            "nude",
-            "nudes",
-            "of",
-            "onlyfans for",
-            "onlyfans leak",
-            "reddit",
-            "twitter",
-            "video",
-            "vk",
-            "xxx",
-            "onlyfan",
-            "onlyfanfor",
-        }
-
-        # Get the page article:tag and extract the title
-        article_tags: ResultSet[Any] = soup.find_all(
-            "meta", {"property": "article:tag"}
-        )
-        for article_tag in article_tags:
-            tag_content: str = article_tag.get("content", "")
-            for tag in tags:
-                tag_suffix: str = f" {tag.lower()}"
-                if tag_content.lower().endswith(tag_suffix):
-                    return tag_content.replace(tag_suffix, "")
-
-        return "Unknown"
-
-    def extract_title(self, soup: BeautifulSoup) -> str:
-        title: str = "Unknown"
-
-        if self.button_class:
-            button_html: Tag | NavigableString | None = soup.find(
-                "a", class_=self.button_class
-            )
-            if button_html:
-                print(f"Found button: {button_html.text}")
-                return button_html.text
-
-        text_div: Tag | NavigableString | None = soup.find("title")
-        if not text_div:
-            return title
-        text: str = text_div.text.strip()
 
         try:
-            if " (@" in text:
-                title = text.split(" (@")[0].strip()
-            elif re.search(r" - [0-9]*\s", text):
-                title = text.split(" - ")[0].strip()
-        except IndexError:
-            print(f"ERROR: Could not extract title from '{text}'")
+            # Extract the title if a title_extractor is provided; otherwise, use the given title
+            if title_extractor:
+                title = title_extractor(soup)
+            if not title:
+                raise ValueError("Title could not be determined")
 
-        if title == "Unknown":
-            title = self._get_article_title(soup)
-
-        return title
-
-    def extract_media(self, soup: BeautifulSoup) -> list[str]:
-        # ? If images under a tag return 404, use tag img and get src
-        images: list[str] = [
-            tag.get("href").replace("/604/", "/1280/")
-            for tag in soup.find_all("a", href=lambda href: self.base_media_url in href)
-        ]
-        if images:
-            return images
-
-        # ? If no images are found, search for "https://sun9-" in img_url
-        for tag in soup.find_all("a", href=lambda href: href.startswith("https://sun")):
-            href: str = tag.get("href")
-            print(f"Found sun9 image: {href}")
-            parsed_url: ParseResult = urlparse(href)
-            query: dict[str, list[str]] = parse_qs(
-                parsed_url.query, keep_blank_values=True
+            media_urls: list[str] = list(set(await media_filter(soup)))
+            print(f"Title: {title}")
+            print(f"Media URLs: {len(media_urls)}")
+        except (TypeError, ValueError) as e:
+            print(f"Failed to process album: {e}. Retrying...")
+            return await self.process_album(
+                album_url, media_filter, title_extractor, title, retries + 1
             )
-            query.pop("cs", None)
-            u: ParseResult = parsed_url._replace(query=urlencode(query, True))
-            images.append(u.geturl())
 
-        return images
+        album_path: Path = get_final_path(self.context.download_path, title)
 
-    async def _find_model_albums(
-        self,
-        session: SessionType,
-        model_url: str,
-        album_fetcher: Callable[[SessionType, str], Awaitable[list[str]]],
-        title_extractor: Callable[[BeautifulSoup], str],
-    ) -> AsyncGenerator[tuple[list[str], str], None]:
-        # Clean the URL removing the query parameters
-        model_url = model_url.split("?")[0]
+        return await self.download_media_items(media_urls, album_path)
 
-        soup: BeautifulSoup | None = await fetch_soup(session, model_url)
-        if not soup:
-            return
-
-        model_name: str = title_extractor(soup)
-        i = 1
-        albums_found = True
-
-        while albums_found:
-            page_url: str = f"{model_url}?page={i}"
-            albums_extracted: list[str] = await album_fetcher(session, page_url)
-            if not albums_extracted:
-                albums_found = False
-                continue
-
-            yield albums_extracted, model_name
-            i += 1
-
-            # Sleep for a while to avoid being banned
-            await asyncio.sleep(1)
-
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
-        if (self.model_url and url.startswith(self.model_url)) or (
-            self.cosplay_url and url.startswith(self.cosplay_url)
-        ):
-            results: list[dict[str, str]] = []
-
-            # Find all the albums for the model incrementally
-            async for albums, _ in self._find_model_albums(
-                context.session, url, self.fetch_page_albums, self.extract_title
-            ):
-                tasks: list[Coroutine[Any, Any, list[dict[str, str]]]] = [
-                    process_album(
-                        context, album, self.extract_media, self.extract_title
-                    )
-                    for album in albums
-                ]
-
-                # Process the tasks for this chunk and collect results
-                chunk_results: list[dict[str, str]] = sum(
-                    await asyncio.gather(*tasks), []
-                )
-                results.extend(chunk_results)
-
-            return results
-
-        return await process_album(context, url, self.extract_media, self.extract_title)
+    # endregion Core album logic

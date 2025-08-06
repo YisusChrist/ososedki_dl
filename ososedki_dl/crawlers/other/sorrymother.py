@@ -6,26 +6,48 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import override
 
-from .._common import process_album
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup
 
-    from .._common import CrawlerContext
 
-
-class SorryMotherCrawler(SimpleCrawler):
+class SorryMotherCrawler(BaseCrawler):
     site_url = "https://sorrymother.to"
     base_url: str = "https://pics.sorrymother.video/"
 
     def sorrymother_title_extractor(self, soup: BeautifulSoup) -> str:
+        """
+        Extracts the content title from the HTML soup by locating the first <a>
+        tag with class "entry-tag".
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content of the page.
+
+        Returns:
+            The text of the first matching tag, or "Untitled" if no such tag is
+            found.
+        """
         # TODO: Add a better way to get the title, this fails if there is no tag
         # or if the first tag is not the correct title
         tags = soup.find_all("a", class_="entry-tag")
         return tags[0].text if tags else "Untitled"
 
-    def sorrymother_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    async def sorrymother_media_filter(self, soup: BeautifulSoup) -> list[str]:
+        """
+        Extracts and normalizes media URLs from the provided HTML soup.
+
+        Finds all image and video sources relevant to the site, removes
+        resolution suffixes from image filenames, and strips query parameters
+        from video URLs.
+
+        Args:
+            soup (BeautifulSoup): Parsed HTML content to search for media
+                elements.
+
+        Returns:
+            list[str]: List of cleaned image and video URLs found in the soup.
+        """
         images_list: list[str] = [
             img["src"] for img in soup.find_all("img") if self.base_url in img["src"]
         ]
@@ -42,10 +64,17 @@ class SorryMotherCrawler(SimpleCrawler):
         return images + videos
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
-        return await process_album(
-            context,
-            url,
-            self.sorrymother_media_filter,
-            self.sorrymother_title_extractor,
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Download and process media content from the specified URL.
+
+        Args:
+            url (str): The target page URL to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing information
+            about each downloaded media item.
+        """
+        return await self.process_album(
+            url, self.sorrymother_media_filter, self.sorrymother_title_extractor
         )
