@@ -9,5 +9,6 @@ class CosplayAsianCrawler(OsosedkiBaseCrawler):
     album_path = "/post/"
     model_url = f"{site_url}/mod/"
     cosplay_url = f"{site_url}/cos/"
+    fandom_url = f"{site_url}/fan/"
     button_class = None
     pagination = True

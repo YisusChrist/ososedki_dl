@@ -32,6 +32,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
     album_path: str
     model_url: Optional[str] = None
     cosplay_url: Optional[str] = None
+    fandom_url: Optional[str] = None
     button_class: Optional[str] = None
     pagination: bool
 
@@ -365,8 +366,10 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         """
         if url.startswith(self.site_url + self.album_path):
             return await self.process_album(url, self.extract_media, self.extract_title)
-        elif (self.model_url and url.startswith(self.model_url)) or (
-            self.cosplay_url and url.startswith(self.cosplay_url)
+        elif (
+            (self.model_url and url.startswith(self.model_url))
+            or (self.cosplay_url and url.startswith(self.cosplay_url))
+            or (self.fandom_url and url.startswith(self.fandom_url))
         ):
             results: list[dict[str, str]] = []
 

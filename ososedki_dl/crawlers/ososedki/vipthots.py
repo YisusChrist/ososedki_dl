@@ -9,5 +9,6 @@ class VipThotsCrawler(OsosedkiBaseCrawler):
     album_path = "/p/"
     model_url = f"{site_url}/m/"
     cosplay_url = f"{site_url}/c/"
+    fandom_url = f"{site_url}/f/"
     button_class = "btn btn-sm bg-model"
     pagination = True
