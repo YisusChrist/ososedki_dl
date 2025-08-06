@@ -6,23 +6,21 @@ import json
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import NavigableString
 from rich import print
 from typing_extensions import override
 
 from ...download import fetch
-from .._common import fetch_soup, process_album
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from aiohttp import ClientSession
     from bs4 import ResultSet
-    from bs4.element import Tag
+    from bs4.element import BeautifulSoup, Tag
 
 
-class HusvjjalBlogspotCrawler(SimpleCrawler):
+class HusvjjalBlogspotCrawler(BaseCrawler):
     site_url = "https://husvjjal.blogspot.com"
 
     # @lru_cache
@@ -37,23 +35,16 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
             list[dict[str, str]]: A list of dictionaries containing media
             metadata and URLs extracted from the album.
         """
-        return await process_album(
-            self.context,
-            album_url,
-            self.husvjjal_blogspot_media_filter,
-            title="husvjjal",
+        return await self.process_album(
+            album_url, self.husvjjal_blogspot_media_filter, title="husvjjal"
         )
 
-    async def get_related_albums(
-        self, session: ClientSession, album_url: str
-    ) -> list[str]:
+    async def get_related_albums(self, album_url: str) -> list[str]:
         """
         Fetches related album URLs for a given album by querying the site's
         JSON feed endpoint.
 
         Args:
-            session (ClientSession): The aiohttp session to use for the
-                request.
             album_url (str): The URL of the album for which to find related
                 albums.
 
@@ -73,7 +64,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         }
 
         js_script: str = await fetch(
-            session=session, url=js_url, headers=headers, params=params
+            self.context.session, js_url, headers=headers, params=params
         )
         script_json: str = (
             js_script.split("BloggerJS.related(")[1].split(");")[0].strip()
@@ -81,11 +72,11 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         # Convert the str to a dictionary
         js_dict: dict[str, Any] = json.loads(script_json)
 
-        js_feed_entry: list[dict] = js_dict["feed"]["entry"]
+        js_feed_entry: list[dict[str, list[dict[str, str]]]] = js_dict["feed"]["entry"]
 
         related_albums: list[str] = []
         for entry in js_feed_entry:
-            entry_link: list[dict] = entry["link"]
+            entry_link: list[dict[str, str]] = entry["link"]
             for link in entry_link:
                 if link["rel"] == "alternate" and link["type"] == "text/html":
                     related_albums.append(link["href"])
@@ -114,7 +105,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
             js_script.split("var VIDEO_CONFIG = ")[1].split(";")[0].strip()
         )
         # Convert the video config to a dictionary
-        video_config: dict = json.loads(video_config_str)
+        video_config: dict[str, Any] = json.loads(video_config_str)
 
         # Find the one with the highest format_id
         max_stream: dict[str, str] = max(
@@ -176,7 +167,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
                 urls.append(img)
                 continue
 
-            soup2 = await fetch_soup(self.context.session, url=img)
+            soup2: BeautifulSoup | None = await self.fetch_soup(img)
             if not soup2:
                 continue
 
@@ -196,7 +187,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
                 urls.append(download_href)
 
         for vid in videos:
-            soup2 = await fetch_soup(self.context.session, url=vid)
+            soup2 = await self.fetch_soup(vid)
             if not soup2:
                 continue
 
@@ -246,25 +237,17 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
             profile_url = profile_url[:-1]
 
         if profile_url.endswith(".html"):
-            results: list[dict[str, str]] = await process_album(
-                self.context,
-                profile_url,
-                self.husvjjal_blogspot_media_filter,
-                title="husvjjal",
+            results: list[dict[str, str]] = await self.process_album(
+                profile_url, self.husvjjal_blogspot_media_filter, title="husvjjal"
             )
-            related_albums: list[str] = await self.get_related_albums(
-                self.context.session, profile_url
-            )
+            related_albums: list[str] = await self.get_related_albums(profile_url)
             for related_album in related_albums:
-                results += await process_album(
-                    self.context,
-                    related_album,
-                    self.husvjjal_blogspot_media_filter,
-                    title="husvjjal",
+                results += await self.process_album(
+                    related_album, self.husvjjal_blogspot_media_filter, title="husvjjal"
                 )
             return results
 
-        soup: BeautifulSoup | None = await fetch_soup(self.context.session, profile_url)
+        soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
         if not soup:
             return []
 
@@ -283,7 +266,7 @@ class HusvjjalBlogspotCrawler(SimpleCrawler):
         while index < len(albums):
             album: str = albums[index]
             results += await self.download_album(album)
-            related_albums = await self.get_related_albums(self.context.session, album)
+            related_albums = await self.get_related_albums(album)
             for related_album in related_albums:
                 if related_album not in albums:
                     albums.append(related_album)

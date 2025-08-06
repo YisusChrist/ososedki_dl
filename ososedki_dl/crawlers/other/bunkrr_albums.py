@@ -8,8 +8,7 @@ from rich import print
 from typing_extensions import override
 
 from ...consts import MAX_TIMEOUT
-from .._common import fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     from bs4 import BeautifulSoup
 
 
-class BunkrAlbumsCrawler(SimpleCrawler):
+class BunkrAlbumsCrawler(BaseCrawler):
     site_url = "https://bunkr-albums.io"
 
     async def get_real_url(self, url: str) -> str:
@@ -53,7 +52,7 @@ class BunkrAlbumsCrawler(SimpleCrawler):
         Returns:
             list[dict[str, str]]: Currently always returns an empty list.
         """
-        soup: BeautifulSoup | None = await fetch_soup(self.context.session, url)
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
         if not soup:
             return []
 

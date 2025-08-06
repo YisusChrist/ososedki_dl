@@ -5,24 +5,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import tldextract
+from bs4 import NavigableString
 from rich import print
 from typing_extensions import override
 
 from ...download import download_and_save_media
 from ...utils import get_final_path
-from .._common import fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from bs4 import BeautifulSoup
-    from bs4.element import NavigableString, Tag
-
-    from ...download import SessionType
+    from bs4.element import Tag
 
 
-class EromeXXXCrawler(SimpleCrawler):
+class EromeXXXCrawler(BaseCrawler):
     site_url = "https://eromexxx.com"
 
     @override
@@ -49,7 +47,7 @@ class EromeXXXCrawler(SimpleCrawler):
 
         profile: str = profile_url.split("/")[-1]
 
-        soup: BeautifulSoup | None = await fetch_soup(self.context.session, profile_url)
+        soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
         if not soup:
             return []
 
@@ -65,7 +63,7 @@ class EromeXXXCrawler(SimpleCrawler):
 
         # Get all album URLs from pagination
         albums: list[str] = await self.find_albums_with_pagination(
-            self.context.session, soup, profile_url, profile
+            soup, profile_url, profile
         )
         if not albums:
             print("No albums found.")
@@ -85,7 +83,7 @@ class EromeXXXCrawler(SimpleCrawler):
         return results
 
     async def find_albums_with_pagination(
-        self, session: SessionType, soup: BeautifulSoup, profile_url: str, profile: str
+        self, soup: BeautifulSoup, profile_url: str, profile: str
     ) -> list[str]:
         # Get pagination items
         pagination: Tag | NavigableString | None = soup.find("ul", class_="pagination")
@@ -102,7 +100,7 @@ class EromeXXXCrawler(SimpleCrawler):
         albums: list[str] = []
         for page in range(1, last_page + 1):
             page_url: str = f"{profile_url}/page/{page}"
-            page_soup: BeautifulSoup | None = await fetch_soup(session, page_url)
+            page_soup: BeautifulSoup | None = await self.fetch_soup(page_url)
             if not page_soup:
                 break
             page_albums: list[str] = self.find_albums_in_soup(page_soup, profile)
@@ -150,9 +148,7 @@ class EromeXXXCrawler(SimpleCrawler):
             each downloaded media file.
         """
         try:
-            soup: BeautifulSoup | None = await fetch_soup(
-                self.context.session, album_url
-            )
+            soup: BeautifulSoup | None = await self.fetch_soup(album_url)
         except ValueError:
             return []
 
@@ -173,7 +169,7 @@ class EromeXXXCrawler(SimpleCrawler):
         results: list[dict[str, str]] = []
         for url in urls:
             result: dict[str, str] = await self.download_media(
-                self.context.session, url, album_path, album_url
+                url, album_path, album_url
             )
             results.append(result)
             self.context.progress.advance(self.context.task)
@@ -181,7 +177,7 @@ class EromeXXXCrawler(SimpleCrawler):
         return results
 
     async def download_media(
-        self, session: SessionType, url: str, download_path: Path, album: str = ""
+        self, url: str, download_path: Path, album: str = ""
     ) -> dict[str, str]:
         hostname: str = tldextract.extract(url).fqdn
 
@@ -192,7 +188,7 @@ class EromeXXXCrawler(SimpleCrawler):
         }
 
         return await download_and_save_media(
-            session,
+            self.context.session,
             url,
             download_path,
             headers,

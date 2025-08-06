@@ -1,9 +1,9 @@
 """Downloader for https://waifubitches.com"""
 
-from ..base_crawler import BaseCrawler
+from ..ososedki_crawler import OsosedkiBaseCrawler
 
 
-class WaifuBitchesCrawler(BaseCrawler):
+class WaifuBitchesCrawler(OsosedkiBaseCrawler):
     site_url = "https://waifubitches.com"
     base_image_path = "/images/a/"
     album_path = "/gallery/"

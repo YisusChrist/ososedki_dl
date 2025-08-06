@@ -6,14 +6,13 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import override
 
-from .._common import process_album
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup
 
 
-class SorryMotherCrawler(SimpleCrawler):
+class SorryMotherCrawler(BaseCrawler):
     site_url = "https://sorrymother.to"
     base_url: str = "https://pics.sorrymother.video/"
 
@@ -76,9 +75,6 @@ class SorryMotherCrawler(SimpleCrawler):
             list[dict[str, str]]: A list of dictionaries containing information
             about each downloaded media item.
         """
-        return await process_album(
-            self.context,
-            url,
-            self.sorrymother_media_filter,
-            self.sorrymother_title_extractor,
+        return await self.process_album(
+            url, self.sorrymother_media_filter, self.sorrymother_title_extractor
         )

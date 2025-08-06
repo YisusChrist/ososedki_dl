@@ -1,9 +1,9 @@
 """Downloader for https://cosplayasian.com"""
 
-from ..base_crawler import BaseCrawler
+from ..ososedki_crawler import OsosedkiBaseCrawler
 
 
-class CosplayAsianCrawler(BaseCrawler):
+class CosplayAsianCrawler(OsosedkiBaseCrawler):
     site_url = "https://cosplayasian.com"
     base_image_path = "/images/a/"
     album_path = "/post/"

@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import override
 
 from ...utils import get_final_path
-from .._common import download_media_items, fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     from bs4.element import NavigableString, Tag
 
 
-class CosxuxiClubCrawler(SimpleCrawler):
+class CosxuxiClubCrawler(BaseCrawler):
     site_url = "https://cosxuxi.club"
     base_url: str = ".wp.com/img.nungvl.net/"
 
@@ -78,9 +77,7 @@ class CosxuxiClubCrawler(SimpleCrawler):
         urls: list[str] = []
 
         while True:
-            soup: BeautifulSoup | None = await fetch_soup(
-                self.context.session, album_url
-            )
+            soup: BeautifulSoup | None = await self.fetch_soup(album_url)
             if not soup:
                 break
             page_urls: list[str] = self.cosxuxi_club_media_filter(soup) if soup else []
@@ -107,10 +104,4 @@ class CosxuxiClubCrawler(SimpleCrawler):
 
         album_path: Path = get_final_path(self.context.download_path, title)
 
-        return await download_media_items(
-            self.context.session,
-            urls,
-            album_path,
-            self.context.progress,
-            self.context.task,
-        )
+        return await self.download_media_items(urls, album_path)

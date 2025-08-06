@@ -8,28 +8,24 @@ from rich import print
 from typing_extensions import override
 
 from ...utils import get_final_path
-from .._common import download_media_items
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from ...download import SessionType
 
-
-class FapelloIsCrawler(SimpleCrawler):
+class FapelloIsCrawler(BaseCrawler):
     site_url = "https://fapello.is"
     download_url: str = site_url + "/api/media"
 
     async def fetch_media_urls(
-        self, session: SessionType, url: str, referer_url: str
+        self, url: str, referer_url: str
     ) -> list[dict[str, str]] | str:
         """
         Asynchronously retrieves media metadata from the specified API URL with
         a custom referer header.
 
         Args:
-            session: An asynchronous HTTP session used to make the request.
             url (str): The API endpoint to fetch media data from.
             referer_url (str): The referer URL to include in the request
                 headers.
@@ -40,7 +36,7 @@ class FapelloIsCrawler(SimpleCrawler):
             response is not a list.
         """
         headers: dict[str, str] = {"Referer": referer_url}
-        async with session.get(url, headers=headers) as response:
+        async with self.context.session.get(url, headers=headers) as response:
             if response.status != 200:
                 return []
             return await response.json()
@@ -76,7 +72,7 @@ class FapelloIsCrawler(SimpleCrawler):
             print(f"Fetching page {i} for profile {profile_id}...")
             fetch_url: str = f"{self.download_url}/{profile_id}/{i}/1"
             album: list[dict[str, str]] | str = await self.fetch_media_urls(
-                self.context.session, fetch_url, url
+                fetch_url, url
             )
             if not album or album == "null":
                 break
@@ -94,10 +90,4 @@ class FapelloIsCrawler(SimpleCrawler):
 
         album_path: Path = get_final_path(self.context.download_path, title)
 
-        return await download_media_items(
-            session=self.context.session,
-            media_urls=urls,
-            album_path=album_path,
-            progress=self.context.progress,
-            task=self.context.task,
-        )
+        return await self.download_media_items(urls, album_path)

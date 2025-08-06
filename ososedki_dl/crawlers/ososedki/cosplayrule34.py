@@ -1,9 +1,9 @@
 """Downloader for https://cosplayrule34.com"""
 
-from ..base_crawler import BaseCrawler
+from ..ososedki_crawler import OsosedkiBaseCrawler
 
 
-class CosplayRule34Crawler(BaseCrawler):
+class CosplayRule34Crawler(OsosedkiBaseCrawler):
     site_url = "https://cosplayrule34.com"
     base_image_path = "/images/a/"
     album_path = "/post/"
