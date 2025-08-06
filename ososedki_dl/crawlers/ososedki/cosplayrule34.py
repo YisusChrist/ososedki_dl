@@ -9,5 +9,6 @@ class CosplayRule34Crawler(OsosedkiBaseCrawler):
     album_path = "/post/"
     model_url = f"{site_url}/model/"
     cosplay_url = f"{site_url}/cosplay/"
+    fandom_url = f"{site_url}/fandom/"
     button_class = "btn btn-sm bg-pink-pink"
     pagination = True
