@@ -8,6 +8,6 @@ class OsosedkiCrawler(OsosedkiBaseCrawler):
     base_image_path = "/images/a/"
     album_path = "/photos/"
     model_url = None
-    cosplay_url = None
+    cosplay_url = f"{site_url}/cosplay/"
     button_class = None
     pagination = False
