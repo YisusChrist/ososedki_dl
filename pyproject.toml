@@ -1,6 +1,6 @@
 [project]
 name = "ososedki_dl"
-version = "1.0.1"
+version = "1.1.0"
 description = "Blazing bulk web scraper for leak sites"
 license = "GPL-3.0-only"
 authors = [
@@ -35,6 +35,13 @@ types-aiofiles = "^24.1.0.20241221"
 types-beautifulsoup4 = "^4.12.0.20241020"
 types-pygments = "^2.18.0.20240506"
 types-requests = "^2.32.0.20241016"
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver2"
+version_provider = "pep621"
+update_changelog_on_bump = true
 
 [build-system]
 requires = ["poetry-core"]
