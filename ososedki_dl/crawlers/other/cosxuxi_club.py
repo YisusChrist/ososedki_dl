@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from bs4 import NavigableString
 from typing_extensions import override
 
 from ...utils import get_final_path
@@ -12,8 +13,7 @@ from ..base_crawler import BaseCrawler
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from bs4 import BeautifulSoup
-    from bs4.element import NavigableString, Tag
+    from bs4 import BeautifulSoup, Tag
 
 
 class CosxuxiClubCrawler(BaseCrawler):
