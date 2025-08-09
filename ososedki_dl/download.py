@@ -100,7 +100,7 @@ async def download_and_compare(
         # check if the link is in the cache
         cache_filename: Path = get_url_hashfile(url)
         if cache_filename.exists():
-            print(f"Skipping {url}")
+            #print(f"Skipping {url}")
             return {"url": url, "status": "skipped"}
     try:
         image_content: bytes = await fetch(
@@ -110,26 +110,26 @@ async def download_and_compare(
             headers=headers,
         )
     except ClientResponseError as e:
-        print(f"Failed to fetch {url} with status {e.status}")
+        #print(f"Failed to fetch {url} with status {e.status}")
         return {"url": url, "status": f"error: {e.status}"}
     except InvalidURL as e:
-        print(f'Invalid URL: "{url}"')
+        #print(f'Invalid URL: "{url}"')
         return {"url": url, "status": f"error: {e}"}
     except Exception as e:
-        print(f"Failed to fetch {url} with error {e}")
+        #print(f"Failed to fetch {url} with error {e}")
         return {"url": url, "status": f"error: {e}"}
 
     if media_path.exists():
         file_content: bytes = media_path.read_bytes()
         if file_content == image_content:
-            print(f"Skipping {url}")
+            #print(f"Skipping {url}")
             return {"url": url, "status": "skipped"}
         new_path: Path = get_unique_filename(media_path)
         await write_media(new_path, image_content, url)
     else:
         await write_media(media_path, image_content, url)
 
-    print(f"Downloaded {url}")
+    #print(f"Downloaded {url}")
     return {"url": url, "status": "ok"}
 
 
