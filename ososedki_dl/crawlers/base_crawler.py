@@ -10,18 +10,17 @@ from typing import TYPE_CHECKING
 from aiohttp import ClientResponseError
 from bs4 import BeautifulSoup
 from rich import print
-from rich.progress import (BarColumn, Progress, TextColumn, TimeElapsedColumn,
-                           TimeRemainingColumn, TransferSpeedColumn)
 
 from ..download import download_and_save_media, fetch
 from ..logs import logger
+from ..progress import AlbumProgress
 from ..utils import get_final_path
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Awaitable, Callable, Optional
 
-    from rich.progress import TaskID
+    from rich.progress import Progress, TaskID
 
     from ..download import SessionType
 
@@ -99,15 +98,7 @@ class BaseCrawler(ABC):
         ]
 
         results: list[dict[str, str]] = []
-        with Progress(
-            TextColumn("[cyan]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>5.1f}%"),
-            TextColumn("({task.completed}/{task.total})"),
-            TransferSpeedColumn(),
-            TimeElapsedColumn(),
-            TimeRemainingColumn(),
-        ) as progress:
+        with AlbumProgress() as progress:
             task: TaskID = progress.add_task(
                 f"[cyan]Downloading {album_title}...", total=len(media_urls)
             )
@@ -170,8 +161,8 @@ class BaseCrawler(ABC):
                 raise ValueError("Title could not be determined")
 
             media_urls: list[str] = list(set(await media_filter(soup)))
-            #print(f"Title: {title}")
-            #print(f"Media URLs: {len(media_urls)}")
+            # print(f"Title: {title}")
+            # print(f"Media URLs: {len(media_urls)}")
         except (TypeError, ValueError) as e:
             print(f"Failed to process album: {e}. Retrying...")
             return await self.process_album(
