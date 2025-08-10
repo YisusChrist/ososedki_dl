@@ -99,7 +99,7 @@ def create_config_file(interactive: bool = False) -> None:
         )
 
 
-def configure_paths(args: Namespace) -> Path:
+def load_config(args: Namespace) -> Path:
     """
     Get the source and destination path values from the configuration file or
     the command-line arguments.
