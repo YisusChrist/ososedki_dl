@@ -8,17 +8,18 @@ from typing import TYPE_CHECKING
 from aiohttp import ClientSession
 from aiohttp_client_cache.session import CachedSession
 from core_helpers.utils import print_welcome
+from fake_useragent import UserAgent
 from rich import print
 from rich.traceback import install
 
 from .cli import get_parsed_args, handle_config_command
 from .config import configure_paths
 from .consts import (CACHE_PATH, CONFIG_FILE, CONFIG_PATH, EXIT_SUCCESS,
-                     GITHUB, LOG_FILE, LOG_PATH, PACKAGE)
+                     GITHUB, LOG_FILE, LOG_PATH, MIN_USER_AGENT_VERSION,
+                     PACKAGE)
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .crawlers import crawlers as crawler_modules
-from .download import get_user_agent
 from .logs import logger
 from .scrapper import generic_download
 from .utils import exit_session, get_user_input
@@ -35,7 +36,8 @@ async def run_main_loop(dest_path: Path, cache: bool) -> None:
     print(msg)
     logger.info(msg)
 
-    headers: dict[str, str] = {"User-Agent": get_user_agent()}
+    ua = UserAgent(min_version=MIN_USER_AGENT_VERSION)
+    headers: dict[str, str] = {"User-Agent": ua.random}
     async with SessionType(headers=headers) as session:
         # Dynamically load all crawler modules
         while True:
