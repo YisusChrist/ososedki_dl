@@ -18,6 +18,9 @@
     <a href="https://github.com/YisusChrist/ososedki_dl/pulls">
         <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/YisusChrist/ososedki_dl?color=0088ff">&nbsp;&nbsp;&nbsp;
     </a>
+    <a href="https://deepwiki.com/YisusChrist/ososedki_dl">
+        <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki">&nbsp;&nbsp;&nbsp;
+    </a>
     <a href="https://opensource.org/license/GPL-3.0/">
         <img alt="License" src="https://img.shields.io/github/license/YisusChrist/ososedki_dl?color=0088ff">
     </a>
