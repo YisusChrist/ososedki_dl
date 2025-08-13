@@ -917,14 +917,14 @@ requests = ">=1.0.0"
 
 [[package]]
 name = "requests-pprint"
-version = "1.2.3"
+version = "1.2.4"
 description = "Pretty print your python HTTP requests"
 optional = false
-python-versions = "<4.0,>=3.8"
+python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "requests_pprint-1.2.3-py3-none-any.whl", hash = "sha256:c44cc333dbd99423b199ce5f438b10146b70e9b3681470c87f86c79b95c46e12"},
-    {file = "requests_pprint-1.2.3.tar.gz", hash = "sha256:c3a91898605aedacf8c4e2237d21448ac777f2592824654d2b98b83d8fd1f52a"},
+    {file = "requests_pprint-1.2.4-py3-none-any.whl", hash = "sha256:99c690db8ddaede0d169a39f96e04a3271380cb758613a8e33f27f51625f3f7d"},
+    {file = "requests_pprint-1.2.4.tar.gz", hash = "sha256:2f761c3b58fd50f0fc0d708b02433081bd9ef11aceade35d5579a9fdff054191"},
 ]
 
 [package.dependencies]
@@ -1037,7 +1037,7 @@ version = "0.21.0.20250809"
 description = "Typing stubs for docutils"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev", "types"]
+groups = ["types"]
 files = [
     {file = "types_docutils-0.21.0.20250809-py3-none-any.whl", hash = "sha256:af02c82327e8ded85f57dd85c8ebf93b6a0b643d85a44c32d471e3395604ea50"},
     {file = "types_docutils-0.21.0.20250809.tar.gz", hash = "sha256:cc2453c87dc729b5aae499597496e4f69b44aa5fccb27051ed8bb55b0bd5e31b"},
@@ -1049,7 +1049,7 @@ version = "1.1.11.20250809"
 description = "Typing stubs for html5lib"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev", "types"]
+groups = ["types"]
 files = [
     {file = "types_html5lib-1.1.11.20250809-py3-none-any.whl", hash = "sha256:e5f48ab670ae4cdeafd88bbc47113d8126dcf08318e0b8d70df26ecc13eca9b6"},
     {file = "types_html5lib-1.1.11.20250809.tar.gz", hash = "sha256:7976ec7426bb009997dc5e072bca3ed988dd747d0cbfe093c7dfbd3d5ec8bf57"},
