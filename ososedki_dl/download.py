@@ -12,7 +12,6 @@ import requests
 from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
                      ClientTimeout, InvalidURL)
 from aiohttp_client_cache.session import CachedSession
-from fake_useragent import UserAgent  # type: ignore
 from rich import print
 
 from .consts import CHECK_CACHE, MAX_TIMEOUT
@@ -24,24 +23,11 @@ if TYPE_CHECKING:
 
 
 client_timeout = ClientTimeout()
-ua = UserAgent(min_version=120.0)
-_user_agent: str = ""
 SessionType = Union[CachedSession, ClientSession]
 
 
-def get_user_agent() -> str:
-    global _user_agent
-
-    if _user_agent == "":
-        _user_agent = ua.random
-    return _user_agent
-
-
-async def _generic_fetch(
-    session: SessionType,
-    url: str,
-    response_property: str = "text",
-    **kwargs: Any,
+async def fetch(
+    session: SessionType, url: str, response_property: str = "text", **kwargs: Any
 ) -> Any:
     while True:
         try:
@@ -79,17 +65,6 @@ async def _generic_fetch(
             return response2.content
 
 
-async def fetch(
-    session: SessionType,
-    url: str,
-    property: str = "text",
-    **kwargs: Optional[dict[str, str]],
-) -> Any:
-    return await _generic_fetch(
-        session=session, url=url, response_property=property, **kwargs
-    )
-
-
 async def download_and_compare(
     session: SessionType,
     url: str,
@@ -103,12 +78,7 @@ async def download_and_compare(
             #print(f"Skipping {url}")
             return {"url": url, "status": "skipped"}
     try:
-        image_content: bytes = await fetch(
-            session=session,
-            url=url,
-            property="read",
-            headers=headers,
-        )
+        image_content: bytes = await fetch(session, url, "read", headers=headers)
     except ClientResponseError as e:
         #print(f"Failed to fetch {url} with status {e.status}")
         return {"url": url, "status": f"error: {e.status}"}
@@ -151,7 +121,7 @@ async def download_and_save_media(
             print(f"Failed to get content type for {url}")
         else:
             # Map content type to a file extension
-            extension = content_type.split("/")[-1]  # e.g., 'image/jpeg' -> 'jpeg'
+            extension: str = content_type.split("/")[-1]  # e.g., 'image/jpeg' -> 'jpeg'
             media_name = f"{media_name}.{extension}"
 
     media_path: Path = sanitize_path(album_path, media_name)
