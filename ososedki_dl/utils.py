@@ -99,8 +99,8 @@ def write_to_cache(url: str) -> None:
 
 
 def get_unique_filename(base_path: Path) -> Path:
-    suffix: int = 1
-    new_path: Path = base_path.with_stem(f"{base_path.stem}_{suffix}")
+    suffix: int = 0
+    new_path: Path = base_path
     while new_path.exists():
         suffix += 1
         new_path = base_path.with_stem(f"{base_path.stem}_{suffix}")
