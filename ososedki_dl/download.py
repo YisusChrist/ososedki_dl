@@ -6,6 +6,7 @@ import hashlib
 from asyncio import sleep
 from pathlib import Path
 from ssl import SSLCertVerificationError
+from time import monotonic
 from typing import TYPE_CHECKING, Union
 from urllib.parse import unquote, urlparse
 
@@ -30,6 +31,20 @@ if TYPE_CHECKING:
 
 client_timeout = ClientTimeout()
 SessionType = Union[CachedSession, ClientSession]
+
+
+def _choose_chunk_size(
+    throughput_bps: Optional[int] = None,
+    min_kb: int = 32,
+    max_kb: int = 1024,
+    target_ms: int = 150,
+) -> int:
+    # throughput_bps is bytes/sec (measure it once you start receiving data)
+    if not throughput_bps:
+        return 64 * 1024  # default before we can measure
+    target_bytes = int(throughput_bps * (target_ms / 1000))
+    # clamp to [min_kb, max_kb]
+    return max(min_kb * 1024, min(target_bytes, max_kb * 1024))
 
 
 async def fetch(
@@ -97,7 +112,11 @@ async def download_image(
 
 
 async def download_video(
-    url: str, response: ClientResponse, media_path: Path, chunk_size: int = 8192
+    url: str,
+    response: ClientResponse,
+    media_path: Path,
+    chunk_size: int = 8192,
+    dynamic_chunk: bool = False,
 ) -> dict[str, str]:
     content_length = int(response.headers.get("Content-Length", 0))
 
@@ -108,6 +127,11 @@ async def download_video(
         local_hash = hashlib.sha256(media_path.read_bytes())
 
     temp_path: Path = media_path.with_suffix(media_path.suffix + ".part")
+
+    bytes_seen = 0
+    t0: float = monotonic()
+    if dynamic_chunk:
+        chunk_size = _choose_chunk_size()
 
     with MediaProgress() as progress:
         task = progress.add_task(
@@ -121,6 +145,19 @@ async def download_video(
                 remote_hash.update(chunk)
                 await f.write(chunk)
                 progress.advance(task, len(chunk))
+
+                if not dynamic_chunk:
+                    continue
+
+                now: float = monotonic()
+                bytes_seen += len(chunk)
+                elapsed: float = now - t0
+                if elapsed > 1.0:  # update once per second (cheap)
+                    throughput_bps = int(bytes_seen / elapsed)
+                    chunk_size = _choose_chunk_size(throughput_bps)  # 32KB..1MB
+                    print(f"New chunk size: {chunk_size / 1024:.2f} KB")
+                    bytes_seen = 0
+                    t0 = now
 
     if file_exists and local_hash.digest() == remote_hash.digest():
         temp_path.unlink(missing_ok=True)
