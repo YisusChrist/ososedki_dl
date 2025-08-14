@@ -20,7 +20,7 @@ from ososedki_dl.progress import MediaProgress
 
 from .consts import CHECK_CACHE, MAX_TIMEOUT
 from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
-                    write_media)
+                    write_to_cache)
 
 if TYPE_CHECKING:
     from typing import Any, Optional
