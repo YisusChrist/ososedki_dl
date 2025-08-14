@@ -37,6 +37,6 @@ def AlbumProgress() -> Progress:
         TextColumn("[progress.percentage]{task.percentage:>5.1f}%"),
         TextColumn("({task.completed}/{task.total})"),
         TransferSpeedColumn(),
-        TimeElapsedColumn(),
         TimeRemainingColumn(),
+        TimeElapsedColumn(),
     )
