@@ -26,6 +26,7 @@ def MediaProgress() -> Progress:
         DownloadColumn(),
         TransferSpeedColumn(),
         TimeRemainingColumn(),
+        TimeElapsedColumn(),
     )
 
 
