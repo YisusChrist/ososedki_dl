@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import aiofiles
 import validators  # type: ignore
 from rich import print
 from rich.prompt import Prompt
@@ -74,17 +73,6 @@ def get_final_path(download_path: Path, title: str) -> Path:
         raise ValueError("Invalid path", final_path)
     final_path.mkdir(parents=True, exist_ok=True)
     return final_path
-
-
-async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
-    # print(f"[green]Downloading [/]{url}")
-    try:
-        async with aiofiles.open(media_path, "wb") as f:
-            await f.write(image_content)
-    except (OSError, FileNotFoundError, TypeError) as e:
-        print(f"Failed to write to {media_path} with error: {e}")
-
-    write_to_cache(url)
 
 
 def get_url_hashfile(url: str) -> Path:

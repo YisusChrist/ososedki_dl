@@ -86,11 +86,12 @@ async def download_image(
         if file_content == image_content:
             #print(f"Skipping {url}")
             return {"url": url, "status": "skipped"}
-        new_path: Path = get_unique_filename(media_path)
-        await write_media(new_path, image_content, url)
-    else:
-        await write_media(media_path, image_content, url)
+        media_path = get_unique_filename(media_path)
 
+    async with aiofiles.open(media_path, "wb") as f:
+        await f.write(image_content)
+
+    write_to_cache(url)
     #print(f"Downloaded {url}")
     return {"url": url, "status": "ok"}
 
@@ -128,6 +129,7 @@ async def download_video(
 
     new_path: Path = get_unique_filename(media_path)
     temp_path.rename(new_path)
+    write_to_cache(url)
     #print(f"Downloaded {url}")
     return {"url": url, "status": "ok"}
 
