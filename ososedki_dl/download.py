@@ -177,12 +177,9 @@ async def download_and_compare(
     media_path: Path,
     headers: Optional[dict[str, str]] = None,
 ) -> dict[str, str]:
-    if CHECK_CACHE:
-        # check if the link is in the cache
-        cache_filename: Path = get_url_hashfile(url)
-        if cache_filename.exists():
-            #print(f"Skipping {url}")
-            return {"url": url, "status": "skipped"}
+    if CHECK_CACHE and get_url_hashfile(url).exists():
+        #print(f"Skipping {url}")
+        return {"url": url, "status": "skipped"}
     try:
         response = await fetch(session, url, raw_response=True, headers=headers)
     except ClientResponseError as e:
