@@ -82,7 +82,7 @@ Here's a breakdown of the packages needed and their versions:
 - [validators](https://pypi.org/project/validators) >= 0.22.0
 
 > [!NOTE]
-> The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.6. Although the software may work with previous versions, it is not guaranteed.
+> The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.9. Although the software may work with previous versions, it is not guaranteed.
 
 ## Installation
 
