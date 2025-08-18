@@ -31,7 +31,8 @@ SAMPLE_PERIOD_S = 0.25  # sampling cadence for throughput rows
 EMA_ALPHA = 0.2  # smoothing factor for EMA throughput
 OUT_DIR = Path("bench_results")  # where CSVs will be stored
 OUT_DIR.mkdir(exist_ok=True)
-BYTES = 1024
+KB = 1024
+MB = KB * KB
 
 
 @dataclass
@@ -67,17 +68,17 @@ async def _download_with_metrics(
     run_id: str = f"{safe_name}_cs{chunk_size}"
     samples_csv: Path = OUT_DIR / f"samples_{run_id}.csv"
 
-    total_bytes = 0
+    total_bytes: int = 0
     ema_bps: float | None = None
     last_sample_t: float = time.perf_counter()
-    last_sample_bytes = 0
+    last_sample_bytes: int = 0
     inst_bps_series: list[float] = []
 
     t0: float = time.perf_counter()
     try:
         async with session.get(url, timeout=DEFAULT_TIMEOUT, headers=headers) as resp:
             resp.raise_for_status()
-            total_len = int(resp.headers.get("Content-Length", 0)) or None
+            total_len = int(resp.headers.get("Content-Length", 0))
 
             with (
                 Progress(
@@ -92,7 +93,7 @@ async def _download_with_metrics(
                     transient=True,
                 ) as progress,
                 tempfile.TemporaryDirectory() as temp_dir,
-                open(Path(temp_dir) / f"/{run_id}.part", "wb") as f,
+                open(Path(temp_dir) / f"{run_id}.part", "wb") as f,
                 open(samples_csv, "w", newline="") as csvfile,
             ):
                 writer = csv.writer(csvfile)
@@ -108,7 +109,7 @@ async def _download_with_metrics(
                 )
 
                 task = progress.add_task(
-                    f"Chunk {chunk_size / BYTES:.2f} KB", total=total_len
+                    f"Chunk {chunk_size / KB:.2f} KiB", total=total_len
                 )
 
                 async for chunk in resp.content.iter_chunked(chunk_size):
@@ -143,7 +144,7 @@ async def _download_with_metrics(
                         )
 
                         last_sample_t = now
-                        last_sample_bytes: int = total_bytes
+                        last_sample_bytes = total_bytes
 
         status: str = "ok"
     except Exception as e:
@@ -196,26 +197,31 @@ async def bench_url(
     headers: Optional[dict[str, str]] = None,
 ) -> None:
     """
-    Benchmarks a single URL for multiple chunk sizes.
-    Returns path to the summary CSV.
+    Benchmarks a single URL for multiple chunk sizes. Writes a per-URL summary
+    CSV to the `bench_results` directory and prints its path.
     """
     rows: list[dict[str, str | int | float]] = []
     async with ClientSession() as session:
         for cs in chunk_sizes:
             for r in range(runs_per_size):
                 print(
-                    f"[cyan]→ Benchmarking[/cyan] chunk_size={cs / 1024:.2f} KB (run {r+1}/{runs_per_size})"
+                    f"[cyan]→ Benchmarking[/cyan] chunk_size={cs / KB:.2f} "
+                    f"KiB (run {r+1}/{runs_per_size})"
                 )
                 res: BenchResult = await _download_with_metrics(
                     session, url, cs, headers=headers
                 )
                 print(
-                    f"[green]{res.status}[/green] chunk_size={cs / 1024:.2f} "
-                    f"KB total={res.total_bytes / 1024:.2f} KB "
+                    f"[green]{res.status}[/green] chunk_size={cs / KB:.2f} "
+                    f"KiB total={res.total_bytes / KB:.2f} KiB "
                     f"time={res.duration_s:.3f} s "
-                    f"mean={res.mean_bps/1e6:.2f} MB/s"
+                    f"mean={res.mean_bps / MB:.2f} MiB/s"
                 )
                 rows.append(res.summary_row)
+
+    if not rows:
+        print("[yellow]No benchmark rows collected; skipping summary write.[/yellow]")
+        return
 
     # Write / append summary
     summary_csv: Path = (
@@ -232,10 +238,8 @@ async def bench_url(
 
 
 def get_parsed_args() -> Namespace:
-    start_chunk_size = 8 * BYTES  # 8 KiB
-    default_chunk_sizes: list[int] = []
-    for i in range(6, 9):
-        default_chunk_sizes.append(start_chunk_size * (2**i))
+    start_chunk_size = 8 * KB  # 8 KiB
+    default_chunk_sizes: list[int] = [start_chunk_size * (2**i) for i in range(6, 9)]
 
     p = ArgumentParser(description="Benchmark streaming download chunk sizes.")
     sub = p.add_subparsers(dest="mode", required=True)
@@ -285,20 +289,22 @@ def plot_samples(samples: list[str]) -> None:
 
     for p in samples:
         p = Path(p)
-        times, inst, ema = [], [], []
+        times: list[float] = []
+        inst: list[float] = []
+        ema: list[float] = []
         with open(p, newline="") as f:
             r = csv.DictReader(f)
             for row in r:
                 times.append(float(row["time_s"]))
-                inst.append(float(row["inst_bps"]) / 1e6)  # MB/s
-                ema.append(float(row["ema_bps"]) / 1e6)  # MB/s
+                inst.append(float(row["inst_bps"]) / MB)  # MiB/s
+                ema.append(float(row["ema_bps"]) / MB)  # MiB/s
         label = p.name.replace("samples_", "").replace(".csv", "")
         plt.figure()
         plt.title(f"Throughput over time: {label}")
-        plt.plot(times, inst, label="instant bps (MB/s)")
-        plt.plot(times, ema, label="EMA bps (MB/s)")
+        plt.plot(times, inst, label="instant bps (MiB/s)")
+        plt.plot(times, ema, label="EMA bps (MiB/s)")
         plt.xlabel("Time (s)")
-        plt.ylabel("Throughput (MB/s)")
+        plt.ylabel("Throughput (MiB/s)")
         plt.legend()
         plt.tight_layout()
         plt.show()
