@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import csv
 import hashlib
-import math
 import statistics as stats
 import tempfile
 import time
@@ -54,6 +53,7 @@ async def _download_with_metrics(
     session: ClientSession,
     url: str,
     chunk_size: int,
+    run_no: int,
     headers: Optional[dict[str, str]] = None,
     sample_period_s: float = SAMPLE_PERIOD_S,
     ema_alpha: float = EMA_ALPHA,
@@ -65,7 +65,8 @@ async def _download_with_metrics(
     """
     # Output file paths
     safe_name: str = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
-    run_id: str = f"{safe_name}_cs{chunk_size}"
+    suffix: str = f"r{run_no}_t{time.time_ns()}"
+    run_id: str = f"{safe_name}_cs{chunk_size}_{suffix}"
     samples_csv: Path = OUT_DIR / f"samples_{run_id}.csv"
 
     total_bytes: int = 0
@@ -203,13 +204,13 @@ async def bench_url(
     rows: list[dict[str, str | int | float]] = []
     async with ClientSession() as session:
         for cs in chunk_sizes:
-            for r in range(runs_per_size):
+            for r in range(1, runs_per_size + 1):
                 print(
                     f"[cyan]→ Benchmarking[/cyan] chunk_size={cs / KB:.2f} "
-                    f"KiB (run {r+1}/{runs_per_size})"
+                    f"KiB (run {r}/{runs_per_size})"
                 )
                 res: BenchResult = await _download_with_metrics(
-                    session, url, cs, headers=headers
+                    session, url, cs, r, headers=headers
                 )
                 status_color: str = "green" if res.status == "ok" else "red"
                 print(
