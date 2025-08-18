@@ -90,4 +90,4 @@ class FapelloIsCrawler(BaseCrawler):
 
         album_path: Path = get_final_path(self.context.download_path, title)
 
-        return await self.download_media_items(urls, album_path)
+        return await self.download_media_items(urls, title, album_path)

@@ -18,6 +18,9 @@
     <a href="https://github.com/YisusChrist/ososedki_dl/pulls">
         <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/YisusChrist/ososedki_dl?color=0088ff">&nbsp;&nbsp;&nbsp;
     </a>
+    <a href="https://deepwiki.com/YisusChrist/ososedki_dl">
+        <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki">&nbsp;&nbsp;&nbsp;
+    </a>
     <a href="https://opensource.org/license/GPL-3.0/">
         <img alt="License" src="https://img.shields.io/github/license/YisusChrist/ososedki_dl?color=0088ff">
     </a>
@@ -79,7 +82,7 @@ Here's a breakdown of the packages needed and their versions:
 - [validators](https://pypi.org/project/validators) >= 0.22.0
 
 > [!NOTE]
-> The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.6. Although the software may work with previous versions, it is not guaranteed.
+> The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.9. Although the software may work with previous versions, it is not guaranteed.
 
 ## Installation
 

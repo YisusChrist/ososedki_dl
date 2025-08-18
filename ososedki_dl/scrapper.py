@@ -6,7 +6,6 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from rich import print
-from rich.progress import Progress
 
 from .crawlers import CrawlerContext
 from .crawlers import crawlers as crawler_modules
@@ -17,7 +16,6 @@ if TYPE_CHECKING:
 
     from aiohttp import ClientResponse
     from aiohttp_client_cache.response import CachedResponse
-    from rich.progress import TaskID
 
     from .crawlers import CrawlerInstance
     from .download import SessionType
@@ -66,33 +64,29 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
 async def generic_download(
     session: SessionType, urls: list[str], download_path: Path
 ) -> None:
-    with Progress() as progress:
-        task: TaskID = progress.add_task("[cyan]Downloading...", total=len(urls))
-        context = CrawlerContext(session, download_path, progress, task)
+    context = CrawlerContext(session, download_path)
 
-        results: list[dict[str, str]] = []
-        for url in urls:
-            await handle_downloader(
-                context=context,
-                results=results,
-                url=url,
-            )
-
-        ok_count: int = sum(1 for result in results if result["status"] == "ok")
-        skipped_count: int = sum(
-            1 for result in results if result["status"] == "skipped"
+    results: list[dict[str, str]] = []
+    for url in urls:
+        await handle_downloader(
+            context=context,
+            results=results,
+            url=url,
         )
-        error_count: int = sum(1 for result in results if "error" in result["status"])
 
-        print(
-            f"""\n
+    ok_count: int = sum(1 for result in results if result["status"] == "ok")
+    skipped_count: int = sum(1 for result in results if result["status"] == "skipped")
+    error_count: int = sum(1 for result in results if "error" in result["status"])
+
+    print(
+        f"""
 [green]Downloaded: {ok_count}[/]
 [yellow]Skipped: {skipped_count}[/]
 [red]Errors: {error_count}[/]\n"""
-        )
+    )
 
-        if error_count > 0:
-            print_errors(results)
+    if error_count > 0:
+        print_errors(results)
 
 
 async def handle_downloader(
@@ -149,7 +143,5 @@ async def dynamic_download(
     except Exception as e:
         return [{"url": album_url, "status": f"error: {e}"}]
 
-    result: list[dict[str, str]] = await crawler.download(album_url)
-
-    context.progress.advance(context.task)
-    return result
+    return await crawler.download(album_url)
+    # context.progress.advance(context.task)

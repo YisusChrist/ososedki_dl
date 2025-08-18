@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import aiofiles
 import validators  # type: ignore
 from rich import print
 from rich.prompt import Prompt
@@ -76,17 +75,6 @@ def get_final_path(download_path: Path, title: str) -> Path:
     return final_path
 
 
-async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
-    # print(f"[green]Downloading [/]{url}")
-    try:
-        async with aiofiles.open(media_path, "wb") as f:
-            await f.write(image_content)
-    except (OSError, FileNotFoundError, TypeError) as e:
-        print(f"Failed to write to {media_path} with error: {e}")
-
-    write_to_cache(url)
-
-
 def get_url_hashfile(url: str) -> Path:
     url_hash: str = hashlib.sha256(url.encode("utf-8")).hexdigest()
     return CACHE_PATH / url_hash
@@ -99,8 +87,8 @@ def write_to_cache(url: str) -> None:
 
 
 def get_unique_filename(base_path: Path) -> Path:
-    suffix: int = 1
-    new_path: Path = base_path.with_stem(f"{base_path.stem}_{suffix}")
+    suffix: int = 0
+    new_path: Path = base_path
     while new_path.exists():
         suffix += 1
         new_path = base_path.with_stem(f"{base_path.stem}_{suffix}")

@@ -13,6 +13,7 @@ from rich import print
 
 from ..download import download_and_save_media, fetch
 from ..logs import logger
+from ..progress import AlbumProgress
 from ..utils import get_final_path
 
 if TYPE_CHECKING:
@@ -30,8 +31,8 @@ if TYPE_CHECKING:
 class CrawlerContext:
     session: SessionType
     download_path: Path
-    progress: Progress
-    task: TaskID
+    progress: Optional[Progress] = None
+    task: Optional[TaskID] = None
 
 
 # endregion Context class
@@ -88,6 +89,7 @@ class BaseCrawler(ABC):
     async def download_media_items(
         self,
         media_urls: list[str],
+        album_title: str,
         album_path: Path,
     ) -> list[dict[str, str]]:
         tasks: list[Any] = [
@@ -95,9 +97,15 @@ class BaseCrawler(ABC):
             for url in media_urls
         ]
 
-        results: list[dict[str, str]] = await asyncio.gather(*tasks)
-        for _ in media_urls:
-            self.context.progress.advance(self.context.task)
+        results: list[dict[str, str]] = []
+        with AlbumProgress() as progress:
+            task: TaskID = progress.add_task(
+                f"[cyan]Downloading {album_title}...", total=len(media_urls)
+            )
+            for future in asyncio.as_completed(tasks):
+                result: dict[str, str] = await future
+                results.append(result)
+                progress.advance(task)
 
         return results
 
@@ -153,8 +161,8 @@ class BaseCrawler(ABC):
                 raise ValueError("Title could not be determined")
 
             media_urls: list[str] = list(set(await media_filter(soup)))
-            print(f"Title: {title}")
-            print(f"Media URLs: {len(media_urls)}")
+            # print(f"Title: {title}")
+            # print(f"Media URLs: {len(media_urls)}")
         except (TypeError, ValueError) as e:
             print(f"Failed to process album: {e}. Retrying...")
             return await self.process_album(
@@ -162,7 +170,6 @@ class BaseCrawler(ABC):
             )
 
         album_path: Path = get_final_path(self.context.download_path, title)
-
-        return await self.download_media_items(media_urls, album_path)
+        return await self.download_media_items(media_urls, title, album_path)
 
     # endregion Core album logic

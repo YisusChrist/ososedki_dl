@@ -113,4 +113,4 @@ class WildskirtsCrawler(BaseCrawler):
 
         album_path: Path = get_final_path(self.context.download_path, profile)
 
-        return await self.download_media_items(media_urls, album_path)
+        return await self.download_media_items(media_urls, profile, album_path)
