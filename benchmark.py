@@ -78,7 +78,7 @@ async def _download_with_metrics(
     try:
         async with session.get(url, timeout=DEFAULT_TIMEOUT, headers=headers) as resp:
             resp.raise_for_status()
-            total_len = int(resp.headers.get("Content-Length", 0))
+            total_len = int(resp.headers.get("Content-Length", 0)) or None
 
             with (
                 Progress(
@@ -155,8 +155,8 @@ async def _download_with_metrics(
     # Compute metrics
     mean_bps: float = (total_bytes / duration_s) if duration_s > 0 else 0.0
     p50_bps: float = stats.median(inst_bps_series) if inst_bps_series else 0.0
-    p95_bps: float = (
-        (sorted(inst_bps_series)[max(0, math.floor(0.95 * (len(inst_bps_series) - 1)))])
+    p95_bps: float = (  # 95th percentile
+        stats.quantiles(inst_bps_series, n=100, method="inclusive")[94]
         if inst_bps_series
         else 0.0
     )
@@ -211,8 +211,10 @@ async def bench_url(
                 res: BenchResult = await _download_with_metrics(
                     session, url, cs, headers=headers
                 )
+                status_color: str = "green" if res.status == "ok" else "red"
                 print(
-                    f"[green]{res.status}[/green] chunk_size={cs / KB:.2f} "
+                    f"[{status_color}]{res.status}[/] "
+                    f"chunk_size={cs / KB:.2f} "
                     f"KiB total={res.total_bytes / KB:.2f} KiB "
                     f"time={res.duration_s:.3f} s "
                     f"mean={res.mean_bps / MB:.2f} MiB/s"
@@ -301,8 +303,8 @@ def plot_samples(samples: list[str]) -> None:
         label = p.name.replace("samples_", "").replace(".csv", "")
         plt.figure()
         plt.title(f"Throughput over time: {label}")
-        plt.plot(times, inst, label="instant bps (MiB/s)")
-        plt.plot(times, ema, label="EMA bps (MiB/s)")
+        plt.plot(times, inst, label="Instant throughput (MiB/s)")
+        plt.plot(times, ema, label="EMA throughput (MiB/s)")
         plt.xlabel("Time (s)")
         plt.ylabel("Throughput (MiB/s)")
         plt.legend()
