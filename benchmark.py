@@ -92,7 +92,7 @@ async def _download_with_metrics(
                     transient=True,
                 ) as progress,
                 tempfile.TemporaryDirectory() as temp_dir,
-                open(temp_dir + f"/{run_id}.part", "wb") as f,
+                open(Path(temp_dir) / f"/{run_id}.part", "wb") as f,
                 open(samples_csv, "w", newline="") as csvfile,
             ):
                 writer = csv.writer(csvfile)
@@ -279,6 +279,10 @@ def plot_samples(samples: list[str]) -> None:
         # If no specific samples provided, plot all in OUT_DIR
         samples = [str(p) for p in OUT_DIR.glob("samples_*.csv")]
 
+    if not samples:
+        print("[bold]No sample CSVs found to plot.[/bold] Please run benchmarks first.")
+        return
+
     for p in samples:
         p = Path(p)
         times, inst, ema = [], [], []
@@ -298,14 +302,11 @@ def plot_samples(samples: list[str]) -> None:
         plt.legend()
         plt.tight_layout()
         plt.show()
-    else:
-        print("[bold]No sample CSVs found to plot.[/bold] Please run benchmarks first.")
 
 
 def main() -> None:
     install()
     args: Namespace = get_parsed_args()
-
 
     if args.mode == "run":
         print(

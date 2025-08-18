@@ -122,9 +122,7 @@ async def download_video(
 
     remote_hash = hashlib.sha256()
     file_exists: bool = media_path.exists()
-    local_hash = hashlib.sha256()
-    if file_exists:
-        local_hash = hashlib.sha256(media_path.read_bytes())
+    local_hash = hashlib.sha256() if file_exists else None
 
     temp_path: Path = media_path.with_suffix(media_path.suffix + ".part")
 
@@ -146,6 +144,9 @@ async def download_video(
                 await f.write(chunk)
                 progress.advance(task, len(chunk))
 
+                if local_hash is not None:
+                    local_hash.update(chunk)
+
                 if not dynamic_chunk:
                     continue
 
@@ -159,7 +160,7 @@ async def download_video(
                     bytes_seen = 0
                     t0 = now
 
-    if file_exists and local_hash.digest() == remote_hash.digest():
+    if file_exists and local_hash and local_hash.digest() == remote_hash.digest():
         temp_path.unlink(missing_ok=True)
         #print(f"Skipping {url}")
         return {"url": url, "status": "skipped"}

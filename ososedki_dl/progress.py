@@ -9,11 +9,11 @@ from rich.progress import (BarColumn, DownloadColumn, Progress, ProgressColumn,
                            TimeRemainingColumn, TransferSpeedColumn)
 
 if TYPE_CHECKING:
-    from rich.progress import TaskID
+    from rich.progress import Task
 
 
 class PercentageColumn(ProgressColumn):
-    def render(self, task: TaskID) -> str:
+    def render(self, task: Task) -> str:
         return f"{task.percentage:>5.1f}%"
 
 
