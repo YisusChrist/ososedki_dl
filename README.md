@@ -56,7 +56,7 @@
   - [Uninstall](#uninstall)
 - [Usage](#usage)
   - [Example of execution](#example-of-execution)
-  - [WIP: Upcoming progress bar feature for heavy files](#wip-upcoming-progress-bar-feature-for-heavy-files)
+  - [Progress bars](#progress-bars)
   - [Supported sites](#supported-sites)
 - [Contributors](#contributors)
   - [How do I contribute to ososedki\_dl?](#how-do-i-contribute-to-ososedki_dl)
@@ -150,9 +150,17 @@ The program can be run from the terminal with the `ososedki_dl` command. It will
 
 https://github.com/user-attachments/assets/1b82d20f-1680-4cda-9021-ebd0f87a72ed
 
-### WIP: Upcoming progress bar feature for heavy files
+### Progress bars
 
-https://github.com/user-attachments/assets/b3a0ecfc-4c85-4513-807a-2e1981e3eb19
+Since 2025-08-18, the program includes progress bars for downloading processes. This feature provides a visual indication of the progress of the operations, making it easier to track the status of the downloads. There are two types of progress bars:
+
+- **Albums**: This bar shows the progress of the whole downloading process, indicating how many items have been downloaded from the album. In case you are downloading a profile, it will display as many bars as albums in the profile, each showing the progress of the respective album. Example:
+
+  https://github.com/user-attachments/assets/691e10c8-4256-4ce1-be88-7684b3798765
+
+- **Videos**: This bar shows the progress of a single video being downloaded. It indicates how much of the video has been downloaded so far.
+
+  https://github.com/user-attachments/assets/8bdc1de9-32eb-4cc2-96ae-061e1df76e1c
 
 ### Supported sites
 
