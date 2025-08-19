@@ -848,14 +848,14 @@ files = [
 
 [[package]]
 name = "pyfiglet"
-version = "1.0.3"
+version = "1.0.4"
 description = "Pure-python FIGlet implementation"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pyfiglet-1.0.3-py3-none-any.whl", hash = "sha256:671bd101ca6a08dc2d94c6a2cda75a862c5e162b980af47d0ba4023837e36489"},
-    {file = "pyfiglet-1.0.3.tar.gz", hash = "sha256:bad3b55d2eccb30d4693ccfd94573c2a3477dd75f86a0e5465cea51bdbfe2875"},
+    {file = "pyfiglet-1.0.4-py3-none-any.whl", hash = "sha256:65b57b7a8e1dff8a67dc8e940a117238661d5e14c3e49121032bd404d9b2b39f"},
+    {file = "pyfiglet-1.0.4.tar.gz", hash = "sha256:db9c9940ed1bf3048deff534ed52ff2dafbbc2cd7610b17bb5eca1df6d4278ef"},
 ]
 
 [[package]]
@@ -1032,7 +1032,7 @@ version = "0.22.0.20250814"
 description = "Typing stubs for docutils"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev", "types"]
+groups = ["types"]
 files = [
     {file = "types_docutils-0.22.0.20250814-py3-none-any.whl", hash = "sha256:22ff141b85be203cb57999ca5fc94d7cf574a7065e19446920e3f11c7181700a"},
     {file = "types_docutils-0.22.0.20250814.tar.gz", hash = "sha256:84c645863419b38f949a93e77d31420fe4b5cacf95757b3104278318a95fc158"},
