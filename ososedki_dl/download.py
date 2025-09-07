@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import sys
 from asyncio import sleep
 from pathlib import Path
 from ssl import SSLCertVerificationError
 from time import monotonic
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlparse
 
 import aiofiles
@@ -24,17 +25,22 @@ from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
                     write_to_cache)
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from aiohttp import ClientResponse
 
 
 client_timeout = ClientTimeout()
-SessionType = Union[CachedSession, ClientSession]
+if sys.version_info >= (3, 10):
+    SessionType = CachedSession | ClientSession
+else:
+    from typing import Union
+
+    SessionType = Union[CachedSession, ClientSession]
 
 
 def _choose_chunk_size(
-    throughput_bps: Optional[int] = None,
+    throughput_bps: int | None = None,
     min_kb: int = 32,
     max_kb: int = 1024,
     target_ms: int = 150,
@@ -176,7 +182,7 @@ async def download_and_compare(
     session: SessionType,
     url: str,
     media_path: Path,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
 ) -> dict[str, str]:
     if CHECK_CACHE and get_url_hashfile(url).exists():
         #print(f"Skipping {url}")
@@ -201,7 +207,7 @@ async def download_and_save_media(
     session: SessionType,
     url: str,
     album_path: Path,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
 ) -> dict[str, str]:
     # Use urlparse to extract the media name from the URL
     media_name: str = unquote(urlparse(url).path).split("/")[-1]

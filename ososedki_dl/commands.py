@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-
 async def run_main_loop(dest_path: Path, cache: bool) -> None:
     """
     Run the main loop for downloading media.

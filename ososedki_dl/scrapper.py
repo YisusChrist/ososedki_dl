@@ -12,7 +12,6 @@ from .crawlers import crawlers as crawler_modules
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import DefaultDict
 
     from aiohttp import ClientResponse
     from aiohttp_client_cache.response import CachedResponse
@@ -32,7 +31,7 @@ def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
     """
 
     # Group errors by error message
-    error_groups: DefaultDict[str, list[str]] = defaultdict(list)
+    error_groups: defaultdict[str, list[str]] = defaultdict(list)
 
     for result in results:
         if "error" in result["status"]:

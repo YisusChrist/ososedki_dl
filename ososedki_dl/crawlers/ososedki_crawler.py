@@ -16,8 +16,9 @@ from typing_extensions import override
 from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Awaitable, Callable
     from types import CoroutineType
-    from typing import Any, AsyncGenerator, Awaitable, Callable, Optional
+    from typing import Any
     from urllib.parse import ParseResult
 
     from bs4 import NavigableString, ResultSet
@@ -30,10 +31,10 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
     base_image_path: str
     album_path: str
-    model_url: Optional[str] = None
-    cosplay_url: Optional[str] = None
-    fandom_url: Optional[str] = None
-    button_class: Optional[str] = None
+    model_url: str | None = None
+    cosplay_url: str | None = None
+    fandom_url: str | None = None
+    button_class: str | None = None
     pagination: bool
 
     def __init__(self, context: CrawlerContext) -> None:

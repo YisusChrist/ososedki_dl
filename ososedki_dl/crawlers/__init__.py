@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-from typing import Type, Union
+import sys
 
 from .base_crawler import BaseCrawler, CrawlerContext
 from .ososedki import crawlers as ososedki_crawlers
 from .ososedki_crawler import OsosedkiBaseCrawler
 from .other import crawlers as other_crawlers
 
-CrawlerType = Union[Type[OsosedkiBaseCrawler], Type[BaseCrawler]]
-CrawlerInstance = Union[OsosedkiBaseCrawler, BaseCrawler]
-crawlers: list[CrawlerType] = ososedki_crawlers + other_crawlers
+if sys.version_info >= (3, 10):
+    CrawlerType = type[OsosedkiBaseCrawler] | type[BaseCrawler]
+    CrawlerInstance = OsosedkiBaseCrawler | BaseCrawler
+    crawlers = ososedki_crawlers + other_crawlers
+else:
+    from typing import Union
+
+    CrawlerType = Union[type[OsosedkiBaseCrawler], type[BaseCrawler]]
+    CrawlerInstance = Union[OsosedkiBaseCrawler, BaseCrawler]
+    crawlers = ososedki_crawlers + other_crawlers
 
 __all__: list[str] = [
     "BaseCrawler",

@@ -17,10 +17,11 @@ from ..progress import AlbumProgress
 from ..utils import get_final_path
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
     from pathlib import Path
-    from typing import Any, Awaitable, Callable, Optional
+    from typing import Any
 
-    from rich.progress import Progress, TaskID
+    from rich.progress import TaskID
 
     from ..download import SessionType
 
@@ -117,8 +118,8 @@ class BaseCrawler(ABC):
         self,
         album_url: str,
         media_filter: Callable[[BeautifulSoup], Awaitable[list[str]]],
-        title_extractor: Optional[Callable[[BeautifulSoup], str]] = None,
-        title: Optional[str] = None,
+        title_extractor: Callable[[BeautifulSoup], str] | None = None,
+        title: str | None = None,
         retries: int = 0,
     ) -> list[dict[str, str]]:
         """
