@@ -84,11 +84,8 @@ class WildskirtsCrawler(BaseCrawler):
             list[dict[str, str]]: A list of dictionaries containing information
             about each downloaded media item.
         """
-        profile_url: str = url
         # ! Beware, the trailing slash may return different results
-        if profile_url.endswith("/"):
-            profile_url = profile_url[:-1]
-
+        profile_url: str = url.rstrip("/")
         profile: str = profile_url.split("/")[-1]
 
         soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
@@ -111,6 +108,6 @@ class WildskirtsCrawler(BaseCrawler):
 
         print("Retrieved media URLs")
 
-        album_path: Path = get_final_path(self.context.download_path, profile)
+        album_path: Path = get_final_path(self.download_path, profile)
 
         return await self.download_media_items(media_urls, profile, album_path)

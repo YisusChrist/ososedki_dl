@@ -13,17 +13,19 @@ from bs4 import BeautifulSoup, Tag
 from rich import print
 from typing_extensions import override
 
+from ..consts import MAX_TIMEOUT
 from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable
+    from pathlib import Path
     from types import CoroutineType
     from typing import Any
     from urllib.parse import ParseResult
 
     from bs4 import NavigableString, ResultSet
 
-    from .base_crawler import CrawlerContext
+    from ..download import SessionType
 
 
 class OsosedkiBaseCrawler(BaseCrawler, ABC):
@@ -37,16 +39,17 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
     button_class: str | None = None
     pagination: bool
 
-    def __init__(self, context: CrawlerContext) -> None:
+    def __init__(self, session: SessionType, download_path: Path) -> None:
         """
         Initialize the crawler with the provided context and set up the base
         media URL.
 
         Args:
-            context (CrawlerContext): The crawler context containing
-                configuration and session information.
+            session (SessionType): The HTTP session to use for requests.
+            download_path (Path): The base path where downloaded media will be
+                saved.
         """
-        super().__init__(context)
+        super().__init__(session, download_path)
         self.base_media_url: str = self.site_url + self.base_image_path
 
     async def fetch_page_albums(self, page_url: str) -> list[str]:
@@ -181,9 +184,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         while True:
             try:
-                response = await self.context.session.post(
-                    url, json=payload, timeout=10
-                )
+                response = await self.session.post(url, json=payload, timeout=MAX_TIMEOUT)
                 response.raise_for_status()
                 response_json: dict[str, Any] = await response.json()
             except Exception as e:

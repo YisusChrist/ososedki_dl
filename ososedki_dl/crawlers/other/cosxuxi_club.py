@@ -34,7 +34,6 @@ class CosxuxiClubCrawler(BaseCrawler):
         return title
 
     def cosxuxi_club_media_filter(self, soup: BeautifulSoup) -> list[str]:
-        # Find all the images inside the div with the class 'contentme'
         """
         Extracts and returns a list of image URLs from the 'contentme' div that
         contain the specified base URL fragment.
@@ -46,6 +45,7 @@ class CosxuxiClubCrawler(BaseCrawler):
             list[str]: List of image source URLs matching the base URL filter,
             or an empty list if no valid images are found.
         """
+        # Find all the images inside the div with the class 'contentme'
         content_div: Tag | NavigableString | None = soup.find("div", class_="contentme")
         if not content_div or isinstance(content_div, NavigableString):
             return []
@@ -59,20 +59,17 @@ class CosxuxiClubCrawler(BaseCrawler):
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
-        Asynchronously downloads all media items from a Cosxuxi Club album,
+        Asynchronously downloads all media items from a CosXuxi Club album,
         following pagination if present.
 
         Args:
-            url (str): The URL of the Cosxuxi Club album to download.
+            url (str): The URL of the CosXuxi Club album to download.
 
         Returns:
             list[dict[str, str]]: A list of dictionaries containing information
             about each downloaded media item.
         """
-        album_url: str = url
-        if album_url.endswith("/"):
-            album_url = album_url[:-1]
-
+        album_url: str = url.rstrip("/")
         title: str = ""
         urls: list[str] = []
 
@@ -102,6 +99,6 @@ class CosxuxiClubCrawler(BaseCrawler):
                 next_page_url = next_page_url[0]
             album_url = self.site_url + next_page_url
 
-        album_path: Path = get_final_path(self.context.download_path, title)
+        album_path: Path = get_final_path(self.download_path, title)
 
         return await self.download_media_items(urls, title, album_path)

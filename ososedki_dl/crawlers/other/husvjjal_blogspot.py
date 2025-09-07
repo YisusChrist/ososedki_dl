@@ -54,7 +54,6 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         print(f"Fetching related albums for {album_url}")
 
         headers: dict[str, str] = {"Referer": album_url}
-
         js_url: str = f"{self.site_url}/feeds/posts/default"
         params: dict[str, str] = {
             "alt": "json-in-script",
@@ -64,7 +63,7 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         }
 
         js_script: str = await fetch(
-            self.context.session, js_url, headers=headers, params=params
+            self.session, js_url, headers=headers, params=params
         )
         script_json: str = (
             js_script.split("BloggerJS.related(")[1].split(");")[0].strip()
@@ -232,10 +231,7 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
             list[dict[str, str]]: A list of dictionaries containing media
             information from all discovered albums.
         """
-        profile_url: str = url
-        if profile_url.endswith("/"):
-            profile_url = profile_url[:-1]
-
+        profile_url: str = url.rstrip("/")
         if profile_url.endswith(".html"):
             results: list[dict[str, str]] = await self.process_album(
                 profile_url, self.husvjjal_blogspot_media_filter, title="husvjjal"

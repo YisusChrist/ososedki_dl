@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from aiohttp import ClientResponseError
@@ -25,37 +24,29 @@ if TYPE_CHECKING:
 
     from ..download import SessionType
 
-# region Context class
-
-
-@dataclass
-class CrawlerContext:
-    session: SessionType
-    download_path: Path
-
-
-# endregion Context class
-
 
 class BaseCrawler(ABC):
     """Abstract base class for crawlers, providing common functionality."""
 
     site_url: str
-    context: CrawlerContext
+    session: SessionType
+    download_path: Path
     headers: dict[str, str] | None = None
 
-    def __init__(self, context: CrawlerContext) -> None:
+    def __init__(self, session: SessionType, download_path: Path) -> None:
         """
         Initialize the BaseCrawler with a given crawling context.
 
         Args:
-            context (CrawlerContext): The context containing configuration and
-                state for the crawler instance.
+            session (SessionType): The HTTP session to use for requests.
+            download_path (Path): The base path where downloaded media will be
+                saved.
         """
         logger.debug(
             f"Initialized {self.__class__.__name__} with site URL: {self.site_url}"
         )
-        self.context = context
+        self.session = session
+        self.download_path = download_path
 
     @abstractmethod
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -80,7 +71,7 @@ class BaseCrawler(ABC):
     async def fetch_soup(self, url: str) -> BeautifulSoup | None:
         print(f"Fetching {url}")
         try:
-            html_content: str = await fetch(self.context.session, url)
+            html_content: str = await fetch(self.session, url)
             return BeautifulSoup(html_content, "html.parser")
         except ClientResponseError as e:
             print(f"Failed to fetch {url} with status {e.status}")
@@ -93,7 +84,7 @@ class BaseCrawler(ABC):
         album_path: Path,
     ) -> list[dict[str, str]]:
         tasks: list[Any] = [
-            download_and_save_media(self.context.session, url, album_path, self.headers)
+            download_and_save_media(self.session, url, album_path, self.headers)
             for url in media_urls
         ]
 
@@ -135,11 +126,11 @@ class BaseCrawler(ABC):
             album_url (str): The URL of the album page to process.
             media_filter (Callable[[BeautifulSoup], Awaitable[list[str]]]):
                 Asynchronous function to extract media URLs from the parsed HTML.
-            title_extractor (Optional[Callable[[BeautifulSoup], str]]): Optional
-                function to extract the album title from the parsed HTML.
-            title (Optional[str]): Optional fallback title for the album.
+            title_extractor (Callable[[BeautifulSoup], str], optional): Function
+                to extract the album title from the parsed HTML.
+            title (str, optional): Fallback title for the album.
             retries (int): Current retry count for extraction attempts.
-            media_urls (Optional[list[str]]): Optional pre-extracted list of media
+            media_urls (list[str], optional): Pre-extracted list of media
                 URLs to download.
 
         Returns:
@@ -150,8 +141,7 @@ class BaseCrawler(ABC):
             print(f"Max depth reached for {album_url}. Skipping...")
             return []
 
-        if album_url.endswith("/"):
-            album_url = album_url[:-1]
+        album_url.rstrip("/")
 
         soup: BeautifulSoup | None = await self.fetch_soup(album_url)
         if soup is None:
@@ -178,7 +168,7 @@ class BaseCrawler(ABC):
                 media_urls,
             )
 
-        album_path: Path = get_final_path(self.context.download_path, title)
+        album_path: Path = get_final_path(self.download_path, title)
         return await self.download_media_items(media_urls, title, album_path)
 
     # endregion Core album logic

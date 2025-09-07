@@ -37,7 +37,7 @@ class FapelloIsCrawler(BaseCrawler):
             response is not a list.
         """
         headers: dict[str, str] = {"Referer": referer_url}
-        async with self.context.session.get(url, headers=headers) as response:
+        async with self.session.get(url, headers=headers) as response:
             if response.status != 200:
                 return []
             return await response.json()
@@ -59,10 +59,7 @@ class FapelloIsCrawler(BaseCrawler):
             list[dict[str, str]]: A list of dictionaries representing the
             downloaded media items.
         """
-        profile_url: str = url
-        if profile_url.endswith("/"):
-            profile_url = profile_url[:-1]
-
+        profile_url: str = url.rstrip("/")
         profile_id: str = profile_url.split("/")[-1]
         i = 1
 
@@ -89,6 +86,6 @@ class FapelloIsCrawler(BaseCrawler):
 
         print(f"Found {len(urls)} media items in profile {profile_id}")
 
-        album_path: Path = get_final_path(self.context.download_path, title)
+        album_path: Path = get_final_path(self.download_path, title)
 
         return await self.download_media_items(urls, title, album_path)

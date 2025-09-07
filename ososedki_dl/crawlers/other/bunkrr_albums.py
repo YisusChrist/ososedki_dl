@@ -31,7 +31,7 @@ class BunkrAlbumsCrawler(BaseCrawler):
             str: The fully resolved URL after all redirects.
         """
         print(f"Resolving {url}")
-        response = await self.context.session.head(
+        response = await self.session.head(
             url, allow_redirects=True, timeout=MAX_TIMEOUT
         )
         return str(response.url)
