@@ -181,7 +181,9 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         while True:
             try:
-                response = await self.context.session.post(url, json=payload)
+                response = await self.context.session.post(
+                    url, json=payload, timeout=10
+                )
                 response.raise_for_status()
                 response_json: dict[str, Any] = await response.json()
             except Exception as e:
