@@ -169,7 +169,7 @@ Since 2025-08-18, the program includes progress bars for downloading processes. 
 | `eromexxx`          | https://eromexxx.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `fapello_is`        | https://fapello.is            | :heavy_check_mark: | :heavy_check_mark: |
 | `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
-| `sorrymother`       | https://sorrymother.to        | :heavy_check_mark: | :heavy_check_mark: |
+| `sorrymother`       | https://sorrymother.top        | :heavy_check_mark: | :heavy_check_mark: |
 | `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
 | `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
 | `husvjjal_blogspot` | https://husvjjal.blogspot.com | :heavy_check_mark: | :heavy_check_mark: |

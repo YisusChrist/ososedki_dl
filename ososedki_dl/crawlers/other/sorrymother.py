@@ -1,4 +1,4 @@
-"""Downloader for https://sorrymother.to"""
+"""Downloader for https://sorrymother.top"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class SorryMotherCrawler(BaseCrawler):
-    site_url = "https://sorrymother.to"
+    site_url = "https://sorrymother.top"
     base_url: str = "https://pics.sorrymother.video/"
     headers = {"Referer": site_url, "Range": "bytes=0-"}
 
