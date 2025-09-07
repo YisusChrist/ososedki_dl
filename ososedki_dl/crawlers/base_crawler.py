@@ -32,8 +32,6 @@ if TYPE_CHECKING:
 class CrawlerContext:
     session: SessionType
     download_path: Path
-    progress: Optional[Progress] = None
-    task: Optional[TaskID] = None
 
 
 # endregion Context class
@@ -44,6 +42,7 @@ class BaseCrawler(ABC):
 
     site_url: str
     context: CrawlerContext
+    headers: dict[str, str] | None = None
 
     def __init__(self, context: CrawlerContext) -> None:
         """
@@ -94,7 +93,7 @@ class BaseCrawler(ABC):
         album_path: Path,
     ) -> list[dict[str, str]]:
         tasks: list[Any] = [
-            download_and_save_media(self.context.session, url, album_path)
+            download_and_save_media(self.context.session, url, album_path, self.headers)
             for url in media_urls
         ]
 
@@ -121,6 +120,7 @@ class BaseCrawler(ABC):
         title_extractor: Callable[[BeautifulSoup], str] | None = None,
         title: str | None = None,
         retries: int = 0,
+        media_urls: list[str] | None = None,
     ) -> list[dict[str, str]]:
         """
         Asynchronously processes an album page by extracting media URLs,
@@ -138,6 +138,9 @@ class BaseCrawler(ABC):
             title_extractor (Optional[Callable[[BeautifulSoup], str]]): Optional
                 function to extract the album title from the parsed HTML.
             title (Optional[str]): Optional fallback title for the album.
+            retries (int): Current retry count for extraction attempts.
+            media_urls (Optional[list[str]]): Optional pre-extracted list of media
+                URLs to download.
 
         Returns:
             list[dict[str, str]]: A list of dictionaries containing the results of
@@ -161,13 +164,18 @@ class BaseCrawler(ABC):
             if not title:
                 raise ValueError("Title could not be determined")
 
-            media_urls: list[str] = list(set(await media_filter(soup)))
+            media_urls = media_urls or list(set(await media_filter(soup)))
             # print(f"Title: {title}")
             # print(f"Media URLs: {len(media_urls)}")
         except (TypeError, ValueError) as e:
             print(f"Failed to process album: {e}. Retrying...")
             return await self.process_album(
-                album_url, media_filter, title_extractor, title, retries + 1
+                album_url,
+                media_filter,
+                title_extractor,
+                title,
+                retries + 1,
+                media_urls,
             )
 
         album_path: Path = get_final_path(self.context.download_path, title)

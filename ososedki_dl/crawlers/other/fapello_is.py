@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class FapelloIsCrawler(BaseCrawler):
     site_url = "https://fapello.is"
     download_url: str = site_url + "/api/media"
+    headers = {"Referer": site_url}
 
     async def fetch_media_urls(
         self, url: str, referer_url: str

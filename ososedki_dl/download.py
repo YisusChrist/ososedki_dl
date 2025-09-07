@@ -213,7 +213,7 @@ async def download_and_save_media(
     media_name: str = unquote(urlparse(url).path).split("/")[-1]
     if not Path(media_name).suffix:
         # If media_name has no extension, add one using the url content type
-        response: requests.Response = requests.head(
+        response = await session.head(
             url, headers=headers, timeout=MAX_TIMEOUT
         )
         content_type: str | None = response.headers.get("Content-Type")
@@ -225,14 +225,6 @@ async def download_and_save_media(
             media_name = f"{media_name}.{extension}"
 
     media_path: Path = sanitize_path(album_path, media_name)
-
-    if not headers and "sorrymother.video" in url:
-        headers = {
-            "Range": "bytes=0-",
-            "Referer": "https://sorrymother.to/",
-        }
-    elif "nice-try.fckthots.xyz" in url:
-        headers = {"Referer": "https://fapello.is/"}
 
     return await download_and_compare(
         session,

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class SorryMotherCrawler(BaseCrawler):
     site_url = "https://sorrymother.to"
     base_url: str = "https://pics.sorrymother.video/"
+    headers = {"Referer": site_url, "Range": "bytes=0-"}
 
     def sorrymother_title_extractor(self, soup: BeautifulSoup) -> str:
         """
