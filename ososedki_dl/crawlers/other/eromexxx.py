@@ -56,24 +56,11 @@ class EromeXXXCrawler(BaseCrawler):
         if not soup:
             return []
 
-        # Get the total number of albums
-        header: Tag | NavigableString | None = soup.find("div", class_="header-title")
-        if not header:
-            return []
-        span: Tag | NavigableString | None | int = header.find("span")
-        if not span or isinstance(span, int):
-            return []
-        total_albums = int(span.get_text(strip=True))
-        print(f"Total_albums: {total_albums}")
-
-        # Get pagination items
-        pagination: Tag | NavigableString | None = soup.find("ul", class_="pagination")
-        if not pagination or isinstance(pagination, NavigableString):
-            return []
-
-        # Get the last page number
         try:
-            last_page = int(pagination.find_all("li")[-2].text)
+            # Get pagination items
+            pagination: Tag | NavigableString | None = soup.find("ul", class_="pagination")
+            # Get the last page number
+            last_page = int(pagination.find_all("li")[-2].get_text(strip=True))
         except AttributeError:
             # Only one page, return the current page
             last_page = 1
