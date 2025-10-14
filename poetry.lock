@@ -1152,14 +1152,14 @@ files = [
 
 [[package]]
 name = "types-html5lib"
-version = "1.1.11.20250917"
+version = "1.1.11.20251014"
 description = "Typing stubs for html5lib"
 optional = false
 python-versions = ">=3.9"
-groups = ["types"]
+groups = ["dev", "types"]
 files = [
-    {file = "types_html5lib-1.1.11.20250917-py3-none-any.whl", hash = "sha256:b294fd06d60da205daeb2f615485ca4d475088d2eff1009cf427f4a80fcd5346"},
-    {file = "types_html5lib-1.1.11.20250917.tar.gz", hash = "sha256:7b52743377f33f9b4fd7385afbd2d457b8864ee51f90ff2a795ad9e8c053373a"},
+    {file = "types_html5lib-1.1.11.20251014-py3-none-any.whl", hash = "sha256:4ff2cf18dfc547009ab6fa4190fc3de464ba815c9090c3dd4a5b65f664bfa76c"},
+    {file = "types_html5lib-1.1.11.20251014.tar.gz", hash = "sha256:cc628d626e0111a2426a64f5f061ecfd113958b69ff6b3dc0eaaed2347ba9455"},
 ]
 
 [[package]]
