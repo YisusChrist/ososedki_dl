@@ -153,8 +153,6 @@ provide one of the following URLs:
 
         return list(set(await self.media_filter(soup)))
 
-    # async def get_models_from_page(self,
-
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
