@@ -44,6 +44,16 @@ provide one of the following URLs:
         )
 
     def _validate_url(self, url: str) -> str:
+        """
+        Validate the given URL and extract the path component.
+
+        Args:
+            url (str): The URL to validate.
+
+        Returns:
+            str: The path component of the URL if valid, otherwise an empty
+            string.
+        """
         parsed_url: ParseResult = urlparse(url)
         if parsed_url.netloc != urlparse(self.site_url).netloc:
             return ""
@@ -55,6 +65,21 @@ provide one of the following URLs:
         return path[0]
 
     def is_category_url(self, url: str) -> bool:
+        """
+        Determine if the given URL is a category URL.
+
+        Args:
+            url (str): The URL to check.
+
+        Examples:
+            - https://eromexxx.com/category/category-name (True)
+            - https://eromexxx.com/categories/ (False)
+            - https://eromexxx.com/model/model-name (False)
+            - https://eromexxx.com/asian (True)
+
+        Returns:
+            bool: True if the URL is a category URL, False otherwise.
+        """
         if url.startswith(self.category_url):
             return True
 
@@ -67,6 +92,21 @@ provide one of the following URLs:
         return "-" not in path and path.isalpha()
 
     def is_post_url(self, url: str) -> bool:
+        """
+        Determine if the given URL is a post URL.
+
+        Args:
+            url (str): The URL to check.
+
+        Examples:
+            - https://eromexxx.com/video/12345-post-title (True)
+            - https://eromexxx.com/model/model-name (False)
+            - https://eromexxx.com/category/category-name (False)
+            - https://eromexxx.com/abbxeh-189 (True)
+
+        Returns:
+            bool: True if the URL is a post URL, False otherwise.
+        """
         if url.startswith(self.video_url) and url.rstrip("/") != self.video_url.rstrip(
             "/"
         ):
@@ -74,6 +114,15 @@ provide one of the following URLs:
         return "-" in self._validate_url(url)
 
     async def media_filter(self, soup: BeautifulSoup) -> list[str]:
+        """
+        Filter and retrieve media URLs from the BeautifulSoup object.
+
+        Args:
+            soup (BeautifulSoup): The BeautifulSoup object of the page.
+
+        Returns:
+            list[str]: A list of media URLs found on the page.
+        """
         videos: list[str] = [
             video_source["src"] for video_source in soup.find_all("source")
         ]
@@ -89,6 +138,18 @@ provide one of the following URLs:
         get_media_func: Callable[..., Future[list[str]]],
         **kwargs: str,
     ) -> list[str]:
+        """
+        Retrieve all media URLs across paginated pages.
+
+        Args:
+            soup (BeautifulSoup): The BeautifulSoup object of the initial page.
+            get_media_func (Callable[..., Future[list[str]]]): The function to
+                retrieve media URLs from a specific page.
+            **kwargs: Additional keyword arguments to pass to get_media_func.
+
+        Returns:
+            list[str]: A list of all media URLs found across paginated pages.
+        """
         try:
             # Get pagination items
             pagination: Tag | NavigableString | None = soup.find(
@@ -106,6 +167,16 @@ provide one of the following URLs:
         return list(chain.from_iterable(await gather(*page_tasks)))
 
     async def bulk_download(self, url: str) -> list[dict[str, str]]:
+        """
+        Download media from all albums of a model or category URL.
+
+        Args:
+            url (str): The URL of the model or category to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
+        """
         title: str = url.rstrip("/").split("/")[-1]
 
         soup: BeautifulSoup | None = await self.fetch_soup(url)
@@ -130,10 +201,30 @@ provide one of the following URLs:
         raise NotImplementedError
 
     async def post_download(self, post_url: str) -> list[dict[str, str]]:
+        """
+        Download media from a single post URL.
+
+        Args:
+            post_url (str): The URL of the post to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
+        """
         title: str = post_url.rstrip("/").split("/")[-1]
         return await self.process_album(post_url, self.media_filter, title=title)
 
     async def get_media_from_page(self, url: str, page: int) -> list[str]:
+        """
+        Retrieve all media URLs from a specific paginated page of albums.
+
+        Args:
+            url (str): The base URL of the model or category.
+            page (int): The page number to retrieve media from.
+
+        Returns:
+            list[str]: A list of media URLs found on the specified page.
+        """
         page_url: str = f"{url}page/{page}/"
         soup: BeautifulSoup | None = await self.fetch_soup(page_url)
         if not soup:
@@ -146,8 +237,17 @@ provide one of the following URLs:
         tasks = [self.find_media(album) for album in page_albums]
         return list(chain.from_iterable(await gather(*tasks)))
 
-    async def find_media(self, album_url: str) -> list[str]:
-        soup: BeautifulSoup | None = await self.fetch_soup(album_url)
+    async def find_media(self, url: str) -> list[str]:
+        """
+        Find and return all media URLs from a given URL.
+
+        Args:
+            url (str): The URL to retrieve media from.
+
+        Returns:
+            list[str]: A list of media URLs found in the album.
+        """
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
         if soup is None:
             return []
 
@@ -156,13 +256,11 @@ provide one of the following URLs:
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
-        Download all media from a given EromeXXX model URL.
+        Download media from the given URL.
 
-        Fetches the model page, determines the total number of albums,
-        retrieves all album URLs across paginated pages, and downloads media
-        from each album. Returns a list of dictionaries containing the results
-        of each media download. Returns an empty list if the model page or
-        required elements are missing, or if no albums are found.
+        It supports model URLs, category URLs, all models URL,
+        all categories URL, and single post URLs. If the URL is not
+        supported, it prints a help message.
 
         Args:
             url (str): The URL of the EromeXXX model to download media from.
