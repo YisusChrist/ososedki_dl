@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import TYPE_CHECKING
 
 from rich import print
@@ -19,43 +19,57 @@ if TYPE_CHECKING:
     from .download import SessionType
 
 
-def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
+def normalize_error_message(raw_status: str) -> str:
+    # Extract after "error:" if present
+    if "error:" in raw_status:
+        raw_status = raw_status.split("error:", 1)[1].strip()
+
+    # Common known patterns
+    if "Failed to resolve" in raw_status:
+        return "Name Resolution Error - Failed to resolve host"
+    if "404 Client Error: Not Found" in raw_status:
+        return "404 Client Error: Not Found"
+    if "sun9-" in raw_status:
+        return "SUN9 Error - Failed to fetch"
+
+    # Default fallback: take the text before the first ":"
+    return raw_status.split(":", 1)[0].strip()
+
+
+def print_error_report_card(error_groups: dict[str, list[str]]) -> None:
+    total: int = sum(len(urls) for urls in error_groups.values())
+    unique: int = len(error_groups)
+
+    print("[bold magenta]===== Error Report Card =====[/]")
+    print(f"Total Errors: {total}")
+    print(f"Unique Error Types: {unique}\n")
+
+    print("Top Issues:")
+    for err, urls in sorted(error_groups.items(), key=lambda x: len(x[1]), reverse=True):
+        print(f"  • {err} ({len(urls)})")
+    print()
+
+
+def print_errors(results: list[dict[str, str]]) -> None:
     """
     Print a summary of the errors encountered during the download process.
 
     Args:
         results (list[dict[str, str]]): The list of results.
-        verbose (bool, optional): Whether to print the full error messages.
-            Defaults to False.
     """
+    # Extract only errors with normalized message
+    errors: list[tuple[str, str]] = [
+        (normalize_error_message(r["status"]), r["url"])
+        for r in results
+        if r["status"].startswith("error")
+    ]
+
     # Group errors by error message
     error_groups: defaultdict[str, list[str]] = defaultdict(list)
+    for err, url in errors:
+        error_groups[err].append(url)
 
-    for result in results:
-        if "error" in result["status"]:
-            # Extract the main error message without the specific URL
-            error_msg: str = result["status"].split("url:", 1)[0].strip()
-            if "Failed to resolve" in error_msg:
-                error_msg = "Name Resolution Error - Failed to resolve host"
-            elif "404 Client Error: Not Found" in error_msg:
-                error_msg = "404 Client Error: Not Found"
-            elif "sun9-" in error_msg:
-                error_msg = "SUN9 Error - Failed to fetch"
-            else:
-                error_msg = error_msg.split(":", 1)[0].strip()
-
-            error_groups[error_msg].append(result["url"])
-
-    # Print grouped errors
-    print("[bold yellow]Grouped Errors Summary:[/]")
-    for error_type, urls in error_groups.items():
-        print(f"[red]{error_type} - Count: {len(urls)}[/]")
-        if verbose:
-            print("Affected URLs:")
-            for url in urls:
-                print(f"  • {url}")
-
-    print()
+    print_error_report_card(error_groups)
 
 
 async def generic_download(
@@ -71,26 +85,24 @@ async def generic_download(
     """
     results: list[dict[str, str]] = []
     for url in urls:
-        await handle_downloader(session, download_path, results, url)
+        results.extend(await handle_downloader(session, download_path, url))
 
-    ok_count: int = sum(1 for result in results if result["status"] == "ok")
-    skipped_count: int = sum(1 for result in results if result["status"] == "skipped")
-    error_count: int = sum(1 for result in results if "error" in result["status"])
+    status_counts = Counter(result["status"].split(":")[0] for result in results)
 
     print(
         f"""
-[green]Downloaded: {ok_count}[/]
-[yellow]Skipped: {skipped_count}[/]
-[red]Errors: {error_count}[/]\n"""
+[green]Downloaded: {status_counts['ok']}[/]
+[yellow]Skipped: {status_counts['skipped']}[/]
+[red]Errors: {status_counts['error']}[/]\n"""
     )
 
-    if error_count > 0:
+    if status_counts['error'] > 0:
         print_errors(results)
 
 
 async def handle_downloader(
-    session: SessionType, download_path: Path, results: list[dict[str, str]], url: str
-) -> None:
+    session: SessionType, download_path: Path, url: str
+) -> list[dict[str, str]]:
     """
     Selects and invokes the appropriate crawler to download content from the
     given URL.
@@ -103,44 +115,22 @@ async def handle_downloader(
     Args:
         session (SessionType): The HTTP session to use for requests.
         download_path (Path): The base path where downloaded media will be saved.
-        results (list[dict[str, str]]): The list to append download results to.
         url (str): The URL to download from.
-    """
-    for CrawlerClass in crawler_modules:
-        if url.startswith(CrawlerClass.site_url):
-            crawler: CrawlerInstance = CrawlerClass(session, download_path)
-            result: list[dict[str, str]] = await dynamic_download(session, url, crawler)
-            results.extend(result)
-            break
-    else:
-        print(f"[yellow]No downloader found for URL: {url}[/]")
-
-
-async def dynamic_download(
-    session: SessionType, album_url: str, crawler: CrawlerInstance
-) -> list[dict[str, str]]:
-    """
-    Download images from the specified album URL using the provided crawler.
-
-    Attempts to fetch the album URL to ensure it is accessible before invoking
-    the crawler's download method. If the URL is invalid or the request fails,
-    returns an error result. Advances the progress bar after completion.
-
-    Args:
-        session (SessionType): The HTTP session to use for requests.
-        album_url (str): The URL of the album to download.
-        crawler (CrawlerInstance): The crawler instance responsible for
-            downloading from the album URL.
 
     Returns:
-        list[dict[str, str]]: A list of result dictionaries indicating the
-        outcome of the download operation.
+        list[dict[str, str]]: The list to append download results to.
     """
     # Check if the URL is valid
     try:
-        response: ClientResponse | CachedResponse = await session.get(album_url)
+        response: ClientResponse | CachedResponse = await session.get(url)
         response.raise_for_status()
     except Exception as e:
-        return [{"url": album_url, "status": f"error: {e}"}]
+        return [{"url": url, "status": f"error: {e}"}]
 
-    return await crawler.download(album_url)
+    for CrawlerClass in crawler_modules:
+        if url.startswith(CrawlerClass.site_url):
+            crawler: CrawlerInstance = CrawlerClass(session, download_path)
+            return await crawler.download(url)
+    else:
+        print(f"[yellow]No downloader found for URL: {url}[/]")
+        return [{"url": url, "status": "error: no downloader found"}]
