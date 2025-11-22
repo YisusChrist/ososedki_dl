@@ -2,27 +2,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from rich.progress import (BarColumn, DownloadColumn, Progress, ProgressColumn,
-                           SpinnerColumn, TextColumn, TimeElapsedColumn,
-                           TimeRemainingColumn, TransferSpeedColumn)
-
-if TYPE_CHECKING:
-    from rich.progress import Task
-
-
-class PercentageColumn(ProgressColumn):
-    def render(self, task: Task) -> str:
-        return f"{task.percentage:>5.1f}%"
+from rich.progress import (BarColumn, DownloadColumn, MofNCompleteColumn,
+                           Progress, SpinnerColumn, TaskProgressColumn,
+                           TextColumn, TimeElapsedColumn, TimeRemainingColumn,
+                           TransferSpeedColumn)
 
 
 def MediaProgress() -> Progress:
     return Progress(
         SpinnerColumn(),
-        TextColumn("[bold blue]{task.fields[filename]}"),
+        TextColumn(
+            "{task.fields[filename]}",
+            style="bold blue",
+            # table_column=Column(width=40, no_wrap=True),
+        ),
         BarColumn(bar_width=None),
-        PercentageColumn(),
+        TaskProgressColumn("[progress.percentage]{task.percentage:>5.1f}%"),
         DownloadColumn(),
         TransferSpeedColumn(),
         TimeRemainingColumn(),
@@ -32,10 +27,14 @@ def MediaProgress() -> Progress:
 
 def AlbumProgress() -> Progress:
     return Progress(
-        TextColumn("[cyan]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>5.1f}%"),
-        TextColumn("({task.completed}/{task.total})"),
+        TextColumn(
+            "{task.description}",
+            style="cyan",
+            # table_column=Column(width=40, no_wrap=True),
+        ),
+        BarColumn(bar_width=None),
+        TaskProgressColumn("[progress.percentage]{task.percentage:>5.1f}%"),
+        MofNCompleteColumn(),
         TransferSpeedColumn(),
         TimeRemainingColumn(),
         TimeElapsedColumn(),

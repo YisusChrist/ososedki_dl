@@ -91,7 +91,7 @@ class BaseCrawler(ABC):
         results: list[dict[str, str]] = []
         with AlbumProgress() as progress:
             task: TaskID = progress.add_task(
-                f"[cyan]Downloading {album_title}...", total=len(media_urls)
+                f"Downloading {album_title}...", total=len(media_urls)
             )
             for future in asyncio.as_completed(tasks):
                 result: dict[str, str] = await future
