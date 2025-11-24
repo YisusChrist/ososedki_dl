@@ -14,8 +14,7 @@ from typing_extensions import override
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
-    from asyncio import Future
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
     from urllib.parse import ParseResult
 
     from bs4 import BeautifulSoup
@@ -33,8 +32,8 @@ class EromeXXXCrawler(BaseCrawler):
 
     def print_help_message(self) -> None:
         print(
-            f"""[bold yellow]Warning:[/bold yellow] URL not supported. Please \
-provide one of the following URLs:
+            f"""[bold yellow]Warning:[/] URL not supported. Please provide \
+one of the following URLs:
 - Model URL: {self.model_url}<model_name>
 - All Models URL: {self.models_url}
 - Category URL: {self.category_url}<category_name> or {self.site_url}/<category_name>
@@ -80,7 +79,9 @@ provide one of the following URLs:
         Returns:
             bool: True if the URL is a category URL, False otherwise.
         """
-        if url.startswith(self.category_url):
+        if url.startswith(self.category_url) and url.rstrip(
+            "/"
+        ) != self.category_url.rstrip("/"):
             return True
 
         path: str = self._validate_url(url)
@@ -135,17 +136,17 @@ provide one of the following URLs:
     async def get_paginated_media(
         self,
         soup: BeautifulSoup,
-        get_media_func: Callable[..., Future[list[str]]],
-        **kwargs: str,
+        get_media_func: Callable[..., Awaitable[list[str]]],
+        url: str,
     ) -> list[str]:
         """
         Retrieve all media URLs across paginated pages.
 
         Args:
             soup (BeautifulSoup): The BeautifulSoup object of the initial page.
-            get_media_func (Callable[..., Future[list[str]]]): The function to
+            get_media_func (Callable[..., Awaitable[list[str]]]): The function to
                 retrieve media URLs from a specific page.
-            **kwargs: Additional keyword arguments to pass to get_media_func.
+            url (str): The base URL for pagination.
 
         Returns:
             list[str]: A list of all media URLs found across paginated pages.
@@ -161,10 +162,10 @@ provide one of the following URLs:
             # Only one page, return the current page
             last_page = 1
 
-        page_tasks = [
-            get_media_func(**kwargs, page=page) for page in range(1, last_page + 1)
+        tasks = [
+            get_media_func(f"{url}page/{page}/") for page in range(1, last_page + 1)
         ]
-        return list(chain.from_iterable(await gather(*page_tasks)))
+        return list(chain.from_iterable(await gather(*tasks)))
 
     async def bulk_download(self, url: str) -> list[dict[str, str]]:
         """
@@ -191,14 +192,16 @@ provide one of the following URLs:
             return []
 
         return await self.process_album(
-            url, self.media_filter, title=title, media_urls=media_urls
+            url, self.media_filter, title=title, media_urls=media_urls, soup=soup
         )
 
     async def all_models_download(self) -> list[dict[str, str]]:
-        raise NotImplementedError
+        print("[yellow]Downloading all models is not implemented yet.[/]")
+        return []
 
     async def all_categories_download(self) -> list[dict[str, str]]:
-        raise NotImplementedError
+        print("[yellow]Downloading all categories is not implemented yet.[/]")
+        return []
 
     async def post_download(self, post_url: str) -> list[dict[str, str]]:
         """
@@ -214,25 +217,23 @@ provide one of the following URLs:
         title: str = post_url.rstrip("/").split("/")[-1]
         return await self.process_album(post_url, self.media_filter, title=title)
 
-    async def get_media_from_page(self, url: str, page: int) -> list[str]:
+    async def get_media_from_page(self, url: str) -> list[str]:
         """
-        Retrieve all media URLs from a specific paginated page of albums.
+        Callback to retrieve all media URLs from a specific paginated page of
+        albums.
 
         Args:
-            url (str): The base URL of the model or category.
-            page (int): The page number to retrieve media from.
+            url (str): The URL of the page to retrieve media from.
 
         Returns:
             list[str]: A list of media URLs found on the specified page.
         """
-        page_url: str = f"{url}page/{page}/"
-        soup: BeautifulSoup | None = await self.fetch_soup(page_url)
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
         if not soup:
             return []
 
         page_albums: list[str] = [
-            album["href"]
-            for album in soup.find_all("a", class_="athumb thumb-link")
+            album["href"] for album in soup.find_all("a", class_="athumb thumb-link")
         ]
         tasks = [self.find_media(album) for album in page_albums]
         return list(chain.from_iterable(await gather(*tasks)))
@@ -248,7 +249,7 @@ provide one of the following URLs:
             list[str]: A list of media URLs found in the album.
         """
         soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if soup is None:
+        if not soup:
             return []
 
         return list(set(await self.media_filter(soup)))

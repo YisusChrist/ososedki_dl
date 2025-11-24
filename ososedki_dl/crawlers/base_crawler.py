@@ -112,6 +112,7 @@ class BaseCrawler(ABC):
         title: str | None = None,
         retries: int = 0,
         media_urls: list[str] | None = None,
+        soup: BeautifulSoup | None = None,
     ) -> list[dict[str, str]]:
         """
         Asynchronously processes an album page by extracting media URLs,
@@ -132,6 +133,8 @@ class BaseCrawler(ABC):
             retries (int): Current retry count for extraction attempts.
             media_urls (list[str], optional): Pre-extracted list of media
                 URLs to download.
+            soup (BeautifulSoup, optional): Pre-fetched parsed HTML of the album
+                page.
 
         Returns:
             list[dict[str, str]]: A list of dictionaries containing the results of
@@ -143,8 +146,8 @@ class BaseCrawler(ABC):
 
         album_url.rstrip("/")
 
-        soup: BeautifulSoup | None = await self.fetch_soup(album_url)
-        if soup is None:
+        soup = soup or await self.fetch_soup(album_url)
+        if not soup:
             return []
 
         try:
