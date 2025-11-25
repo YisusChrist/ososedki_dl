@@ -166,21 +166,22 @@ Since 2025-08-18, the program includes progress bars for downloading processes. 
 
 | Domain              | URL                           | Scrapping          | Downloading        |
 | ------------------- | ----------------------------- | ------------------ | ------------------ |
+| `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
+| `cosplayasian`      | https://cosplayasian.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplayboobs`      | https://cosplayboobs.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplayrule34`     | https://cosplayrule34.com     | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplaythots`      | https://cosplaythots.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `cosxuxi`           | https://cosxuxi.club          | :heavy_check_mark: | :heavy_check_mark: |
 | `eromexxx`          | https://eromexxx.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `fapello_is`        | https://fapello.is            | :heavy_check_mark: | :heavy_check_mark: |
-| `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
-| `sorrymother`       | https://sorrymother.top        | :heavy_check_mark: | :heavy_check_mark: |
-| `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
-| `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
 | `husvjjal_blogspot` | https://husvjjal.blogspot.com | :heavy_check_mark: | :heavy_check_mark: |
-| `waifubitches`      | https://waifubitches.com      | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplayasian`      | https://cosplayasian.com      | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplayrule34`     | https://cosplayrule34.com     | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplayboobs`      | https://cosplayboobs.com      | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplaythots`      | https://cosplaythots.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `kaizty`            | https://www.kaizty.com        | :heavy_check_mark: | :heavy_check_mark: |
 | `ocosplay`          | https://ocosplay.com          | :heavy_check_mark: | :heavy_check_mark: |
+| `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
+| `sorrymother`       | https://sorrymother.top       | :heavy_check_mark: | :heavy_check_mark: |
 | `vipthots`          | https://vipthots.com          | :heavy_check_mark: | :heavy_check_mark: |
-| `cosxuxi`           | https://cosxuxi.club          | :heavy_check_mark: | :heavy_check_mark: |
+| `waifubitches`      | https://waifubitches.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
 
 **\*** _The program will only scrape the media and display the URLs. You can easily pass all the URLs to the great [CyberDropDownloader](https://github.com/Jules-WinnfieldX/CyberDropDownloader) and download all of them with one command_:
 

@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 
 class CosxuxiClubCrawler(BaseCrawler):
     site_url = "https://cosxuxi.club"
-    base_url: str = ".wp.com/img.nungvl.net/"
+    site_name: str = "CosXuxi Club"
+    title_separator: str = " - "
 
     def cosxuxi_club_title_extractor(self, soup: BeautifulSoup) -> str:
         text_div: Tag | NavigableString | None = soup.find("title")
@@ -26,11 +27,17 @@ class CosxuxiClubCrawler(BaseCrawler):
             return "Unknown"
         text: str = text_div.text.strip()
         title: str = "Unknown"
-        try:
-            if "CosXuxi Club: " in text and " - " in text:
-                title = text.split("CosXuxi Club: ")[1].split(" - ")[0].strip()
-        except IndexError:
-            print(f"ERROR: Could not extract title from '{text}'")
+
+        if f"{self.site_name}: " in text and self.title_separator in text:
+            try:
+                title = (
+                    text.split(f"{self.site_name}: ")[1]
+                    .split(self.title_separator)[0]
+                    .strip()
+                )
+            except IndexError:
+                print(f"ERROR: Could not extract title from '{text}'")
+
         return title
 
     def cosxuxi_club_media_filter(self, soup: BeautifulSoup) -> list[str]:
@@ -50,11 +57,7 @@ class CosxuxiClubCrawler(BaseCrawler):
         if not content_div or isinstance(content_div, NavigableString):
             return []
 
-        return [
-            img.get("src")
-            for img in content_div.find_all("img")
-            if self.base_url in img.get("src")
-        ]
+        return [img.get("src") for img in content_div.find_all("img")]
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
