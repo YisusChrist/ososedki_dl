@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import CosxuxiClubCrawler
+from .cosxuxi_club import CosxuxiClubCrawler
 
 
 class NungvlCrawler(CosxuxiClubCrawler):
