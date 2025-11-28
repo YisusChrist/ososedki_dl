@@ -13,10 +13,9 @@ metadata_info = metadata.metadata(__package__ or __name__)
 
 __version__: str = metadata.version(__package__ or __name__)
 __desc__: str = metadata_info["Summary"]
-if metadata_info["Home-page"]:
-    GITHUB: str = metadata_info["Home-page"]
-else:
-    GITHUB = metadata_info["Project-URL"].split(",")[1].strip()
+GITHUB = (
+    metadata_info["Home-page"] or metadata_info["Project-URL"].split(",")[1].strip()
+)
 PACKAGE: str = metadata_info["Name"]
 
 CACHE_PATH: Path = Path(".cache").resolve()
