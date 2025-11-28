@@ -176,6 +176,7 @@ Since 2025-08-18, the program includes progress bars for downloading processes. 
 | `fapello_is`        | https://fapello.is            | :heavy_check_mark: | :heavy_check_mark: |
 | `husvjjal_blogspot` | https://husvjjal.blogspot.com | :heavy_check_mark: | :heavy_check_mark: |
 | `kaizty`            | https://www.kaizty.com        | :heavy_check_mark: | :heavy_check_mark: |
+| `nungvl`            | https://nungvl.net            | :heavy_check_mark: | :heavy_check_mark: |
 | `ocosplay`          | https://ocosplay.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `sorrymother`       | https://sorrymother.top       | :heavy_check_mark: | :heavy_check_mark: |
