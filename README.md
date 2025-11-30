@@ -1,5 +1,5 @@
 <p align="center">
-    <img width="350" src="https://i.imgur.com/BRi2FsF.png" alt="Ososedki-dl logo">
+    <img width="350" src="https://i.imgur.com/rmZ4myV.png" alt="Ososedki-dl logo">
 </p>
 
 <p align="center">
