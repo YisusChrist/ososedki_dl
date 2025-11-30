@@ -28,13 +28,14 @@ class CosxuxiClubCrawler(BaseCrawler):
         text: str = text_div.text.strip()
         title: str = "Unknown"
 
-        if f"{self.site_name}: " in text and self.title_separator in text:
+        if f"{self.site_name}: " in text:
             try:
-                title = (
-                    text.split(f"{self.site_name}: ")[1]
-                    .split(self.title_separator)[0]
-                    .strip()
-                )
+                title = text.split(f"{self.site_name}: ")[1].strip()
+            except IndexError:
+                print(f"ERROR: Could not extract title from '{text}'")
+        if self.title_separator in text:
+            try:
+                title = text.split(self.title_separator)[0].strip()
             except IndexError:
                 print(f"ERROR: Could not extract title from '{text}'")
 
