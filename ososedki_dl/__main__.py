@@ -28,9 +28,8 @@ def main() -> None:
 
     install()
 
-    CACHE_PATH.mkdir(parents=True, exist_ok=True)
-    CONFIG_PATH.mkdir(parents=True, exist_ok=True)
-    LOG_PATH.mkdir(parents=True, exist_ok=True)
+    for path in (CACHE_PATH, CONFIG_PATH, LOG_PATH):
+        path.mkdir(parents=True, exist_ok=True)
 
     run(args)
 
