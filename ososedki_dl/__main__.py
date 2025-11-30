@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rich.traceback import install
 from core_helpers import logger
+from rich.traceback import install
 
 from .cli import get_parsed_args
 from .commands import run
 from .config import load_config
-from .consts import CACHE_PATH, CONFIG_PATH, EXIT_SUCCESS, LOG_FILE, LOG_PATH, PACKAGE
+from .consts import (CACHE_PATH, CONFIG_PATH, EXIT_SUCCESS, LOG_FILE, LOG_PATH,
+                     PACKAGE)
 from .utils import exit_session
 
 if TYPE_CHECKING:

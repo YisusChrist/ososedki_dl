@@ -10,7 +10,6 @@ from bs4 import NavigableString
 from rich import print
 from typing_extensions import override
 
-from ...download import fetch
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -62,8 +61,8 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
             "q": 'label:"Video"',
         }
 
-        js_script: str = await fetch(
-            self.session, js_url, headers=headers, params=params
+        js_script: str = await self.downloader.fetch(
+            js_url, headers=headers, params=params
         )
         script_json: str = (
             js_script.split("BloggerJS.related(")[1].split(");")[0].strip()

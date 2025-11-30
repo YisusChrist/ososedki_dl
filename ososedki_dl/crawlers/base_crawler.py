@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from core_helpers.logs import logger
 from rich import print
 
-from ..download import download_and_save_media, fetch
+from ..download import Downloader
 from ..progress import AlbumProgress
 from ..utils import get_final_path
 
@@ -30,9 +30,9 @@ class BaseCrawler(ABC):
     """Abstract base class for crawlers, providing common functionality."""
 
     site_url: str
-    base_image_path: str | None = None
     session: SessionType
     download_path: Path
+    base_image_path: str | None = None
     check_cache: bool = False
     headers: dict[str, str] | None = None
 
@@ -51,6 +51,7 @@ class BaseCrawler(ABC):
         self.session = session
         self.download_path = args.dest_path
         self.check_cache = args.check_cache
+        self.downloader = Downloader(self.session, self.headers, self.check_cache)
 
     @property
     def base_media_url(self) -> str:
@@ -79,7 +80,7 @@ class BaseCrawler(ABC):
     async def fetch_soup(self, url: str) -> BeautifulSoup | None:
         print(f"Fetching {url}")
         try:
-            html_content: str = await fetch(self.session, url)
+            html_content: str = await self.downloader.fetch(url)
             return BeautifulSoup(html_content, "html.parser")
         except ClientResponseError as e:
             print(f"Failed to fetch {url} with status {e.status}")
@@ -92,9 +93,7 @@ class BaseCrawler(ABC):
         album_path: Path,
     ) -> list[dict[str, str]]:
         tasks: list[Any] = [
-            download_and_save_media(
-                self.session, url, album_path, self.check_cache, self.headers
-            )
+            self.downloader.download_and_save_media(url, album_path)
             for url in media_urls
         ]
 

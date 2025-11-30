@@ -40,7 +40,6 @@ async def run_main_loop(args: Namespace) -> None:
     ua = UserAgent(min_version=MIN_USER_AGENT_VERSION)
     headers: dict[str, str] = {"User-Agent": ua.random}
     async with SessionType(headers=headers) as session:
-        # Dynamically load all crawler modules
         while True:
             urls, download_path = get_user_input(args.dest_path)
             args.dest_path = download_path
