@@ -1,126 +1,145 @@
 """Scrapper module for downloading images from various websites."""
 
-from collections import defaultdict
-from pathlib import Path
-from typing import DefaultDict
+from __future__ import annotations
 
-from aiohttp import ClientResponse
-from aiohttp_client_cache.response import CachedResponse
+from collections import Counter, defaultdict
+from typing import TYPE_CHECKING
+
 from core_helpers.logs import logger
 from rich import print
-from rich.progress import Progress, TaskID
 
-from .crawlers import CrawlerContext, CrawlerInstance
 from .crawlers import crawlers as crawler_modules
-from .download import SessionType
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from aiohttp import ClientResponse
+    from aiohttp_client_cache.response import CachedResponse
+
+    from .crawlers import CrawlerInstance
+    from .download import SessionType
 
 
-def print_errors(results: list[dict[str, str]], verbose: bool = False) -> None:
+def normalize_error_message(raw_status: str) -> str:
+    # Extract after "error:" if present
+    if "error:" in raw_status:
+        raw_status = raw_status.split("error:", 1)[1].strip()
+
+    # Common known patterns
+    if "Failed to resolve" in raw_status:
+        return "Name Resolution Error - Failed to resolve host"
+    if "404 Client Error: Not Found" in raw_status:
+        return "404 Client Error: Not Found"
+    if "sun9-" in raw_status:
+        return "SUN9 Error - Failed to fetch"
+
+    # Default fallback: take the text before the first ":"
+    return raw_status.split(":", 1)[0].strip()
+
+
+def print_error_report_card(error_groups: dict[str, list[str]]) -> None:
+    total: int = sum(len(urls) for urls in error_groups.values())
+    unique: int = len(error_groups)
+
+    print("[bold magenta]===== Error Report Card =====[/]")
+    print(f"Total Errors: {total}")
+    print(f"Unique Error Types: {unique}\n")
+
+    print("Top Issues:")
+    for err, urls in sorted(error_groups.items(), key=lambda x: len(x[1]), reverse=True):
+        print(f"  • {err} ({len(urls)})")
+    print()
+
+
+def print_errors(results: list[dict[str, str]]) -> None:
     """
     Print a summary of the errors encountered during the download process.
 
     Args:
         results (list[dict[str, str]]): The list of results.
-        verbose (bool, optional): Whether to print the full error messages. Defaults to False.
     """
     logger.debug("Printing errors from results...")
 
+    # Extract only errors with normalized message
+    errors: list[tuple[str, str]] = [
+        (normalize_error_message(r["status"]), r["url"])
+        for r in results
+        if r["status"].startswith("error")
+    ]
+
     # Group errors by error message
-    error_groups: DefaultDict[str, list[str]] = defaultdict(list)
+    error_groups: defaultdict[str, list[str]] = defaultdict(list)
+    for err, url in errors:
+        error_groups[err].append(url)
 
-    for result in results:
-        if "error" in result["status"]:
-            # Extract the main error message without the specific URL
-            error_msg: str = result["status"].split("url:", 1)[0].strip()
-            if "Failed to resolve" in error_msg:
-                error_msg = "Name Resolution Error - Failed to resolve host"
-            elif "404 Client Error: Not Found" in error_msg:
-                error_msg = "404 Client Error: Not Found"
-            elif "sun9-" in error_msg:
-                error_msg = "SUN9 Error - Failed to fetch"
-            else:
-                error_msg = error_msg.split(":", 1)[0].strip()
-
-            error_groups[error_msg].append(result["url"])
-
-    # Print grouped errors
-    print("[bold yellow]Grouped Errors Summary:[/]")
-    for error_type, urls in error_groups.items():
-        print(f"[red]{error_type} - Count: {len(urls)}[/]")
-        if verbose:
-            print("Affected URLs:")
-            for url in urls:
-                print(f"  • {url}")
-
-    print()
+    print_error_report_card(error_groups)
 
 
 async def generic_download(
     session: SessionType, urls: list[str], download_path: Path
 ) -> None:
+    """
+    Download images from a list of URLs using the appropriate crawler.
+
+    Args:
+        session (SessionType): The HTTP session to use for requests.
+        urls (list[str]): List of URLs to download images from.
+        download_path (Path): The base path where downloaded media will be saved.
+    """
     logger.debug("Starting generic download...")
 
-    with Progress() as progress:
-        task: TaskID = progress.add_task("[cyan]Downloading...", total=len(urls))
-        context = CrawlerContext(session, download_path, progress, task)
+    results: list[dict[str, str]] = []
+    for url in urls:
+        results.extend(await handle_downloader(session, download_path, url))
 
-        results: list[dict[str, str]] = []
-        for url in urls:
-            await handle_downloader(
-                context=context,
-                results=results,
-                url=url,
-            )
+    status_counts = Counter(result["status"].split(":")[0] for result in results)
 
-        ok_count: int = sum(1 for result in results if result["status"] == "ok")
-        skipped_count: int = sum(
-            1 for result in results if result["status"] == "skipped"
-        )
-        error_count: int = sum(1 for result in results if "error" in result["status"])
+    print(
+        f"""
+[green]Downloaded: {status_counts['ok']}[/]
+[yellow]Skipped: {status_counts['skipped']}[/]
+[red]Errors: {status_counts['error']}[/]\n"""
+    )
 
-        print(
-            f"""\n
-[green]Downloaded: {ok_count}[/]
-[yellow]Skipped: {skipped_count}[/]
-[red]Errors: {error_count}[/]\n"""
-        )
-
-        if error_count > 0:
-            print_errors(results)
+    if status_counts['error'] > 0:
+        print_errors(results)
 
 
 async def handle_downloader(
-    context: CrawlerContext, results: list[dict[str, str]], url: str
-) -> None:
-    logger.debug("Handling downloader for URL: %s", url)
+    session: SessionType, download_path: Path, url: str
+) -> list[dict[str, str]]:
+    """
+    Selects and invokes the appropriate crawler to download content from the
+    given URL.
+
+    If a matching crawler is found based on the URL prefix, it instantiates the
+    crawler with the provided context and performs the download, appending the
+    results to the shared results list. If no suitable crawler is found, a
+    warning is printed.
+
+    Args:
+        session (SessionType): The HTTP session to use for requests.
+        download_path (Path): The base path where downloaded media will be saved.
+        url (str): The URL to download from.
+
+    Returns:
+        list[dict[str, str]]: The list to append download results to.
+    """
+    # Check if the URL is valid
+    try:
+        response: ClientResponse | CachedResponse = await session.get(url)
+        response.raise_for_status()
+    except Exception as e:
+        logger.exception("Failed to fetch URL %s", url)
+        return [{"url": url, "status": f"error: {e}"}]
 
     for CrawlerClass in crawler_modules:
         if url.startswith(CrawlerClass.site_url):
-            logger.info("Found crawler %s for URL: %s", CrawlerClass.__name__, url)
-            crawler: CrawlerInstance = CrawlerClass()
-            result: list[dict[str, str]] = await dynamic_download(context, url, crawler)
-            results.extend(result)
-            break
+            crawler: CrawlerInstance = CrawlerClass(session, download_path)
+            crawler_name: str = crawler.__class__.__name__
+            logger.debug("Downloading for URL: %s using crawler: %s", url, crawler_name)
+            return await crawler.download(url)
     else:
         logger.warning("No downloader found for URL: %s", url)
         print(f"[yellow]No downloader found for URL: {url}[/]")
-
-
-async def dynamic_download(
-    context: CrawlerContext, album_url: str, crawler: CrawlerInstance
-) -> list[dict[str, str]]:
-    crawler_name: str = crawler.__class__.__name__
-    logger.debug("Downloading for URL: %s using crawler: %s", album_url, crawler_name)
-
-    # Check if the URL is valid
-    try:
-        response: ClientResponse | CachedResponse = await context.session.get(album_url)
-        response.raise_for_status()
-    except Exception as e:
-        logger.exception("Failed to fetch URL %s", album_url)
-        return [{"url": album_url, "status": f"error: {e}"}]
-
-    result: list[dict[str, str]] = await crawler.download(context, album_url)
-
-    context.progress.advance(context.task)
-    return result
+        return [{"url": url, "status": "error: no downloader found"}]

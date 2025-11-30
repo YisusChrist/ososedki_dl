@@ -1,110 +1,129 @@
 """Downloader for https://eromexxx.com"""
 
-from pathlib import Path
-from typing import override
+from __future__ import annotations
 
-import tldextract
-from bs4 import BeautifulSoup
-from bs4.element import NavigableString, Tag
+from asyncio import gather
+from itertools import chain
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
+
+from bs4 import NavigableString
 from rich import print
+from typing_extensions import override
 
-from ...download import SessionType, download_and_save_media
-from ...utils import get_final_path
-from .._common import CrawlerContext, fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+    from urllib.parse import ParseResult
+
+    from bs4 import BeautifulSoup
+    from bs4.element import Tag
 
 
-class EromeXXXCrawler(SimpleCrawler):
+class EromeXXXCrawler(BaseCrawler):
     site_url = "https://eromexxx.com"
+    headers = {"Referer": site_url, "Origin": site_url}
+    models_url: str = site_url + "/models/"
+    model_url: str = site_url + "/model/"
+    categories_url: str = site_url + "/categories/"
+    category_url: str = site_url + "/category/"
+    video_url: str = site_url + "/video/"
 
-    @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
-        profile_url: str = url
-        if profile_url.endswith("/"):
-            profile_url = profile_url[:-1]
-
-        profile: str = profile_url.split("/")[-1]
-
-        soup: BeautifulSoup | None = await fetch_soup(context.session, profile_url)
-        if not soup:
-            return []
-
-        # Get the total number of albums
-        header: Tag | NavigableString | None = soup.find("div", class_="header-title")
-        if not header:
-            return []
-        span: Tag | NavigableString | None | int = header.find("span")
-        if not span or isinstance(span, int):
-            return []
-        total_albums = int(span.text.strip())
-        print(f"Total_albums: {total_albums}")
-
-        # Get all album URLs from pagination
-        albums: list[str] = await self.find_albums_with_pagination(
-            context.session, soup, profile_url, profile
+    def print_help_message(self) -> None:
+        print(
+            f"""[bold yellow]Warning:[/] URL not supported. Please provide \
+one of the following URLs:
+- Model URL: {self.model_url}<model_name>
+- All Models URL: {self.models_url}
+- Category URL: {self.category_url}<category_name> or {self.site_url}/<category_name>
+- All Categories URL: {self.categories_url}
+- Single Post URL: {self.site_url}/<post_id>
+"""
         )
-        if not albums:
-            print("No albums found.")
-            return []
 
-        # Determine the highest album offset
-        highest_offset: int = max(
-            int(album.split("-")[-1].split("/")[0]) for album in albums
-        )
-        print(f"Highest_offset: {highest_offset}")
-        base_url: str = "".join(profile_url.split("/model"))
+    def _validate_url(self, url: str) -> str:
+        """
+        Validate the given URL and extract the path component.
 
-        results: list[dict[str, str]] = []
-        for i in range(1, highest_offset + 1):
-            results += await self.download_album(context, f"{base_url}-{i}", profile)
+        Args:
+            url (str): The URL to validate.
 
-        return results
+        Returns:
+            str: The path component of the URL if valid, otherwise an empty
+            string.
+        """
+        parsed_url: ParseResult = urlparse(url)
+        if parsed_url.netloc != urlparse(self.site_url).netloc:
+            return ""
 
-    async def find_albums_with_pagination(
-        self, session: SessionType, soup: BeautifulSoup, profile_url: str, profile: str
-    ) -> list[str]:
-        # Get pagination items
-        pagination: Tag | NavigableString | None = soup.find("ul", class_="pagination")
-        if not pagination or isinstance(pagination, NavigableString):
-            return []
+        path: list[str] = parsed_url.path.strip("/").split("/")
+        if len(path) != 1:
+            return ""
 
-        # Get the last page number
-        try:
-            last_page = int(pagination.find_all("li")[-2].text)
-        except AttributeError:
-            # Only one page, return the current page
-            last_page = 1
+        return path[0]
 
-        albums: list[str] = []
-        for page in range(1, last_page + 1):
-            page_url: str = f"{profile_url}/page/{page}"
-            page_soup: BeautifulSoup | None = await fetch_soup(session, page_url)
-            if not page_soup:
-                break
-            page_albums: list[str] = self.find_albums_in_soup(page_soup, profile)
-            albums.extend(page_albums)
+    def is_category_url(self, url: str) -> bool:
+        """
+        Determine if the given URL is a category URL.
 
-        albums = list(set(albums))  # Remove duplicates
-        return albums
+        Args:
+            url (str): The URL to check.
 
-    def find_albums_in_soup(self, soup: BeautifulSoup, profile: str) -> list[str]:
-        albums: list[str] = []
-        for album in soup.find_all("a", class_="athumb thumb-link"):
-            if profile in album["href"]:
-                albums.append(album["href"])
-        return albums
+        Examples:
+            - https://eromexxx.com/category/category-name (True)
+            - https://eromexxx.com/categories/ (False)
+            - https://eromexxx.com/model/model-name (False)
+            - https://eromexxx.com/asian (True)
 
-    async def download_album(
-        self, context: CrawlerContext, album_url: str, title: str
-    ) -> list[dict[str, str]]:
-        try:
-            soup: BeautifulSoup | None = await fetch_soup(context.session, album_url)
-        except ValueError:
-            return []
+        Returns:
+            bool: True if the URL is a category URL, False otherwise.
+        """
+        if url.startswith(self.category_url) and url.rstrip(
+            "/"
+        ) != self.category_url.rstrip("/"):
+            return True
 
-        if not soup:
-            return []
+        path: str = self._validate_url(url)
+        if not path:
+            return False
+        if path in ["models", "model", "categories", "category"]:
+            return False
 
+        return "-" not in path and path.isalpha()
+
+    def is_post_url(self, url: str) -> bool:
+        """
+        Determine if the given URL is a post URL.
+
+        Args:
+            url (str): The URL to check.
+
+        Examples:
+            - https://eromexxx.com/video/12345-post-title (True)
+            - https://eromexxx.com/model/model-name (False)
+            - https://eromexxx.com/category/category-name (False)
+            - https://eromexxx.com/abbxeh-189 (True)
+
+        Returns:
+            bool: True if the URL is a post URL, False otherwise.
+        """
+        if url.startswith(self.video_url) and url.rstrip("/") != self.video_url.rstrip(
+            "/"
+        ):
+            return True
+        return "-" in self._validate_url(url)
+
+    async def media_filter(self, soup: BeautifulSoup) -> list[str]:
+        """
+        Filter and retrieve media URLs from the BeautifulSoup object.
+
+        Args:
+            soup (BeautifulSoup): The BeautifulSoup object of the page.
+
+        Returns:
+            list[str]: A list of media URLs found on the page.
+        """
         videos: list[str] = [
             video_source["src"] for video_source in soup.find_all("source")
         ]
@@ -112,34 +131,167 @@ class EromeXXXCrawler(SimpleCrawler):
             image["data-src"]
             for image in soup.find_all("img", class_="img-back lazyload")
         ]
-        urls: list[str] = list(set(images + videos))
+        return images + videos
 
-        album_path: Path = get_final_path(context.download_path, title)
+    async def get_paginated_media(
+        self,
+        soup: BeautifulSoup,
+        get_media_func: Callable[..., Awaitable[list[str]]],
+        url: str,
+    ) -> list[str]:
+        """
+        Retrieve all media URLs across paginated pages.
 
-        results: list[dict[str, str]] = []
-        for url in urls:
-            result: dict[str, str] = await self.download_media(
-                context.session, url, album_path, album_url
+        Args:
+            soup (BeautifulSoup): The BeautifulSoup object of the initial page.
+            get_media_func (Callable[..., Awaitable[list[str]]]): The function to
+                retrieve media URLs from a specific page.
+            url (str): The base URL for pagination.
+
+        Returns:
+            list[str]: A list of all media URLs found across paginated pages.
+        """
+        try:
+            # Get pagination items
+            pagination: Tag | NavigableString | None = soup.find(
+                "ul", class_="pagination"
             )
-            results.append(result)
-            context.progress.advance(context.task)
+            # Get the last page number
+            last_page = int(pagination.find_all("li")[-2].get_text(strip=True))
+        except AttributeError:
+            # Only one page, return the current page
+            last_page = 1
 
-        return results
+        tasks = [
+            get_media_func(f"{url}page/{page}/") for page in range(1, last_page + 1)
+        ]
+        return list(chain.from_iterable(await gather(*tasks)))
 
-    async def download_media(
-        self, session: SessionType, url: str, download_path: Path, album: str = ""
-    ) -> dict[str, str]:
-        hostname: str = tldextract.extract(url).fqdn
+    async def bulk_download(self, url: str) -> list[dict[str, str]]:
+        """
+        Download media from all albums of a model or category URL.
 
-        headers: dict[str, str] = {
-            "Referer": album or f"https://{hostname}",
-            "Origin": f"https://{hostname}",
-            "User-Agent": "Mozilla/5.0",
-        }
+        Args:
+            url (str): The URL of the model or category to download media from.
 
-        return await download_and_save_media(
-            session,
-            url,
-            download_path,
-            headers,
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
+        """
+        title: str = url.rstrip("/").split("/")[-1]
+
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
+        if not soup:
+            return []
+
+        media_urls: list[str] = await self.get_paginated_media(
+            soup, self.get_media_from_page, url=url
         )
+        if not media_urls:
+            print(f"No media found for {title}")
+            return []
+
+        return await self.process_album(
+            url, self.media_filter, title=title, media_urls=media_urls, soup=soup
+        )
+
+    async def all_models_download(self) -> list[dict[str, str]]:
+        print("[yellow]Downloading all models is not implemented yet.[/]")
+        return []
+
+    async def all_categories_download(self) -> list[dict[str, str]]:
+        print("[yellow]Downloading all categories is not implemented yet.[/]")
+        return []
+
+    async def post_download(self, post_url: str) -> list[dict[str, str]]:
+        """
+        Download media from a single post URL.
+
+        Args:
+            post_url (str): The URL of the post to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
+        """
+        title: str = post_url.rstrip("/").split("/")[-1]
+        return await self.process_album(post_url, self.media_filter, title=title)
+
+    async def get_media_from_page(self, url: str) -> list[str]:
+        """
+        Callback to retrieve all media URLs from a specific paginated page of
+        albums.
+
+        Args:
+            url (str): The URL of the page to retrieve media from.
+
+        Returns:
+            list[str]: A list of media URLs found on the specified page.
+        """
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
+        if not soup:
+            return []
+
+        page_albums: list[str] = [
+            album["href"] for album in soup.find_all("a", class_="athumb thumb-link")
+        ]
+        tasks = [self.find_media(album) for album in page_albums]
+        return list(chain.from_iterable(await gather(*tasks)))
+
+    async def find_media(self, url: str) -> list[str]:
+        """
+        Find and return all media URLs from a given URL.
+
+        Args:
+            url (str): The URL to retrieve media from.
+
+        Returns:
+            list[str]: A list of media URLs found in the album.
+        """
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
+        if not soup:
+            return []
+
+        return list(set(await self.media_filter(soup)))
+
+    @override
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Download media from the given URL.
+
+        It supports model URLs, category URLs, all models URL,
+        all categories URL, and single post URLs. If the URL is not
+        supported, it prints a help message.
+
+        Args:
+            url (str): The URL of the EromeXXX model to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries with information about
+            each downloaded media item.
+        """
+        url = url if url.endswith("/") else url + "/"
+        try:
+            response = await self.session.head(url)
+            response.raise_for_status()
+            if (
+                response.status == 301
+                and response.headers.get("Location") == self.site_url
+            ):
+                self.print_help_message()
+                return []
+        except Exception as e:
+            print(f"Failed to access {url}: {e}")
+            return []
+
+        if url == self.models_url:
+            return await self.all_models_download()
+        if url == self.categories_url:
+            return await self.all_categories_download()
+        if self.is_post_url(url):
+            return await self.post_download(url)
+        if any([url.startswith(self.model_url), self.is_category_url(url)]):
+            return await self.bulk_download(url)
+        else:
+            self.print_help_message()
+            return []

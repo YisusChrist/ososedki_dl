@@ -1,35 +1,65 @@
 """Downloader for https://fapello.is"""
 
-from pathlib import Path
-from typing import override
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from rich import print
+from typing_extensions import override
 
-from ...download import SessionType
 from ...utils import get_final_path
-from .._common import CrawlerContext, download_media_items
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
-class FapelloIsCrawler(SimpleCrawler):
+class FapelloIsCrawler(BaseCrawler):
     site_url = "https://fapello.is"
     download_url: str = site_url + "/api/media"
+    headers = {"Referer": site_url}
 
     async def fetch_media_urls(
-        self, session: SessionType, url: str, referer_url: str
+        self, url: str, referer_url: str
     ) -> list[dict[str, str]] | str:
+        """
+        Asynchronously retrieves media metadata from the specified API URL with
+        a custom referer header.
+
+        Args:
+            url (str): The API endpoint to fetch media data from.
+            referer_url (str): The referer URL to include in the request
+                headers.
+
+        Returns:
+            list[dict[str, str]] | str: A list of media metadata dictionaries
+            if the response is successful, or the raw JSON string if the
+            response is not a list.
+        """
         headers: dict[str, str] = {"Referer": referer_url}
-        async with session.get(url, headers=headers) as response:
+        async with self.session.get(url, headers=headers) as response:
             if response.status != 200:
                 return []
             return await response.json()
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
-        profile_url: str = url
-        if profile_url.endswith("/"):
-            profile_url = profile_url[:-1]
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Asynchronously downloads all media items from a given Fapello profile
+        URL.
 
+        Iterates through paginated API endpoints to collect media URLs,
+        determines the album title, and downloads all found media items to the
+        resolved album path.
+
+        Args:
+            url (str): The Fapello profile URL to download media from.
+
+        Returns:
+            list[dict[str, str]]: A list of dictionaries representing the
+            downloaded media items.
+        """
+        profile_url: str = url.rstrip("/")
         profile_id: str = profile_url.split("/")[-1]
         i = 1
 
@@ -40,7 +70,7 @@ class FapelloIsCrawler(SimpleCrawler):
             print(f"Fetching page {i} for profile {profile_id}...")
             fetch_url: str = f"{self.download_url}/{profile_id}/{i}/1"
             album: list[dict[str, str]] | str = await self.fetch_media_urls(
-                context.session, fetch_url, url
+                fetch_url, url
             )
             if not album or album == "null":
                 break
@@ -56,12 +86,6 @@ class FapelloIsCrawler(SimpleCrawler):
 
         print(f"Found {len(urls)} media items in profile {profile_id}")
 
-        album_path: Path = get_final_path(context.download_path, title)
+        album_path: Path = get_final_path(self.download_path, title)
 
-        return await download_media_items(
-            session=context.session,
-            media_urls=urls,
-            album_path=album_path,
-            progress=context.progress,
-            task=context.task,
-        )
+        return await self.download_media_items(urls, title, album_path)

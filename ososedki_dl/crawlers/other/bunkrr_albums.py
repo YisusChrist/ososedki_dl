@@ -1,30 +1,58 @@
 """Downloader for https://bunkr-albums.io"""
 
-from pathlib import Path
-from typing import override
+from __future__ import annotations
 
-import requests
-from bs4 import BeautifulSoup
+from typing import TYPE_CHECKING
+
 from rich import print
+from typing_extensions import override
 
 from ...consts import MAX_TIMEOUT
-from .._common import CrawlerContext, fetch_soup
-from ..simple_crawler import SimpleCrawler
+from ..base_crawler import BaseCrawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from bs4 import BeautifulSoup
 
 
-class BunkrAlbumsCrawler(SimpleCrawler):
+class BunkrAlbumsCrawler(BaseCrawler):
     site_url = "https://bunkr-albums.io"
 
-    def get_real_url(self, url: str) -> str:
+    async def get_real_url(self, url: str) -> str:
+        """
+        Resolve and return the final destination URL after following any
+        redirects.
+
+        Args:
+            url (str): The initial URL to resolve.
+
+        Returns:
+            str: The fully resolved URL after all redirects.
+        """
         print(f"Resolving {url}")
-        response: requests.Response = requests.head(
+        response = await self.session.head(
             url, allow_redirects=True, timeout=MAX_TIMEOUT
         )
-        return response.url
+        return str(response.url)
 
     @override
-    async def download(self, context: CrawlerContext, url: str) -> list[dict[str, str]]:
-        soup: BeautifulSoup | None = await fetch_soup(context.session, url)
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Extracts and resolves all unique Bunkr album URLs from the given page.
+
+        Fetches the HTML content of the specified URL, identifies all anchor
+        tags with hrefs starting with "https://bunkr", removes duplicates, and
+        resolves each to its final destination URL. Returns an empty list;
+        downloading functionality is not yet implemented.
+
+        Args:
+            url (str): The URL of the page to scan for Bunkr album links.
+
+        Returns:
+            list[dict[str, str]]: Currently always returns an empty list.
+        """
+        soup: BeautifulSoup | None = await self.fetch_soup(url)
         if not soup:
             return []
 
@@ -38,7 +66,7 @@ class BunkrAlbumsCrawler(SimpleCrawler):
         urls = list(set(urls))
         # Every url inside the list redirects to a different domain
         # so we need to resolve the real domain
-        real_urls: list[str] = [self.get_real_url(u) for u in urls]
+        real_urls: list[str] = [await self.get_real_url(u) for u in urls]
 
         print(f"Found {len(real_urls)} albums on {url}")
         print(real_urls)

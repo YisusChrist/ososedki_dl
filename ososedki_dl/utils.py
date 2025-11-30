@@ -1,18 +1,22 @@
 """Utility functions for the application."""
 
+from __future__ import annotations
+
 import hashlib
 import re
 import sys
 from pathlib import Path
-from typing import NoReturn
+from typing import TYPE_CHECKING
 
-import aiofiles
 import validators  # type: ignore
 from core_helpers.logs import logger
 from rich import print
 from rich.prompt import Prompt
 
 from .consts import CACHE_PATH, EXIT_FAILURE, LOG_PATH
+
+if TYPE_CHECKING:
+    from typing import NoReturn
 
 
 def get_valid_url() -> list[str]:
@@ -81,18 +85,6 @@ def get_final_path(download_path: Path, title: str) -> Path:
     return final_path
 
 
-async def write_media(media_path: Path, image_content: bytes, url: str) -> None:
-    logger.debug(f"Writing media to {media_path} from URL: {url}")
-
-    try:
-        async with aiofiles.open(media_path, "wb") as f:
-            await f.write(image_content)
-    except (OSError, FileNotFoundError, TypeError) as e:
-        print(f"Failed to write to {media_path} with error: {e}")
-
-    write_to_cache(url)
-
-
 def get_url_hashfile(url: str) -> Path:
     logger.debug(f"Generating cache filename for URL: {url}")
 
@@ -112,8 +104,8 @@ def write_to_cache(url: str) -> None:
 def get_unique_filename(base_path: Path) -> Path:
     logger.debug(f"Generating unique filename for base path: {base_path}")
 
-    suffix: int = 1
-    new_path: Path = base_path.with_stem(f"{base_path.stem}_{suffix}")
+    suffix: int = 0
+    new_path: Path = base_path
     while new_path.exists():
         suffix += 1
         new_path = base_path.with_stem(f"{base_path.stem}_{suffix}")

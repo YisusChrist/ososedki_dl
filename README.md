@@ -18,6 +18,9 @@
     <a href="https://github.com/YisusChrist/ososedki_dl/pulls">
         <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/YisusChrist/ososedki_dl?color=0088ff">&nbsp;&nbsp;&nbsp;
     </a>
+    <a href="https://deepwiki.com/YisusChrist/ososedki_dl">
+        <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki">&nbsp;&nbsp;&nbsp;
+    </a>
     <a href="https://opensource.org/license/GPL-3.0/">
         <img alt="License" src="https://img.shields.io/github/license/YisusChrist/ososedki_dl?color=0088ff">
     </a>
@@ -53,7 +56,7 @@
   - [Uninstall](#uninstall)
 - [Usage](#usage)
   - [Example of execution](#example-of-execution)
-  - [WIP: Upcoming progress bar feature for heavy files](#wip-upcoming-progress-bar-feature-for-heavy-files)
+  - [Progress bars](#progress-bars)
   - [Supported sites](#supported-sites)
 - [Contributors](#contributors)
   - [How do I contribute to ososedki\_dl?](#how-do-i-contribute-to-ososedki_dl)
@@ -79,7 +82,7 @@ Here's a breakdown of the packages needed and their versions:
 - [validators](https://pypi.org/project/validators) >= 0.22.0
 
 > [!NOTE]
-> The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.6. Although the software may work with previous versions, it is not guaranteed.
+> The software has been developed and tested using Python `3.12.1`. The minimum required version to run the software is Python 3.9. Although the software may work with previous versions, it is not guaranteed.
 
 ## Installation
 
@@ -147,29 +150,39 @@ The program can be run from the terminal with the `ososedki_dl` command. It will
 
 https://github.com/user-attachments/assets/1b82d20f-1680-4cda-9021-ebd0f87a72ed
 
-### WIP: Upcoming progress bar feature for heavy files
+### Progress bars
 
-https://github.com/user-attachments/assets/b3a0ecfc-4c85-4513-807a-2e1981e3eb19
+Since 2025-08-18, the program includes progress bars for downloading processes. This feature provides a visual indication of the progress of the operations, making it easier to track the status of the downloads. There are two types of progress bars:
+
+- **Albums**: This bar shows the progress of the whole downloading process, indicating how many items have been downloaded from the album. In case you are downloading a profile, it will display as many bars as albums in the profile, each showing the progress of the respective album. Example:
+
+  https://github.com/user-attachments/assets/691e10c8-4256-4ce1-be88-7684b3798765
+
+- **Videos**: This bar shows the progress of a single video being downloaded. It indicates how much of the video has been downloaded so far.
+
+  https://github.com/user-attachments/assets/8bdc1de9-32eb-4cc2-96ae-061e1df76e1c
 
 ### Supported sites
 
 | Domain              | URL                           | Scrapping          | Downloading        |
 | ------------------- | ----------------------------- | ------------------ | ------------------ |
+| `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
+| `cosplayasian`      | https://cosplayasian.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplayboobs`      | https://cosplayboobs.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplayrule34`     | https://cosplayrule34.com     | :heavy_check_mark: | :heavy_check_mark: |
+| `cosplaythots`      | https://cosplaythots.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `cosxuxi`           | https://cosxuxi.club          | :heavy_check_mark: | :heavy_check_mark: |
 | `eromexxx`          | https://eromexxx.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `fapello_is`        | https://fapello.is            | :heavy_check_mark: | :heavy_check_mark: |
-| `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
-| `sorrymother`       | https://sorrymother.to        | :heavy_check_mark: | :heavy_check_mark: |
-| `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
-| `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
 | `husvjjal_blogspot` | https://husvjjal.blogspot.com | :heavy_check_mark: | :heavy_check_mark: |
-| `waifubitches`      | https://waifubitches.com      | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplayasian`      | https://cosplayasian.com      | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplayrule34`     | https://cosplayrule34.com     | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplayboobs`      | https://cosplayboobs.com      | :heavy_check_mark: | :heavy_check_mark: |
-| `cosplaythots`      | https://cosplaythots.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `kaizty`            | https://www.kaizty.com        | :heavy_check_mark: | :heavy_check_mark: |
+| `nungvl`            | https://nungvl.net            | :heavy_check_mark: | :heavy_check_mark: |
 | `ocosplay`          | https://ocosplay.com          | :heavy_check_mark: | :heavy_check_mark: |
+| `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
+| `sorrymother`       | https://sorrymother.top       | :heavy_check_mark: | :heavy_check_mark: |
 | `vipthots`          | https://vipthots.com          | :heavy_check_mark: | :heavy_check_mark: |
-| `cosxuxi`           | https://cosxuxi.club          | :heavy_check_mark: | :heavy_check_mark: |
+| `waifubitches`      | https://waifubitches.com      | :heavy_check_mark: | :heavy_check_mark: |
+| `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
 
 **\*** _The program will only scrape the media and display the URLs. You can easily pass all the URLs to the great [CyberDropDownloader](https://github.com/Jules-WinnfieldX/CyberDropDownloader) and download all of them with one command_:
 

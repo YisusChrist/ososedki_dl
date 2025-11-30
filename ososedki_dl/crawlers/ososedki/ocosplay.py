@@ -1,12 +1,14 @@
 """Downloader for https://ocosplay.com"""
 
-from ..base_crawler import BaseCrawler
+from ..ososedki_crawler import OsosedkiBaseCrawler
 
 
-class OCosplayCrawler(BaseCrawler):
+class OCosplayCrawler(OsosedkiBaseCrawler):
     site_url = "https://ocosplay.com"
     base_image_path = "/images/a/"
     album_path = "/g/"
     model_url = f"{site_url}/m/"
     cosplay_url = f"{site_url}/c/"
+    fandom_url = f"{site_url}/f/"
     button_class = "btn btn-sm bg-pink"
+    pagination = False

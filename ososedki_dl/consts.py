@@ -13,10 +13,9 @@ metadata_info = metadata.metadata(__package__ or __name__)
 
 __version__: str = metadata.version(__package__ or __name__)
 __desc__: str = metadata_info["Summary"]
-if metadata_info["Home-page"]:
-    GITHUB: str = metadata_info["Home-page"]
-else:
-    GITHUB = metadata_info["Project-URL"].split(",")[1].strip()
+GITHUB = (
+    metadata_info["Home-page"] or metadata_info["Project-URL"].split(",")[1].strip()
+)
 PACKAGE: str = metadata_info["Name"]
 
 CACHE_PATH: Path = Path(".cache").resolve()
@@ -27,6 +26,7 @@ CONFIG_FILE: Path = CONFIG_PATH / f"{PACKAGE}.ini"
 
 MAX_TIMEOUT = 5
 DEFAULT_DEST_PATH: Path = Path("downloads")
+MIN_USER_AGENT_VERSION = 120.0
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1

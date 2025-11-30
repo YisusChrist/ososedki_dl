@@ -1,7 +1,9 @@
 """Command-line interface for the program."""
 
+from __future__ import annotations
+
 import configparser
-from argparse import Namespace
+from typing import TYPE_CHECKING
 
 from core_helpers.cli import setup_parser
 from rich import print
@@ -11,6 +13,9 @@ from .config import (print_entire_config, print_specific_config_field,
 from .consts import CONFIG_FILE, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
+
+if TYPE_CHECKING:
+    from argparse import Namespace
 
 
 def get_parsed_args() -> Namespace:
