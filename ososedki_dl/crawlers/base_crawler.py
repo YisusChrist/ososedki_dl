@@ -8,14 +8,15 @@ from typing import TYPE_CHECKING
 
 from aiohttp import ClientResponseError
 from bs4 import BeautifulSoup
+from core_helpers.logs import logger
 from rich import print
 
 from ..download import download_and_save_media, fetch
-from core_helpers.logs import logger
 from ..progress import AlbumProgress
 from ..utils import get_final_path
 
 if TYPE_CHECKING:
+    from argparse import Namespace
     from collections.abc import Awaitable, Callable
     from pathlib import Path
     from typing import Any
@@ -29,24 +30,31 @@ class BaseCrawler(ABC):
     """Abstract base class for crawlers, providing common functionality."""
 
     site_url: str
+    base_image_path: str | None = None
     session: SessionType
     download_path: Path
+    check_cache: bool = False
     headers: dict[str, str] | None = None
 
-    def __init__(self, session: SessionType, download_path: Path) -> None:
+    def __init__(self, session: SessionType, args: Namespace) -> None:
         """
         Initialize the BaseCrawler with a given crawling context.
 
         Args:
             session (SessionType): The HTTP session to use for requests.
-            download_path (Path): The base path where downloaded media will be
-                saved.
+            args (Namespace): The command-line arguments containing context such as
+                download path and cache checking.
         """
         logger.debug(
             f"Initialized {self.__class__.__name__} with site URL: {self.site_url}"
         )
         self.session = session
-        self.download_path = download_path
+        self.download_path = args.dest_path
+        self.check_cache = args.check_cache
+
+    @property
+    def base_media_url(self) -> str:
+        return self.site_url + (self.base_image_path or "")
 
     @abstractmethod
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -84,7 +92,9 @@ class BaseCrawler(ABC):
         album_path: Path,
     ) -> list[dict[str, str]]:
         tasks: list[Any] = [
-            download_and_save_media(self.session, url, album_path, self.headers)
+            download_and_save_media(
+                self.session, url, album_path, self.check_cache, self.headers
+            )
             for url in media_urls
         ]
 

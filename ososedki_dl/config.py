@@ -99,16 +99,13 @@ def create_config_file(interactive: bool = False) -> None:
         )
 
 
-def load_config(args: Namespace) -> Path:
+def load_config(args: Namespace) -> None:
     """
-    Get the source and destination path values from the configuration file or
-    the command-line arguments.
+    Get the destination path values from the configuration file or the
+    command-line arguments.
 
     Args:
         args (Namespace): The parsed command-line arguments.
-
-    Returns:
-        Path: The source and destination path values.
     """
     logger.debug("Configuring paths")
 
@@ -123,7 +120,7 @@ def load_config(args: Namespace) -> Path:
 
     config_file: Path = CONFIG_FILE
     if args.config_file:
-        config_file = Path(args.config_file).resolve()
+        config_file = args.config_file.resolve()
 
     if not config_file.is_file():
         logger.error("Configuration file '%s' does not exist", config_file)
@@ -133,11 +130,9 @@ def load_config(args: Namespace) -> Path:
     config = ConfigParser()
     config.read(config_file)
 
-    dest_path: Path = Path(
+    args.dest_path = Path(
         args.dest_path or config.get("Paths", "dest_path", fallback=DEFAULT_DEST_PATH)
     ).resolve()
-
-    return dest_path
 
 
 def print_entire_config(config: ConfigParser) -> None:

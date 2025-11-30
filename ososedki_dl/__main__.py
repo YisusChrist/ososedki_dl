@@ -15,7 +15,6 @@ from .utils import exit_session
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from pathlib import Path
 
 
 def main() -> None:
@@ -24,7 +23,7 @@ def main() -> None:
     """
     args: Namespace = get_parsed_args()
     logger.setup_logger(PACKAGE, LOG_FILE, args.debug, args.verbose)
-    dest_path: Path = load_config(args)
+    load_config(args)
 
     install()
 
@@ -32,7 +31,7 @@ def main() -> None:
     CONFIG_PATH.mkdir(parents=True, exist_ok=True)
     LOG_PATH.mkdir(parents=True, exist_ok=True)
 
-    run(args, dest_path)
+    run(args)
 
     exit_session(EXIT_SUCCESS)
 

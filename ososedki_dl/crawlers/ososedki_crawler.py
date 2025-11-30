@@ -18,39 +18,22 @@ from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable
-    from pathlib import Path
     from types import CoroutineType
     from typing import Any
     from urllib.parse import ParseResult
 
     from bs4 import NavigableString, ResultSet
 
-    from ..download import SessionType
-
 
 class OsosedkiBaseCrawler(BaseCrawler, ABC):
     """Base class for crawlers of ososedki and clone sites."""
 
-    base_image_path: str
     album_path: str
     model_url: str | None = None
     cosplay_url: str | None = None
     fandom_url: str | None = None
     button_class: str | None = None
     pagination: bool
-
-    def __init__(self, session: SessionType, download_path: Path) -> None:
-        """
-        Initialize the crawler with the provided context and set up the base
-        media URL.
-
-        Args:
-            session (SessionType): The HTTP session to use for requests.
-            download_path (Path): The base path where downloaded media will be
-                saved.
-        """
-        super().__init__(session, download_path)
-        self.base_media_url: str = self.site_url + self.base_image_path
 
     async def fetch_page_albums(self, page_url: str) -> list[str]:
         """

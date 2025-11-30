@@ -21,7 +21,7 @@ from rich import print
 
 from ososedki_dl.progress import MediaProgress
 
-from .consts import CHECK_CACHE, MAX_TIMEOUT
+from .consts import MAX_TIMEOUT
 from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
                     write_to_cache)
 
@@ -184,8 +184,9 @@ async def download_and_compare(
     url: str,
     media_path: Path,
     headers: dict[str, str] | None = None,
+    check_cache: bool = False,
 ) -> dict[str, str]:
-    if CHECK_CACHE and get_url_hashfile(url).exists():
+    if check_cache and get_url_hashfile(url).exists():
         #print(f"Skipping {url}")
         return {"url": url, "status": "skipped"}
     try:
@@ -208,6 +209,7 @@ async def download_and_save_media(
     session: SessionType,
     url: str,
     album_path: Path,
+    check_cache: bool,
     headers: dict[str, str] | None = None,
 ) -> dict[str, str]:
     logger.debug(f"Downloading media from URL: {url}")
@@ -234,4 +236,5 @@ async def download_and_save_media(
         url,
         media_path,
         headers,
+        check_cache
     )

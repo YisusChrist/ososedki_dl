@@ -22,19 +22,17 @@ from .utils import get_user_input
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from pathlib import Path
 
 
-async def run_main_loop(dest_path: Path, cache: bool) -> None:
+async def run_main_loop(args: Namespace) -> None:
     """
     Run the main loop for downloading media.
 
     Args:
-        dest_path (Path): Destination path for downloads.
-        cache (bool): Whether to use a cached session.
+        args (Namespace): Parsed command line arguments.
     """
-    SessionType = CachedSession if cache else ClientSession
-    session_type_name = "cached" if cache else "non-cached"
+    SessionType = CachedSession if args.cache else ClientSession
+    session_type_name = "cached" if args.cache else "non-cached"
     msg = f"Using {session_type_name} session for downloads."
     print(msg)
     logger.info(msg)
@@ -44,20 +42,17 @@ async def run_main_loop(dest_path: Path, cache: bool) -> None:
     async with SessionType(headers=headers) as session:
         # Dynamically load all crawler modules
         while True:
-            urls, download_path = get_user_input(dest_path)
-
-            await generic_download(
-                session=session, urls=urls, download_path=download_path
-            )
+            urls, download_path = get_user_input(args.dest_path)
+            args.dest_path = download_path
+            await generic_download(session, urls, args)
 
 
-def run(args: Namespace, dest_path: Path) -> None:
+def run(args: Namespace) -> None:
     """
     Run a command if a matching CLI flag is found.
 
     Args:
         args (Namespace): Parsed command line arguments.
-        dest_path (Path): Destination path for downloads.
     """
     if args.config_dir:
         print(CONFIG_FILE)
@@ -72,6 +67,6 @@ def run(args: Namespace, dest_path: Path) -> None:
     else:
         print_welcome(PACKAGE, VERSION, DESC, GITHUB)
         try:
-            asyncio.run(run_main_loop(dest_path, args.cache))
+            asyncio.run(run_main_loop(args))
         except KeyboardInterrupt:
             pass

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import configparser
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from core_helpers.cli import setup_parser
 from rich import print
 
-from .config import (print_entire_config, print_specific_config_field,
-                     update_config_file)
+from .config import print_entire_config, print_specific_config_field, update_config_file
 from .consts import CONFIG_FILE, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
@@ -36,7 +36,7 @@ def get_parsed_args() -> Namespace:
         "-dst",
         "--destination",
         dest="dest_path",
-        type=str,
+        type=Path,
         help="Specify the destination path for moving profiles.",
     )
     # Config file argument
@@ -44,7 +44,7 @@ def get_parsed_args() -> Namespace:
         "-f",
         "--config-file",
         dest="config_file",
-        type=str,
+        type=Path,
         help="Specify a configuration file to use instead of the default one.",
     )
     # Create config file interactive
@@ -62,6 +62,13 @@ def get_parsed_args() -> Namespace:
         action="store_true",
         default=False,
         help="Enable caching support for the requests.",
+    )
+    g_main.add_argument(
+        "-cch",
+        "--check-cache",
+        action="store_true",
+        default=False,
+        help="Check for cached downloads before downloading.",
     )
 
     g_user = parser.add_argument_group("User Options")
