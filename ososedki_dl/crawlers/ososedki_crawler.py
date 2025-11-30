@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from bs4 import BeautifulSoup, Tag
+from core_helpers.logs import logger
 from rich import print
 from typing_extensions import override
 
@@ -48,10 +49,17 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             whose href starts with the configured album path. Returns an empty
             list if the page cannot be fetched or no albums are found.
         """
+        logger.debug(f"Fetching albums from page: {page_url}")
         soup: BeautifulSoup | None = await self.fetch_soup(page_url)
         if not soup:
             return []
 
+        if not self.album_path:
+            logger.warning(
+                f"Album path is not set for {self.__class__.__name__}. Skipping album fetch."
+            )
+
+        logger.debug(f"Extracting albums from soup for {self.__class__.__name__}")
         return list(
             {
                 f"{self.site_url}{a['href']}"
@@ -62,6 +70,8 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         )
 
     def _get_article_title(self, soup: BeautifulSoup) -> str:
+        logger.debug("Extracting article title from soup")
+
         tags: set[str] = {
             "leak",
             "leaked",
@@ -89,8 +99,12 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             for tag in tags:
                 tag_suffix: str = f" {tag.lower()}"
                 if tag_content.lower().endswith(tag_suffix):
+                    logger.info(f"Found article tag: {tag_content}")
                     return tag_content.replace(tag_suffix, "")
 
+        logger.warning(
+            f"No suitable article tag found in the soup for {self.__class__.__name__}"
+        )
         return "Unknown"
 
     def extract_title(self, soup: BeautifulSoup) -> str:
@@ -109,6 +123,8 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             str: The extracted title of the album or model, or "Unknown" if no
             title
         """
+        logger.debug("Extracting title from soup")
+
         title: str = "Unknown"
 
         if self.button_class:
@@ -116,11 +132,13 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                 "a", class_=self.button_class
             )
             if button_html:
+                logger.info(f"Found button with class '{self.button_class}'")
                 print(f"Found button: {button_html.text}")
                 return button_html.text
 
         text_div: Tag | NavigableString | None = soup.find("title")
         if not text_div:
+            logger.warning(f"No title found in the soup for {self.__class__.__name__}")
             return title
         text: str = text_div.text.strip()
 
@@ -130,11 +148,13 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             elif re.search(r" - [0-9]*\s", text):
                 title = text.split(" - ")[0].strip()
         except IndexError:
-            print(f"ERROR: Could not extract title from '{text}'")
+            logger.error(f"Failed to extract title from '{text}'")
+            print(f"ERROR: Failed to extract title from '{text}'")
 
         if title == "Unknown":
             title = self._get_article_title(soup)
 
+        logger.info(f"Extracted title: {title}")
         return title
 
     async def _extract_paginated_images(
@@ -152,6 +172,10 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             list[str]: A list of image URLs extracted from all pages of the
             album.
         """
+        logger.debug(
+            f"Extracting paginated images for owner_id: {owner_id}, album_id: {album_id}"
+        )
+
         images: list[str] = []
         url: str = self.site_url + "/cms/load-more-photos.php"
         pagination_size: int = 100
@@ -167,11 +191,14 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         while True:
             try:
-                response = await self.session.post(url, json=payload, timeout=MAX_TIMEOUT)
+                response = await self.session.post(
+                    url, json=payload, timeout=MAX_TIMEOUT
+                )
                 response.raise_for_status()
                 response_json: dict[str, Any] = await response.json()
             except Exception as e:
-                print(f"Failed to fetch paginated images: {e}")
+                logger.error(f"Failed to fetch paginated images: {e}")
+                print(f"ERROR: Failed to fetch paginated images: {e}")
                 break
             photos: list[dict[str, str]] = response_json["photos"]
             if not photos:
@@ -256,10 +283,13 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         Returns:
             list[str]: List of extracted image URLs.
         """
+        logger.debug("Extracting media from soup")
+
         if self.pagination:
             owner_id, album_id = self._extract_album_info(soup)
             if not owner_id or not album_id:
-                print("Could not find album information in the page.")
+                logger.error("Failed to find album information in the page.")
+                print("ERROR: Failed to find album information in the page.")
                 return []
 
             return await self._extract_paginated_images(owner_id, album_id)
@@ -270,13 +300,16 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             for tag in soup.find_all("a", href=lambda href: self.base_media_url in href)
         ]
         if images:
+            logger.info(f"Found {len(images)} images in the soup")
             return images
 
+        logger.warning("No images found in the soup, searching for alternative sources")
         # ? If no images are found, search for "https://sun9-" in img_url
         for tag in soup.find_all(
-            "a", href=lambda href: href and href.startswith("https://sun")
+            "a", href=lambda href: href and href.startswith("https://sun")  # type: ignore
         ):
             href: str = tag.get("href")
+            logger.info(f"Found sun9 image before cleanup: {href}")
             print(f"Found sun9 image: {href}")
             parsed_url: ParseResult = urlparse(href)
             query: dict[str, list[str]] = parse_qs(
@@ -286,6 +319,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             u: ParseResult = parsed_url._replace(query=urlencode(query, True))
             images.append(u.geturl())
 
+        logger.info(f"Found {len(images)} images after alternative search")
         return images
 
     async def _find_model_albums(
@@ -309,11 +343,14 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             Tuples containing a list of album URLs and the model name for each
             page with albums found.
         """
+        logger.debug(f"Finding model albums for URL: {model_url}")
+
         # Clean the URL removing the query parameters
         model_url = model_url.split("?")[0]
 
         soup: BeautifulSoup | None = await self.fetch_soup(model_url)
         if not soup:
+            logger.error(f"Failed to fetch or parse model page: {model_url}")
             return
 
         model_name: str = title_extractor(soup)
@@ -322,16 +359,20 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         while albums_found:
             page_url: str = f"{model_url}?page={i}"
+            logger.debug("Fetching albums from page %s", page_url)
             albums_extracted: list[str] = await album_fetcher(page_url)
             if not albums_extracted:
                 albums_found = False
                 continue
 
+            logger.info(f"Found {len(albums_extracted)} albums on page {page_url}")
             yield albums_extracted, model_name
             i += 1
 
             # Sleep for a while to avoid being banned
             await asyncio.sleep(1)
+
+        logger.debug(f"Finished finding albums for model: {model_name}")
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -351,13 +392,17 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             list[dict[str, str]]: A list of dictionaries containing media URLs
             and associated metadata.
         """
+        logger.debug(f"Downloading from URL {url} using {self.__class__.__name__}")
+
         if url.startswith(self.site_url + self.album_path):
+            logger.info(f"Downloading album from {url}")
             return await self.process_album(url, self.extract_media, self.extract_title)
         elif (
             (self.model_url and url.startswith(self.model_url))
             or (self.cosplay_url and url.startswith(self.cosplay_url))
             or (self.fandom_url and url.startswith(self.fandom_url))
         ):
+            logger.info(f"Downloading albums for model or cosplay from {url}")
             results: list[dict[str, str]] = []
 
             # Find all the albums for the model incrementally
@@ -376,6 +421,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                 results.extend(chunk_results)
 
             return results
-        else:
-            print(f"Unknown URL format: {url}")
-            return []
+
+        logger.error(f"Unknown URL format: {url}")
+        print(f"ERROR: Unknown URL format: {url}")
+        return []

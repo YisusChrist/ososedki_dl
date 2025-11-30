@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from aiohttp import ClientSession
 from aiohttp_client_cache.session import CachedSession
+from core_helpers.logs import logger
 from core_helpers.utils import print_welcome
 from fake_useragent import UserAgent
 from rich import print
@@ -16,7 +17,6 @@ from .consts import (CONFIG_FILE, GITHUB, LOG_FILE, MIN_USER_AGENT_VERSION,
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .crawlers import crawlers as crawler_modules
-from .logs import logger
 from .scrapper import generic_download
 from .utils import get_user_input
 
@@ -55,16 +55,21 @@ def run(args: Namespace) -> None:
         args (Namespace): Parsed command line arguments.
     """
     if args.config_dir:
+        logger.info("User requested config directory.")
         print(CONFIG_FILE)
     elif args.log_dir:
+        logger.info("User requested log directory.")
         print(LOG_FILE)
     elif args.print_config is not None:
+        logger.info("User requested config file content.")
         handle_config_command(args)
     elif args.list_supported_sites:
+        logger.info("User requested list of supported sites.")
         urls: list[str] = sorted(crawler.site_url for crawler in crawler_modules)
         for url in urls:
             print(url)
     else:
+        logger.info("Starting main loop.")
         print_welcome(PACKAGE, VERSION, DESC, GITHUB)
         try:
             asyncio.run(run_main_loop(args))
