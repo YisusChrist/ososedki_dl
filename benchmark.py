@@ -7,18 +7,18 @@ import statistics as stats
 import tempfile
 import time
 from argparse import ArgumentParser, Namespace
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
 
 from aiohttp import ClientSession, ClientTimeout
 from rich import print
 from rich.progress import (BarColumn, DownloadColumn, Progress, SpinnerColumn,
-                           TimeElapsedColumn, TimeRemainingColumn,
-                           TransferSpeedColumn)
+                           TaskProgressColumn, TimeElapsedColumn,
+                           TimeRemainingColumn, TransferSpeedColumn)
 from rich.traceback import install
 
-from ososedki_dl.progress import PercentageColumn
+from ososedki_dl.consts import KB, PERCENTAGE_FORMAT
 
 # ---------------------------
 # Config
@@ -30,7 +30,6 @@ SAMPLE_PERIOD_S = 0.25  # sampling cadence for throughput rows
 EMA_ALPHA = 0.2  # smoothing factor for EMA throughput
 OUT_DIR = Path("bench_results")  # where CSVs will be stored
 OUT_DIR.mkdir(exist_ok=True)
-KB = 1024
 MB = KB * KB
 
 
@@ -54,7 +53,7 @@ async def _download_with_metrics(
     url: str,
     chunk_size: int,
     run_no: int,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     sample_period_s: float = SAMPLE_PERIOD_S,
     ema_alpha: float = EMA_ALPHA,
 ) -> BenchResult:
@@ -86,7 +85,7 @@ async def _download_with_metrics(
                     SpinnerColumn(),
                     "[progress.description]{task.description}",
                     BarColumn(bar_width=None),
-                    PercentageColumn(),
+                    TaskProgressColumn(PERCENTAGE_FORMAT),
                     DownloadColumn(),
                     TransferSpeedColumn(),
                     TimeRemainingColumn(),
@@ -195,7 +194,7 @@ async def bench_url(
     url: str,
     chunk_sizes: Iterable[int],
     runs_per_size: int,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
 ) -> None:
     """
     Benchmarks a single URL for multiple chunk sizes. Writes a per-URL summary
