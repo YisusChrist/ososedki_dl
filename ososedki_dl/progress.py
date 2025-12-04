@@ -7,6 +7,8 @@ from rich.progress import (BarColumn, DownloadColumn, MofNCompleteColumn,
                            TextColumn, TimeElapsedColumn, TimeRemainingColumn,
                            TransferSpeedColumn)
 
+from ososedki_dl.consts import PERCENTAGE_FORMAT
+
 
 def MediaProgress() -> Progress:
     return Progress(
@@ -17,7 +19,7 @@ def MediaProgress() -> Progress:
             # table_column=Column(width=40, no_wrap=True),
         ),
         BarColumn(bar_width=None),
-        TaskProgressColumn("[progress.percentage]{task.percentage:>5.1f}%"),
+        TaskProgressColumn(PERCENTAGE_FORMAT),
         DownloadColumn(),
         TransferSpeedColumn(),
         TimeRemainingColumn(),
@@ -33,7 +35,7 @@ def AlbumProgress() -> Progress:
             # table_column=Column(width=40, no_wrap=True),
         ),
         BarColumn(bar_width=None),
-        TaskProgressColumn("[progress.percentage]{task.percentage:>5.1f}%"),
+        TaskProgressColumn(PERCENTAGE_FORMAT),
         MofNCompleteColumn(),
         TransferSpeedColumn(),
         TimeRemainingColumn(),

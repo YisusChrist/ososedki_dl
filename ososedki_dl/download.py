@@ -19,7 +19,8 @@ from aiohttp_client_cache.session import CachedSession
 from core_helpers.logs import logger
 from rich import print
 
-from .consts import MAX_TIMEOUT
+from .consts import (DEFAULT_CHUNK_SIZE, DEFAULT_RESPONSE_PROPERTY, KB,
+                     MAX_TIMEOUT)
 from .progress import MediaProgress
 from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
                     write_to_cache)
@@ -42,15 +43,20 @@ else:
 def _choose_chunk_size(
     throughput_bps: int | None = None,
     min_kb: int = 32,
-    max_kb: int = 1024,
+    max_kb: int = KB,
     target_ms: int = 150,
 ) -> int:
+    logger.debug(
+        f"Choosing chunk size with throughput_bps={throughput_bps}, "
+        f"min_kb={min_kb}, max_kb={max_kb}, target_ms={target_ms}"
+    )
+
     # throughput_bps is bytes/sec (measure it once you start receiving data)
     if not throughput_bps:
-        return 64 * 1024  # default before we can measure
+        return 64 * KB  # default before we can measure
     target_bytes = int(throughput_bps * (target_ms / 1000))
     # clamp to [min_kb, max_kb]
-    return max(min_kb * 1024, min(target_bytes, max_kb * 1024))
+    return max(min_kb * KB, min(target_bytes, max_kb * KB))
 
 
 class Downloader:
@@ -64,6 +70,8 @@ class Downloader:
         headers: dict[str, str] | None = None,
         check_cache: bool = False,
     ) -> None:
+        logger.debug("Initialized Downloader")
+
         self.session = session
         self.headers = headers
         self.check_cache = check_cache
@@ -71,10 +79,15 @@ class Downloader:
     async def fetch(
         self,
         url: str,
-        response_property: str = "text",
+        response_property: str = DEFAULT_RESPONSE_PROPERTY,
         raw_response: bool = False,
         **kwargs: Any,
     ) -> Any:
+        logger.debug(
+            f"Fetching URL: {url} with response_property='{response_property}' "
+            f"and raw_response={raw_response}"
+        )
+
         while True:
             try:
                 response = await self.session.get(
@@ -99,10 +112,13 @@ class Downloader:
             except SSLCertVerificationError as e:
                 raise e
             except ClientConnectorError as e:
+                logger.exception(f"Failed to connect to {url}")
                 print(f"Failed to connect to {url} with error {e}. Retrying...")
                 await sleep(5)
             except ClientResponseError as e:  # 4xx, 5xx errors
+                logger.exception(f"Failed to fetch {url}")
                 print(f"Failed to fetch {url} with status {e.status}")
+
                 response2: requests.Response = requests.get(
                     url, timeout=MAX_TIMEOUT, **kwargs
                 )
@@ -118,20 +134,27 @@ class Downloader:
     async def download_image(
         self, url: str, response: ClientResponse, media_path: Path
     ) -> dict[str, str]:
+        logger.debug(f"Downloading image from URL: {url}")
+
         image_content: bytes = await response.read()
 
         if media_path.exists():
+            logger.debug(f"Checking existing file: {media_path}")
             file_content: bytes = media_path.read_bytes()
             if file_content == image_content:
-                # print(f"Skipping {url}")
+                logger.info(f"File already exists and matches: {media_path}")
                 return {"url": url, "status": "skipped"}
             media_path = get_unique_filename(media_path)
+            logger.debug(f"File exists, renaming to: {media_path}")
 
         async with aiofiles.open(media_path, "wb") as f:
             await f.write(image_content)
 
-        write_to_cache(url)
-        # print(f"Downloaded {url}")
+        if self.check_cache:
+            write_to_cache(url)
+
+        logger.info(f"Downloaded image to: {media_path}")
+
         return {"url": url, "status": "ok"}
 
     async def download_video(
@@ -139,16 +162,20 @@ class Downloader:
         url: str,
         response: ClientResponse,
         media_path: Path,
-        chunk_size: int = 8192,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
         dynamic_chunk: bool = False,
     ) -> dict[str, str]:
+        logger.debug(f"Downloading video from URL: {url}")
+
         content_length = int(response.headers.get("Content-Length", 0))
+        logger.debug(f"Content length: {content_length} bytes")
 
         remote_hash = hashlib.sha256()
         file_exists: bool = media_path.exists()
         local_hash = hashlib.sha256() if file_exists else None
 
         temp_path: Path = media_path.with_suffix(media_path.suffix + ".part")
+        logger.debug(f"Temporary file path: {temp_path}")
 
         bytes_seen = 0
         t0: float = monotonic()
@@ -160,6 +187,7 @@ class Downloader:
                 "Downloading", filename=media_path.name, total=content_length
             )
             async with aiofiles.open(temp_path, "wb") as f:
+                logger.debug(f"Opened temporary file for writing: {temp_path}")
                 async for chunk in response.content.iter_chunked(chunk_size):
                     if not chunk:
                         continue
@@ -167,6 +195,10 @@ class Downloader:
                     remote_hash.update(chunk)
                     await f.write(chunk)
                     progress.advance(task, len(chunk))
+                    logger.debug(
+                        f"Wrote {len(chunk)} bytes to {temp_path}, "
+                        f"Total written: {progress.completed}/{progress.total}"
+                    )
 
                     if local_hash is not None:
                         local_hash.update(chunk)
@@ -180,32 +212,44 @@ class Downloader:
                     if elapsed > 1.0:  # update once per second (cheap)
                         throughput_bps = int(bytes_seen / elapsed)
                         chunk_size = _choose_chunk_size(throughput_bps)  # 32KB..1MB
-                        print(f"New chunk size: {chunk_size / 1024:.2f} KB")
+                        logger.debug(
+                            f"Throughput: {throughput_bps / KB:.2f} KB/s, "
+                            f"Chunk size: {chunk_size / KB:.2f} KB"
+                        )
+                        print(f"New chunk size: {chunk_size / KB:.2f} KB")
                         bytes_seen = 0
                         t0 = now
 
         if file_exists and local_hash and local_hash.digest() == remote_hash.digest():
+            logger.info(f"File already exists and matches: {media_path}")
             temp_path.unlink(missing_ok=True)
-            # print(f"Skipping {url}")
+            logger.debug(f"Removed temporary file: {temp_path}")
             return {"url": url, "status": "skipped"}
 
         new_path: Path = get_unique_filename(media_path)
+        logger.debug(f"Final file path: {new_path}")
         temp_path.rename(new_path)
-        write_to_cache(url)
-        # print(f"Downloaded {url}")
+
+        if self.check_cache:
+            write_to_cache(url)
+
+        logger.info(f"Downloaded video to: {new_path}")
+
         return {"url": url, "status": "ok"}
 
     async def download_and_compare(self, url: str, media_path: Path) -> dict[str, str]:
+        logger.debug(f"Downloading and comparing media from URL: {url}")
+
         if self.check_cache and get_url_hashfile(url).exists():
-            # print(f"Skipping {url}")
+            logger.info(f"Media already in cache, skipping download: {url}")
             return {"url": url, "status": "skipped"}
         try:
             response = await self.fetch(url, raw_response=True, headers=self.headers)
         except ClientResponseError as e:
-            # print(f"Failed to fetch {url} with status {e.status}")
+            logger.exception(f"Failed to fetch {url}")
             return {"url": url, "status": f"error: {e.status}"}
         except Exception as e:
-            # print(f"Failed to fetch {url} with error {e}")
+            logger.exception(f"Failed to fetch {url}")
             return {"url": url, "status": f"error: {e}"}
 
         content_type: str = response.headers.get("Content-Type", "")
@@ -222,20 +266,26 @@ class Downloader:
         # Use urlparse to extract the media name from the URL
         media_name: str = unquote(urlparse(url).path).split("/")[-1]
         if not Path(media_name).suffix:
+            logger.info(
+                f"Media name '{media_name}' has no extension, checking content type..."
+            )
             # If media_name has no extension, add one using the url content type
             response = await self.session.head(
                 url, headers=self.headers, timeout=MAX_TIMEOUT
             )
             content_type: str | None = response.headers.get("Content-Type")
             if not content_type:
-                print(f"Failed to get content type for {url}")
+                logger.error(f"Failed to get content type for {url}")
+                print(f"ERROR: Failed to get content type for {url}")
             else:
                 # Map content type to a file extension
                 extension: str = content_type.split("/")[
                     -1
                 ]  # e.g., 'image/jpeg' -> 'jpeg'
                 media_name = f"{media_name}.{extension}"
+                logger.debug(f"Updated media name to: {media_name}")
 
         media_path: Path = sanitize_path(album_path, media_name)
+        logger.debug(f"Media path resolved to: {media_path}")
 
         return await self.download_and_compare(url, media_path)

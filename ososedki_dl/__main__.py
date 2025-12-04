@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from core_helpers import logger
+from core_helpers.logs import logger
 from rich.traceback import install
 
 from .cli import get_parsed_args

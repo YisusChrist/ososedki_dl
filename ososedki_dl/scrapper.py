@@ -95,8 +95,11 @@ async def generic_download(
     for url in urls:
         results.extend(await handle_downloader(session, url, args))
 
-    status_counts = Counter(result["status"].split(":")[0] for result in results)
+    status_counts: Counter[str] = Counter(
+        result["status"].split(":")[0] for result in results
+    )
 
+    logger.debug(f"Download results summary: {status_counts}")
     print(
         f"""
 [green]Downloaded: {status_counts['ok']}[/]
@@ -105,6 +108,7 @@ async def generic_download(
     )
 
     if status_counts["error"] > 0:
+        logger.info("There were errors during download")
         print_errors(results)
 
 
@@ -129,6 +133,8 @@ async def handle_downloader(
     Returns:
         list[dict[str, str]]: The list to append download results to.
     """
+    logger.debug(f"Handling downloader for URL: {url}")
+
     # Check if the URL is valid
     try:
         response: ClientResponse | CachedResponse = await session.get(url)
@@ -137,11 +143,14 @@ async def handle_downloader(
         logger.exception("Failed to fetch URL %s", url)
         return [{"url": url, "status": f"error: {e}"}]
 
+    logger.info("URL %s is valid, selecting crawler...", url)
+
     for CrawlerClass in crawler_modules:
+        logger.debug("Checking crawler: %s for URL: %s", CrawlerClass.__name__, url)
         if url.startswith(CrawlerClass.site_url):
             crawler: CrawlerInstance = CrawlerClass(session, args)
             crawler_name: str = crawler.__class__.__name__
-            logger.debug("Downloading for URL: %s using crawler: %s", url, crawler_name)
+            logger.info("Downloading for URL: %s using crawler: %s", url, crawler_name)
             return await crawler.download(url)
     else:
         logger.warning("No downloader found for URL: %s", url)

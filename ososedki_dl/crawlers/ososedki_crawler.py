@@ -14,7 +14,7 @@ from core_helpers.logs import logger
 from rich import print
 from typing_extensions import override
 
-from ..consts import MAX_TIMEOUT
+from ..consts import DEFAULT_ALBUM_TITLE, DEFAULT_PAGINATION_SIZE, MAX_TIMEOUT
 from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -105,7 +105,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         logger.warning(
             f"No suitable article tag found in the soup for {self.__class__.__name__}"
         )
-        return "Unknown"
+        return DEFAULT_ALBUM_TITLE
 
     def extract_title(self, soup: BeautifulSoup) -> str:
         """
@@ -114,18 +114,17 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         Attempts to find a title by checking for an anchor tag with a specific
         button class, parsing the "title" tag for known patterns, or falling
-        back to meta tags. Returns "Unknown" if no suitable title is found.
+        back to meta tags. Returns `DEFAULT_ALBUM_TITLE` if no suitable title is
+        found.
 
         Args:
             soup (BeautifulSoup): Parsed HTML content of the page.
 
         Returns:
-            str: The extracted title of the album or model, or "Unknown" if no
-            title
+            str: The extracted title of the album or model, or
+                `DEFAULT_ALBUM_TITLE` if no title could be extracted.
         """
         logger.debug("Extracting title from soup")
-
-        title: str = "Unknown"
 
         if self.button_class:
             button_html: Tag | NavigableString | None = soup.find(
@@ -138,9 +137,13 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         text_div: Tag | NavigableString | None = soup.find("title")
         if not text_div:
-            logger.warning(f"No title found in the soup for {self.__class__.__name__}")
-            return title
+            logger.warning(
+                f"No title tag found in the soup for {self.__class__.__name__}"
+            )
+            return DEFAULT_ALBUM_TITLE
+
         text: str = text_div.text.strip()
+        title: str = DEFAULT_ALBUM_TITLE
 
         try:
             if " (@" in text:
@@ -151,14 +154,17 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             logger.error(f"Failed to extract title from '{text}'")
             print(f"ERROR: Failed to extract title from '{text}'")
 
-        if title == "Unknown":
+        if title == DEFAULT_ALBUM_TITLE:
             title = self._get_article_title(soup)
 
         logger.info(f"Extracted title: {title}")
         return title
 
     async def _extract_paginated_images(
-        self, owner_id: str, album_id: str
+        self,
+        owner_id: str,
+        album_id: str,
+        pagination_size: int = DEFAULT_PAGINATION_SIZE,
     ) -> list[str]:
         """
         Asynchronously retrieves all image URLs from a paginated album using
@@ -167,10 +173,12 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         Args:
             owner_id (str): The owner ID of the album.
             album_id (str): The album ID to fetch images from.
+            pagination_size (int): Number of images to fetch per request. Defaults to
+                DEFAULT_PAGINATION_SIZE.
 
         Returns:
             list[str]: A list of image URLs extracted from all pages of the
-            album.
+                album.
         """
         logger.debug(
             f"Extracting paginated images for owner_id: {owner_id}, album_id: {album_id}"
@@ -178,7 +186,6 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         images: list[str] = []
         url: str = self.site_url + "/cms/load-more-photos.php"
-        pagination_size: int = 100
 
         payload: dict[str, str | int] = {
             "album_id": album_id,
@@ -204,6 +211,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             if not photos:
                 break
 
+            logger.info(f"Fetched {len(photos)} photos from offset {payload['offset']}")
             for photo in photos:
                 soup = BeautifulSoup(photo["html"], "html.parser")
                 anchor: Tag | NavigableString | None = soup.find(
@@ -216,6 +224,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                     continue
                 if isinstance(href, list):
                     href = href[0]
+                logger.debug(f"Found image URL: {href}")
                 images.append(href)
 
             if len(photos) < pagination_size:
@@ -243,6 +252,8 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             tuple[str, str]: A tuple containing the owner ID and album ID, or
             empty strings if not found.
         """
+        logger.debug("Extracting album info from soup")
+
         preload: Tag | NavigableString | None = soup.find(
             "link", {"rel": "preload", "as": "image"}
         )
@@ -252,7 +263,11 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                 href = href[0]
             if href:
                 parts: list[str] = href.split("/")[-3:-1]
-                return parts[0], parts[1]
+                owner_id, album_id = parts[0], parts[1]
+                logger.info(
+                    f"Extracted album info from preload: owner_id={owner_id}, album_id={album_id}"
+                )
+                return owner_id, album_id
 
         og_image: Tag | NavigableString | None = soup.find(
             "meta", {"property": "og:image"}
@@ -263,8 +278,13 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                 content = content[0]
             if content:
                 parts = content.split("/")
-                return parts[-2], parts[-1].split(".")[0]
+                owner_id, album_id = parts[-2], parts[-1].split(".")[0]
+                logger.info(
+                    f"Extracted album info from og:image: owner_id={owner_id}, album_id={album_id}"
+                )
+                return owner_id, album_id
 
+        logger.error("Failed to extract album info from soup")
         return "", ""
 
     async def extract_media(self, soup: BeautifulSoup) -> list[str]:
@@ -409,6 +429,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             async for albums, _ in self._find_model_albums(
                 url, self.fetch_page_albums, self.extract_title
             ):
+                logger.info(f"Processing {len(albums)} albums concurrently")
                 tasks: list[CoroutineType[Any, Any, list[dict[str, str]]]] = [
                     self.process_album(album, self.extract_media, self.extract_title)
                     for album in albums

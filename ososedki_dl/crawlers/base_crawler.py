@@ -78,11 +78,14 @@ class BaseCrawler(ABC):
     # region Fetching functions
 
     async def fetch_soup(self, url: str) -> BeautifulSoup | None:
-        print(f"Fetching {url}")
+        logger.debug(f"Fetching soup for URL: {url}")
+        #print(f"Fetching {url}")
+
         try:
             html_content: str = await self.downloader.fetch(url)
             return BeautifulSoup(html_content, "html.parser")
         except ClientResponseError as e:
+            logger.exception(f"Failed to fetch {url}")
             print(f"Failed to fetch {url} with status {e.status}")
             return None
 
@@ -92,6 +95,10 @@ class BaseCrawler(ABC):
         album_title: str,
         album_path: Path,
     ) -> list[dict[str, str]]:
+        logger.debug(
+            f"Downloading {len(media_urls)} media items for album '{album_title}'"
+        )
+
         tasks: list[Any] = [
             self.downloader.download_and_save_media(url, album_path)
             for url in media_urls
@@ -106,6 +113,7 @@ class BaseCrawler(ABC):
                 result: dict[str, str] = await future
                 results.append(result)
                 progress.advance(task)
+                logger.info(f"Downloaded: {result['url']} - Status: {result['status']}")
 
         return results
 
@@ -149,8 +157,10 @@ class BaseCrawler(ABC):
             list[dict[str, str]]: A list of dictionaries containing the results of
             each media download or an empty list otherwise.
         """
+        logger.debug(f"Processing album: {album_url}")
         if retries > 5:
-            print(f"Max depth reached for {album_url}. Skipping...")
+            logger.error(f"Max retries reached for {album_url}. Skipping...")
+            print(f"ERROR: Max retries reached for {album_url}. Skipping...")
             return []
 
         album_url.rstrip("/")
@@ -171,6 +181,7 @@ class BaseCrawler(ABC):
             # print(f"Title: {title}")
             # print(f"Media URLs: {len(media_urls)}")
         except (TypeError, ValueError) as e:
+            logger.exception(f"Error extracting album data from {album_url}")
             print(f"Failed to process album: {e}. Retrying...")
             return await self.process_album(
                 album_url,

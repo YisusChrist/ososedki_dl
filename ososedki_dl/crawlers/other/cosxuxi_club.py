@@ -5,8 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from bs4 import NavigableString
+from core_helpers.logs import logger
 from typing_extensions import override
 
+from ...consts import DEFAULT_ALBUM_TITLE
 from ...utils import get_final_path
 from ..base_crawler import BaseCrawler
 
@@ -24,20 +26,22 @@ class CosxuxiClubCrawler(BaseCrawler):
     def cosxuxi_club_title_extractor(self, soup: BeautifulSoup) -> str:
         text_div: Tag | NavigableString | None = soup.find("title")
         if not text_div:
-            return "Unknown"
-        text: str = text_div.text.strip()
-        title: str = "Unknown"
+            logger.warning(
+                f"No title tag found in the soup for {self.__class__.__name__}"
+            )
+            return DEFAULT_ALBUM_TITLE
 
-        if f"{self.site_name}: " in text:
-            try:
+        text: str = text_div.text.strip()
+        title: str = DEFAULT_ALBUM_TITLE
+
+        try:
+            if f"{self.site_name}: " in text:
                 title = text.split(f"{self.site_name}: ")[1].strip()
-            except IndexError:
-                print(f"ERROR: Could not extract title from '{text}'")
-        if self.title_separator in text:
-            try:
+            if self.title_separator in text:
                 title = text.split(self.title_separator)[0].strip()
-            except IndexError:
-                print(f"ERROR: Could not extract title from '{text}'")
+        except IndexError:
+            logger.error(f"Failed to extract title from '{text}'")
+            print(f"ERROR: Failed to extract title from '{text}'")
 
         return title
 

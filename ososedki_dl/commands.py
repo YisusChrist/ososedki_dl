@@ -31,6 +31,8 @@ async def run_main_loop(args: Namespace) -> None:
     Args:
         args (Namespace): Parsed command line arguments.
     """
+    logger.debug("Entering main download loop.")
+
     SessionType = CachedSession if args.cache else ClientSession
     session_type_name = "cached" if args.cache else "non-cached"
     msg = f"Using {session_type_name} session for downloads."
@@ -38,6 +40,7 @@ async def run_main_loop(args: Namespace) -> None:
     logger.info(msg)
 
     ua = UserAgent(min_version=MIN_USER_AGENT_VERSION)
+    logger.debug(f"Generated User-Agent: {ua.random}")
     headers: dict[str, str] = {"User-Agent": ua.random}
     async with SessionType(headers=headers) as session:
         while True:
@@ -53,6 +56,8 @@ def run(args: Namespace) -> None:
     Args:
         args (Namespace): Parsed command line arguments.
     """
+    logger.debug(f"Running commands with args: {args}")
+
     if args.config_dir:
         logger.info("User requested config directory.")
         print(CONFIG_FILE)

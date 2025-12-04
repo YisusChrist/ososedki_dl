@@ -6,6 +6,7 @@ import configparser
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from core_helpers.logs import logger
 from core_helpers.cli import setup_parser
 from rich import print
 
@@ -122,22 +123,32 @@ def handle_config_command(args: Namespace) -> None:
     Args:
         args (Namespace): The parsed arguments.
     """
+    logger.debug("Handling config command")
+
     # Read both configuration file and command-line arguments
     config = configparser.ConfigParser()
     try:
+        logger.info(f"Reading config file: {CONFIG_FILE}")
         config.read(CONFIG_FILE)
 
         if not args.print_config:
+            logger.debug("Printing entire config")
             print_entire_config(config)
         elif len(args.print_config) == 1:
+            logger.debug(f"Printing specific config field: {args.print_config[0]}")
             print_specific_config_field(config, args.print_config[0])
         else:
+            logger.debug("Updating config fields")
             update_config_file(config, args.print_config)
             # Save updated config
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 config.write(f)
+            logger.info("Config file updated successfully.")
+            print("[green]Config file updated successfully.[/]")
 
     except configparser.Error as e:
+        logger.exception("Error parsing config file")
         print(f"Error parsing config file: {e}")
     except IOError as e:
+        logger.exception("Error accessing config file")
         print(f"Error accessing config file: {e}")
