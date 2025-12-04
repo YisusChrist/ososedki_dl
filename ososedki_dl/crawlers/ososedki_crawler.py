@@ -18,7 +18,7 @@ from ..consts import DEFAULT_ALBUM_TITLE, DEFAULT_PAGINATION_SIZE, MAX_TIMEOUT
 from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Awaitable, Callable
+    from collections.abc import AsyncGenerator
     from types import CoroutineType
     from typing import Any
     from urllib.parse import ParseResult
@@ -107,7 +107,8 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         )
         return DEFAULT_ALBUM_TITLE
 
-    def extract_title(self, soup: BeautifulSoup) -> str:
+    @override
+    def get_album_title(self, soup: BeautifulSoup) -> str:
         """
         Extracts the title of an album or model page from the provided
         BeautifulSoup object.
@@ -287,7 +288,8 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         logger.error("Failed to extract album info from soup")
         return "", ""
 
-    async def extract_media(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         """
         Asynchronously extracts all media (image) URLs from an album or page.
 
@@ -343,10 +345,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         return images
 
     async def _find_model_albums(
-        self,
-        model_url: str,
-        album_fetcher: Callable[[str], Awaitable[list[str]]],
-        title_extractor: Callable[[BeautifulSoup], str],
+        self, model_url: str
     ) -> AsyncGenerator[tuple[list[str], str], None]:
         """
         Asynchronously iterates through paginated model pages to yield album
@@ -354,10 +353,6 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         Args:
             model_url (str): The URL of the model page to start from.
-            album_fetcher (Callable): A function that fetches album URLs from a
-                page.
-            title_extractor (Callable): A function that extracts the model name
-                from the page.
 
         Yields:
             Tuples containing a list of album URLs and the model name for each
@@ -373,14 +368,14 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             logger.error(f"Failed to fetch or parse model page: {model_url}")
             return
 
-        model_name: str = title_extractor(soup)
+        model_name: str = self.get_album_title(soup)
         i = 1
         albums_found = True
 
         while albums_found:
             page_url: str = f"{model_url}?page={i}"
             logger.debug("Fetching albums from page %s", page_url)
-            albums_extracted: list[str] = await album_fetcher(page_url)
+            albums_extracted: list[str] = await self.fetch_page_albums(page_url)
             if not albums_extracted:
                 albums_found = False
                 continue
@@ -416,7 +411,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         if url.startswith(self.site_url + self.album_path):
             logger.info(f"Downloading album from {url}")
-            return await self.process_album(url, self.extract_media, self.extract_title)
+            return await self.process_album(url)
         elif (
             (self.model_url and url.startswith(self.model_url))
             or (self.cosplay_url and url.startswith(self.cosplay_url))
@@ -426,12 +421,10 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             results: list[dict[str, str]] = []
 
             # Find all the albums for the model incrementally
-            async for albums, _ in self._find_model_albums(
-                url, self.fetch_page_albums, self.extract_title
-            ):
+            async for albums, _ in self._find_model_albums(url):
                 logger.info(f"Processing {len(albums)} albums concurrently")
                 tasks: list[CoroutineType[Any, Any, list[dict[str, str]]]] = [
-                    self.process_album(album, self.extract_media, self.extract_title)
+                    self.process_album(album)
                     for album in albums
                 ]
 

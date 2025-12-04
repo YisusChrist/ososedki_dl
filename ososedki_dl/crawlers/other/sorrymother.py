@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import override
 
+from ...consts import DEFAULT_ALBUM_TITLE
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -17,7 +18,8 @@ class SorryMotherCrawler(BaseCrawler):
     base_url: str = "https://pics.sorrymother.video/"
     headers = {"Referer": site_url, "Range": "bytes=0-"}
 
-    def sorrymother_title_extractor(self, soup: BeautifulSoup) -> str:
+    @override
+    def get_album_title(self, soup: BeautifulSoup) -> str:
         """
         Extracts the content title from the HTML soup by locating the first <a>
         tag with class "entry-tag".
@@ -26,15 +28,16 @@ class SorryMotherCrawler(BaseCrawler):
             soup (BeautifulSoup): Parsed HTML content of the page.
 
         Returns:
-            The text of the first matching tag, or "Untitled" if no such tag is
-            found.
+            str: The text of the first matching tag, or `DEFAULT_ALBUM_TITLE`
+                if no such tag is found.
         """
         # TODO: Add a better way to get the title, this fails if there is no tag
         # or if the first tag is not the correct title
         tags = soup.find_all("a", class_="entry-tag")
-        return tags[0].text if tags else "Untitled"
+        return tags[0].text if tags else DEFAULT_ALBUM_TITLE
 
-    async def sorrymother_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         """
         Extracts and normalizes media URLs from the provided HTML soup.
 
@@ -59,8 +62,8 @@ class SorryMotherCrawler(BaseCrawler):
             new_name: str = "-".join(parts[:-1]) + "." + parts[-1].split(".")[-1]
             images.append(new_name)
         videos: list[str] = [
-            video["src"].split("?")[0]
-            for video in soup.find_all("source", {"type": "video/mp4"})
+            video["data-src"].strip()
+            for video in soup.find_all("button", class_="cfp_dl")
         ]
         return images + videos
 
@@ -76,6 +79,4 @@ class SorryMotherCrawler(BaseCrawler):
             list[dict[str, str]]: A list of dictionaries containing information
             about each downloaded media item.
         """
-        return await self.process_album(
-            url, self.sorrymother_media_filter, self.sorrymother_title_extractor
-        )
+        return await self.process_album(url)

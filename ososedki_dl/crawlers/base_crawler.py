@@ -17,7 +17,6 @@ from ..utils import get_final_path
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from collections.abc import Awaitable, Callable
     from pathlib import Path
     from typing import Any
 
@@ -58,6 +57,37 @@ class BaseCrawler(ABC):
         return self.site_url + (self.base_image_path or "")
 
     @abstractmethod
+    def get_album_title(self, soup: BeautifulSoup) -> str:
+        """
+        Extracts and returns the album title from the given URL and parsed HTML.
+
+        Args:
+            soup (BeautifulSoup | None): Parsed HTML content of the album page.
+
+        Returns:
+            str: The extracted album title.
+        """
+        raise NotImplementedError(
+            "Each crawler must implement its own get_album_title method"
+        )
+
+    @abstractmethod
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+        """
+        Asynchronously extracts and returns a list of media URLs from the given
+        album URL and parsed HTML.
+
+        Args:
+            soup (BeautifulSoup | None): Parsed HTML content of the album page.
+
+        Returns:
+            list[str]: A list of media URLs extracted from the album page.
+        """
+        raise NotImplementedError(
+            "Each crawler must implement its own get_media_urls method"
+        )
+
+    @abstractmethod
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Asynchronously downloads and parses content from the specified URL.
@@ -79,7 +109,7 @@ class BaseCrawler(ABC):
 
     async def fetch_soup(self, url: str) -> BeautifulSoup | None:
         logger.debug(f"Fetching soup for URL: {url}")
-        #print(f"Fetching {url}")
+        # print(f"Fetching {url}")
 
         try:
             html_content: str = await self.downloader.fetch(url)
@@ -124,8 +154,6 @@ class BaseCrawler(ABC):
     async def process_album(
         self,
         album_url: str,
-        media_filter: Callable[[BeautifulSoup], Awaitable[list[str]]],
-        title_extractor: Callable[[BeautifulSoup], str] | None = None,
         title: str | None = None,
         retries: int = 0,
         media_urls: list[str] | None = None,
@@ -142,10 +170,6 @@ class BaseCrawler(ABC):
 
         Args:
             album_url (str): The URL of the album page to process.
-            media_filter (Callable[[BeautifulSoup], Awaitable[list[str]]]):
-                Asynchronous function to extract media URLs from the parsed HTML.
-            title_extractor (Callable[[BeautifulSoup], str], optional): Function
-                to extract the album title from the parsed HTML.
             title (str, optional): Fallback title for the album.
             retries (int): Current retry count for extraction attempts.
             media_urls (list[str], optional): Pre-extracted list of media
@@ -158,6 +182,7 @@ class BaseCrawler(ABC):
             each media download or an empty list otherwise.
         """
         logger.debug(f"Processing album: {album_url}")
+
         if retries > 5:
             logger.error(f"Max retries reached for {album_url}. Skipping...")
             print(f"ERROR: Max retries reached for {album_url}. Skipping...")
@@ -172,12 +197,12 @@ class BaseCrawler(ABC):
 
         try:
             # Extract the title if a title_extractor is provided; otherwise, use the given title
-            if title_extractor:
-                title = title_extractor(soup)
+            if not title:
+                title = self.get_album_title(soup)
             if not title:
                 raise ValueError("Title could not be determined")
 
-            media_urls = media_urls or list(set(await media_filter(soup)))
+            media_urls = media_urls or list(set(await self.get_media_urls(soup)))
             # print(f"Title: {title}")
             # print(f"Media URLs: {len(media_urls)}")
         except (TypeError, ValueError) as e:
@@ -185,11 +210,10 @@ class BaseCrawler(ABC):
             print(f"Failed to process album: {e}. Retrying...")
             return await self.process_album(
                 album_url,
-                media_filter,
-                title_extractor,
                 title,
                 retries + 1,
                 media_urls,
+                soup,
             )
 
         album_path: Path = get_final_path(self.download_path, title)

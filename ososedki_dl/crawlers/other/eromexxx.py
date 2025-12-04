@@ -114,7 +114,8 @@ one of the following URLs:
             return True
         return "-" in self._validate_url(url)
 
-    async def media_filter(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         """
         Filter and retrieve media URLs from the BeautifulSoup object.
 
@@ -192,7 +193,7 @@ one of the following URLs:
             return []
 
         return await self.process_album(
-            url, self.media_filter, title=title, media_urls=media_urls, soup=soup
+            url, title=title, media_urls=media_urls, soup=soup
         )
 
     async def all_models_download(self) -> list[dict[str, str]]:
@@ -215,7 +216,7 @@ one of the following URLs:
             each downloaded media item.
         """
         title: str = post_url.rstrip("/").split("/")[-1]
-        return await self.process_album(post_url, self.media_filter, title=title)
+        return await self.process_album(post_url, title=title)
 
     async def get_media_from_page(self, url: str) -> list[str]:
         """
@@ -252,7 +253,7 @@ one of the following URLs:
         if not soup:
             return []
 
-        return list(set(await self.media_filter(soup)))
+        return list(set(await self.get_media_urls(soup)))
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:

@@ -7,7 +7,7 @@ from rich.progress import (BarColumn, DownloadColumn, MofNCompleteColumn,
                            TextColumn, TimeElapsedColumn, TimeRemainingColumn,
                            TransferSpeedColumn)
 
-from ososedki_dl.consts import PERCENTAGE_FORMAT
+from .consts import PERCENTAGE_FORMAT
 
 
 def MediaProgress() -> Progress:

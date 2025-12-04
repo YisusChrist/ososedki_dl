@@ -22,22 +22,6 @@ if TYPE_CHECKING:
 class HusvjjalBlogspotCrawler(BaseCrawler):
     site_url = "https://husvjjal.blogspot.com"
 
-    # @lru_cache
-    async def download_album(self, album_url: str) -> list[dict[str, str]]:
-        """
-        Download all media items from a specified album URL.
-
-        Args:
-            album_url (str): The URL of the album to download media from.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries containing media
-            metadata and URLs extracted from the album.
-        """
-        return await self.process_album(
-            album_url, self.husvjjal_blogspot_media_filter, title="husvjjal"
-        )
-
     async def get_related_albums(self, album_url: str) -> list[str]:
         """
         Fetches related album URLs for a given album by querying the site's
@@ -115,7 +99,8 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
 
         return max_stream
 
-    async def husvjjal_blogspot_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         """
         Asynchronously extracts downloadable image and video URLs from a
         BeautifulSoup-parsed album page.
@@ -233,13 +218,11 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         profile_url: str = url.rstrip("/")
         if profile_url.endswith(".html"):
             results: list[dict[str, str]] = await self.process_album(
-                profile_url, self.husvjjal_blogspot_media_filter, title="husvjjal"
+                profile_url, title="husvjjal"
             )
             related_albums: list[str] = await self.get_related_albums(profile_url)
             for related_album in related_albums:
-                results += await self.process_album(
-                    related_album, self.husvjjal_blogspot_media_filter, title="husvjjal"
-                )
+                results += await self.process_album(related_album, title="husvjjal")
             return results
 
         soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
@@ -259,9 +242,9 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         results = []
         index = 0
         while index < len(albums):
-            album: str = albums[index]
-            results += await self.download_album(album)
-            related_albums = await self.get_related_albums(album)
+            album_url: str = albums[index]
+            results += await self.process_album(album_url, title="husvjjal")
+            related_albums = await self.get_related_albums(album_url)
             for related_album in related_albums:
                 if related_album not in albums:
                     albums.append(related_album)
