@@ -186,6 +186,7 @@ class Downloader:
             task = progress.add_task(
                 "Downloading", filename=media_path.name, total=content_length
             )
+            p_task = progress.tasks[0]
             async with aiofiles.open(temp_path, "wb") as f:
                 logger.debug(f"Opened temporary file for writing: {temp_path}")
                 async for chunk in response.content.iter_chunked(chunk_size):
@@ -196,8 +197,8 @@ class Downloader:
                     await f.write(chunk)
                     progress.advance(task, len(chunk))
                     logger.debug(
-                        f"Wrote {len(chunk)} bytes to {temp_path}, "
-                        f"Total written: {progress.completed}/{progress.total}"
+                        f"Wrote {len(chunk)} bytes to {temp_path.name}, "
+                        f"Total written: {p_task.completed}/{p_task.total}"
                     )
 
                     if local_hash is not None:
