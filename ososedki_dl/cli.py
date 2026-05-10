@@ -6,8 +6,8 @@ import configparser
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from core_helpers.logs import logger
 from core_helpers.cli import setup_parser
+from core_helpers.logs import logger
 from rich import print
 
 from .config import print_entire_config, print_specific_config_field, update_config_file

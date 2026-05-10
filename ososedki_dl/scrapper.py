@@ -100,12 +100,10 @@ async def generic_download(
     )
 
     logger.debug(f"Download results summary: {status_counts}")
-    print(
-        f"""
+    print(f"""
 [green]Downloaded: {status_counts['ok']}[/]
 [yellow]Skipped: {status_counts['skipped']}[/]
-[red]Errors: {status_counts['error']}[/]\n"""
-    )
+[red]Errors: {status_counts['error']}[/]\n""")
 
     if status_counts["error"] > 0:
         logger.info("There were errors during download")

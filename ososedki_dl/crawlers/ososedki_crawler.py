@@ -424,8 +424,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             async for albums, _ in self._find_model_albums(url):
                 logger.info(f"Processing {len(albums)} albums concurrently")
                 tasks: list[CoroutineType[Any, Any, list[dict[str, str]]]] = [
-                    self.process_album(album)
-                    for album in albums
+                    self.process_album(album) for album in albums
                 ]
 
                 # Process the tasks for this chunk and collect results

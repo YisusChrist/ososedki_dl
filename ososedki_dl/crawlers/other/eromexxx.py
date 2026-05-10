@@ -7,7 +7,6 @@ from itertools import chain
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from bs4 import NavigableString
 from rich import print
 from typing_extensions import override
 
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
     from urllib.parse import ParseResult
 
-    from bs4 import BeautifulSoup
+    from bs4 import BeautifulSoup, NavigableString
     from bs4.element import Tag
 
 
@@ -31,16 +30,14 @@ class EromeXXXCrawler(BaseCrawler):
     video_url: str = site_url + "/video/"
 
     def print_help_message(self) -> None:
-        print(
-            f"""[bold yellow]Warning:[/] URL not supported. Please provide \
+        print(f"""[bold yellow]Warning:[/] URL not supported. Please provide \
 one of the following URLs:
 - Model URL: {self.model_url}<model_name>
 - All Models URL: {self.models_url}
 - Category URL: {self.category_url}<category_name> or {self.site_url}/<category_name>
 - All Categories URL: {self.categories_url}
 - Single Post URL: {self.site_url}/<post_id>
-"""
-        )
+""")
 
     def _validate_url(self, url: str) -> str:
         """
