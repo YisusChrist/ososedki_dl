@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import sys
 from asyncio import sleep
+from dataclasses import dataclass
 from pathlib import Path
 from ssl import SSLCertVerificationError
 from time import monotonic
@@ -13,31 +14,30 @@ from urllib.parse import unquote, urlparse
 
 import aiofiles
 import requests
-from aiohttp import (ClientConnectorError, ClientResponseError, ClientSession,
-                     ClientTimeout)
+from aiohttp.client import ClientResponse, ClientSession, ClientTimeout
+from aiohttp.client_exceptions import ClientConnectorError, ClientResponseError
+from aiohttp_client_cache.response import CachedResponse
 from aiohttp_client_cache.session import CachedSession
 from core_helpers.logs import logger
 from rich import print
 
-from .consts import (DEFAULT_CHUNK_SIZE, DEFAULT_RESPONSE_PROPERTY, KB,
-                     MAX_TIMEOUT)
+from .consts import DEFAULT_CHUNK_SIZE, DEFAULT_RESPONSE_PROPERTY, KB, MAX_TIMEOUT
 from .progress import MediaProgress
-from .utils import (get_unique_filename, get_url_hashfile, sanitize_path,
-                    write_to_cache)
+from .utils import get_unique_filename, get_url_hashfile, sanitize_path, write_to_cache
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from aiohttp import ClientResponse
 
-
-client_timeout = ClientTimeout()
+client_timeout = ClientTimeout(total=MAX_TIMEOUT)
 if sys.version_info >= (3, 10):
     SessionType = CachedSession | ClientSession
+    ResponseType = ClientResponse | CachedResponse
 else:
     from typing import Union
 
     SessionType = Union[CachedSession, ClientSession]
+    ResponseType = Union[ClientResponse, CachedResponse]
 
 
 def _choose_chunk_size(
@@ -59,22 +59,15 @@ def _choose_chunk_size(
     return max(min_kb * KB, min(target_bytes, max_kb * KB))
 
 
+@dataclass
 class Downloader:
     session: SessionType
     headers: dict[str, str] | None = None
     check_cache: bool = False
+    debug: bool = False
 
-    def __init__(
-        self,
-        session: SessionType,
-        headers: dict[str, str] | None = None,
-        check_cache: bool = False,
-    ) -> None:
+    def __post_init__(self) -> None:
         logger.debug("Initialized Downloader")
-
-        self.session = session
-        self.headers = headers
-        self.check_cache = check_cache
 
     async def fetch(
         self,
@@ -93,6 +86,14 @@ class Downloader:
                 response = await self.session.get(
                     url=url, timeout=client_timeout, **kwargs
                 )
+                if isinstance(response, CachedResponse) and self.debug:
+                    print(
+                        f"URL: {url}\n",
+                        f"from_cache: {response.from_cache}",
+                        f"created_at: {response.created_at}",
+                        f"expires: {response.expires}",
+                        f"is_expired: {response.is_expired}",
+                    )
                 if response.status in (429, 503):
                     # Too Many Requests or Service Unavailable
                     await sleep(5)
@@ -132,7 +133,7 @@ class Downloader:
                 return response2.content
 
     async def download_image(
-        self, url: str, response: ClientResponse, media_path: Path
+        self, url: str, response: ResponseType, media_path: Path
     ) -> dict[str, str]:
         logger.debug(f"Downloading image from URL: {url}")
 
@@ -160,7 +161,7 @@ class Downloader:
     async def download_video(
         self,
         url: str,
-        response: ClientResponse,
+        response: ResponseType,
         media_path: Path,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         dynamic_chunk: bool = False,
@@ -270,9 +271,10 @@ class Downloader:
             logger.info(
                 f"Media name '{media_name}' has no extension, checking content type..."
             )
+
             # If media_name has no extension, add one using the url content type
             response = await self.session.head(
-                url, headers=self.headers, timeout=MAX_TIMEOUT
+                url, headers=self.headers, timeout=client_timeout
             )
             content_type: str | None = response.headers.get("Content-Type")
             if not content_type:

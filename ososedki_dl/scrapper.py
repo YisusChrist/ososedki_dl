@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING
 
+from aiohttp_client_cache.response import CachedResponse
 from core_helpers.logs import logger
 from rich import print
 
@@ -13,11 +14,8 @@ from .crawlers import crawlers as crawler_modules
 if TYPE_CHECKING:
     from argparse import Namespace
 
-    from aiohttp import ClientResponse
-    from aiohttp_client_cache.response import CachedResponse
-
     from .crawlers import CrawlerInstance
-    from .download import SessionType
+    from .download import ResponseType, SessionType
 
 
 def normalize_error_message(raw_status: str) -> str:
@@ -135,7 +133,16 @@ async def handle_downloader(
 
     # Check if the URL is valid
     try:
-        response: ClientResponse | CachedResponse = await session.get(url)
+        response: ResponseType = await session.get(url)
+        if isinstance(response, CachedResponse) and args.debug:
+            print(
+                f"URL: {url}\n",
+                f"from_cache: {response.from_cache}",
+                f"created_at: {response.created_at}",
+                f"expires: {response.expires}",
+                f"is_expired: {response.is_expired}",
+            )
+        # await print_async_response_summary(response)
         response.raise_for_status()
     except Exception as e:
         logger.exception("Failed to fetch URL %s", url)

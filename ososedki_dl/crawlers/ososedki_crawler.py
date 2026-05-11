@@ -14,16 +14,25 @@ from core_helpers.logs import logger
 from rich import print
 from typing_extensions import override
 
-from ..consts import DEFAULT_ALBUM_TITLE, DEFAULT_PAGINATION_SIZE, MAX_TIMEOUT
+from ..consts import DEFAULT_ALBUM_TITLE, DEFAULT_PAGINATION_SIZE
+from ..download import client_timeout
 from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from types import CoroutineType
-    from typing import Any
+    from typing import Any, TypedDict
     from urllib.parse import ParseResult
 
     from bs4 import NavigableString, ResultSet
+
+    class PayloadType(TypedDict):
+        album_id: str
+        owner_id: str
+        download: int
+        download_id: int
+        offset: int
+        limit: int
 
 
 class OsosedkiBaseCrawler(BaseCrawler, ABC):
@@ -188,7 +197,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         images: list[str] = []
         url: str = self.site_url + "/cms/load-more-photos.php"
 
-        payload: dict[str, str | int] = {
+        payload: PayloadType = {
             "album_id": album_id,
             "owner_id": owner_id,
             "download": 1,
@@ -200,7 +209,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         while True:
             try:
                 response = await self.session.post(
-                    url, json=payload, timeout=MAX_TIMEOUT
+                    url, json=payload, timeout=client_timeout
                 )
                 response.raise_for_status()
                 response_json: dict[str, Any] = await response.json()

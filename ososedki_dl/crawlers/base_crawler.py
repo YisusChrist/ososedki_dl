@@ -32,7 +32,6 @@ class BaseCrawler(ABC):
     session: SessionType
     download_path: Path
     base_image_path: str | None = None
-    check_cache: bool = False
     headers: dict[str, str] | None = None
 
     def __init__(self, session: SessionType, args: Namespace) -> None:
@@ -49,8 +48,9 @@ class BaseCrawler(ABC):
         )
         self.session = session
         self.download_path = args.dest_path
-        self.check_cache = args.check_cache
-        self.downloader = Downloader(self.session, self.headers, self.check_cache)
+        self.downloader = Downloader(
+            self.session, self.headers, args.check_cache, debug=args.debug
+        )
 
     @property
     def base_media_url(self) -> str:

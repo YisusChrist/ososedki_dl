@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from rich import print
 from typing_extensions import override
 
-from ...consts import MAX_TIMEOUT
+from ...download import client_timeout
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ class BunkrAlbumsCrawler(BaseCrawler):
         """
         print(f"Resolving {url}")
         response = await self.session.head(
-            url, allow_redirects=True, timeout=MAX_TIMEOUT
+            url, allow_redirects=True, timeout=client_timeout
         )
         return str(response.url)
 
