@@ -155,7 +155,6 @@ class BaseCrawler(ABC):
         self,
         album_url: str,
         title: str | None = None,
-        retries: int = 0,
         media_urls: list[str] | None = None,
         soup: BeautifulSoup | None = None,
     ) -> list[dict[str, str]]:
@@ -171,7 +170,6 @@ class BaseCrawler(ABC):
         Args:
             album_url (str): The URL of the album page to process.
             title (str, optional): Fallback title for the album.
-            retries (int): Current retry count for extraction attempts.
             media_urls (list[str], optional): Pre-extracted list of media
                 URLs to download.
             soup (BeautifulSoup, optional): Pre-fetched parsed HTML of the album
@@ -183,40 +181,37 @@ class BaseCrawler(ABC):
         """
         logger.debug(f"Processing album: {album_url}")
 
-        if retries > 5:
-            logger.error(f"Max retries reached for {album_url}. Skipping...")
-            print(f"ERROR: Max retries reached for {album_url}. Skipping...")
-            return []
-
         album_url.rstrip("/")
+        retries = 0
 
-        soup = soup or await self.fetch_soup(album_url)
-        if not soup:
-            logger.error(f"Failed to fetch or parse page: {album_url}")
-            return []
+        while retries <= 5:
+            retries += 1
+            soup = soup or await self.fetch_soup(album_url)
+            if not soup:
+                logger.error(f"Failed to fetch or parse page: {album_url}")
+                return []
 
-        try:
-            # Extract the title if a title_extractor is provided; otherwise, use the given title
-            if not title:
-                title = self.get_album_title(soup)
-            if not title:
-                raise ValueError("Title could not be determined")
+            try:
+                # Extract the title if a title_extractor is provided; otherwise, use the given title
+                if not title:
+                    title = self.get_album_title(soup)
+                if not title:
+                    raise ValueError("Title could not be determined")
 
-            media_urls = media_urls or list(set(await self.get_media_urls(soup)))
-            # print(f"Title: {title}")
-            # print(f"Media URLs: {len(media_urls)}")
-        except (TypeError, ValueError) as e:
-            logger.exception(f"Error extracting album data from {album_url}")
-            print(f"Failed to process album: {e}. Retrying...")
-            return await self.process_album(
-                album_url,
-                title,
-                retries + 1,
-                media_urls,
-                soup,
-            )
+                media_urls = media_urls or await self.get_media_urls(soup)
+                media_urls = list(set(media_urls))
+                # print(f"Title: {title}")
+                # print(f"Media URLs: {len(media_urls)}")
+            except (TypeError, ValueError) as e:
+                logger.exception(f"Error extracting album data from {album_url}")
+                print(f"Failed to process album: {e}. Retrying...")
+                continue
 
-        album_path: Path = get_final_path(self.download_path, title)
-        return await self.download_media_items(media_urls, title, album_path)
+            album_path: Path = get_final_path(self.download_path, title)
+            return await self.download_media_items(media_urls, title, album_path)
+
+        logger.error(f"Max retries reached for {album_url}. Skipping...")
+        print(f"ERROR: Max retries reached for {album_url}. Skipping...")
+        return []
 
     # endregion Core album logic

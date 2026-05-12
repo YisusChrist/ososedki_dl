@@ -23,6 +23,12 @@ class CosxuxiClubCrawler(BaseCrawler):
     site_name: str = "CosXuxi Club"
     title_separator: str = " - "
 
+    @override
+    async def get_album_title(): ...
+
+    @override
+    async def get_media_urls(): ...
+
     def cosxuxi_club_title_extractor(self, soup: BeautifulSoup) -> str:
         text_div: Tag | NavigableString | None = soup.find("title")
         if not text_div:

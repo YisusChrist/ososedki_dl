@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from itertools import chain
 from typing import TYPE_CHECKING
 
 from typing_extensions import override
@@ -69,6 +70,12 @@ class WildskirtsCrawler(BaseCrawler):
         return self.wildskirts_media_filter(soup) if soup else []
 
     @override
+    async def get_album_title(): ...
+
+    @override
+    async def get_media_urls(): ...
+
+    @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Downloads all media items from a Wildskirts profile URL.
@@ -101,9 +108,7 @@ class WildskirtsCrawler(BaseCrawler):
         urls: list[str] = [f"{profile_url}/{i}" for i in range(1, total_items + 1)]
         # Fetch media URLs concurrently
         tasks = [self.fetch_media_urls(url) for url in urls]
-        media_urls_lists: list[list[str]] = await asyncio.gather(*tasks)
-        # Flatten the list of lists into a single list
-        media_urls: list[str] = [url for sublist in media_urls_lists for url in sublist]
+        media_urls: list[str] = list(chain.from_iterable(await asyncio.gather(*tasks)))
 
         print("Retrieved media URLs")
 

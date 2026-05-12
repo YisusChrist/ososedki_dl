@@ -20,6 +20,12 @@ class BunkrAlbumsCrawler(BaseCrawler):
     site_url = "https://bunkr-albums.io"
 
     @override
+    async def get_album_title(): ...
+
+    @override
+    async def get_media_urls(): ...
+
+    @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Extracts and resolves all unique Bunkr album URLs from the given page.

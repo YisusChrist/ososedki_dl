@@ -46,6 +46,12 @@ class FapelloIsCrawler(BaseCrawler):
             return []
 
     @override
+    async def get_album_title(): ...
+
+    @override
+    async def get_media_urls(): ...
+
+    @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Asynchronously downloads all media items from a given Fapello profile

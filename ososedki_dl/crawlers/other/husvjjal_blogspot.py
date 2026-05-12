@@ -100,6 +100,9 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         return max_stream
 
     @override
+    async def get_album_title(): ...
+
+    @override
     async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         """
         Asynchronously extracts downloadable image and video URLs from a

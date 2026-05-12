@@ -112,6 +112,9 @@ one of the following URLs:
         return "-" in self._validate_url(url)
 
     @override
+    async def get_album_title(): ...
+
+    @override
     async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         """
         Filter and retrieve media URLs from the BeautifulSoup object.
