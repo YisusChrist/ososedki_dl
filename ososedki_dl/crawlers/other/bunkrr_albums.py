@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from rich import print
 from typing_extensions import override
 
-from ...download import client_timeout
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -18,23 +18,6 @@ if TYPE_CHECKING:
 
 class BunkrAlbumsCrawler(BaseCrawler):
     site_url = "https://bunkr-albums.io"
-
-    async def get_real_url(self, url: str) -> str:
-        """
-        Resolve and return the final destination URL after following any
-        redirects.
-
-        Args:
-            url (str): The initial URL to resolve.
-
-        Returns:
-            str: The fully resolved URL after all redirects.
-        """
-        print(f"Resolving {url}")
-        response = await self.session.head(
-            url, allow_redirects=True, timeout=client_timeout
-        )
-        return str(response.url)
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -66,7 +49,16 @@ class BunkrAlbumsCrawler(BaseCrawler):
         urls = list(set(urls))
         # Every url inside the list redirects to a different domain
         # so we need to resolve the real domain
-        real_urls: list[str] = [await self.get_real_url(u) for u in urls]
+        tasks = [
+            self.downloader.fetch(
+                u,
+                "HEAD",
+                response_property="url",
+                allow_redirects=True,
+            )
+            for u in urls
+        ]
+        real_urls: list[str] = await asyncio.gather(*tasks)
 
         print(f"Found {len(real_urls)} albums on {url}")
         print(real_urls)

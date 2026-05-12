@@ -37,10 +37,13 @@ class FapelloIsCrawler(BaseCrawler):
             response is not a list.
         """
         headers: dict[str, str] = {"Referer": referer_url}
-        async with self.session.get(url, headers=headers) as response:
-            if response.status != 200:
-                return []
-            return await response.json()
+        try:
+            return await self.downloader.fetch(
+                url, headers=headers, response_property="json"
+            )
+        except Exception as e:
+            print(f"Error fetching media URLs from {url}: {e}")
+            return []
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:

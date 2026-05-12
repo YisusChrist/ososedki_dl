@@ -270,7 +270,7 @@ one of the following URLs:
         """
         url = url if url.endswith("/") else url + "/"
         try:
-            response = await self.session.head(url)
+            response = await self.downloader.fetch(url, "HEAD", raw_response=True)
             response.raise_for_status()
             if (
                 response.status == 301

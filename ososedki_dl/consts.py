@@ -25,6 +25,7 @@ CONFIG_PATH: Path = get_user_path(PACKAGE, PathType.CONFIG)
 CONFIG_FILE: Path = CONFIG_PATH / f"{PACKAGE}.ini"
 
 MAX_TIMEOUT = 5
+MAX_SLEEP_SECONDS = 30
 MIN_USER_AGENT_VERSION = 120.0
 KB = 1024
 PERCENTAGE_FORMAT = "[progress.percentage]{task.percentage:>5.1f}%"

@@ -15,7 +15,6 @@ from rich import print
 from typing_extensions import override
 
 from ..consts import DEFAULT_ALBUM_TITLE, DEFAULT_PAGINATION_SIZE
-from ..download import client_timeout
 from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -208,16 +207,14 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
         while True:
             try:
-                response = await self.session.post(
-                    url, json=payload, timeout=client_timeout
+                data = await self.downloader.fetch(
+                    url, "POST", response_property="json", json=payload
                 )
-                response.raise_for_status()
-                response_json: dict[str, Any] = await response.json()
             except Exception as e:
                 logger.error(f"Failed to fetch paginated images: {e}")
                 print(f"ERROR: Failed to fetch paginated images: {e}")
                 break
-            photos: list[dict[str, str]] = response_json["photos"]
+            photos: list[dict[str, str]] = data["photos"]
             if not photos:
                 break
 

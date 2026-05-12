@@ -100,9 +100,8 @@ class WildskirtsCrawler(BaseCrawler):
 
         urls: list[str] = [f"{profile_url}/{i}" for i in range(1, total_items + 1)]
         # Fetch media URLs concurrently
-        media_urls_lists: list[list[str]] = await asyncio.gather(
-            *[self.fetch_media_urls(url) for url in urls]
-        )
+        tasks = [self.fetch_media_urls(url) for url in urls]
+        media_urls_lists: list[list[str]] = await asyncio.gather(*tasks)
         # Flatten the list of lists into a single list
         media_urls: list[str] = [url for sublist in media_urls_lists for url in sublist]
 

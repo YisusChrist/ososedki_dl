@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import hashlib
 import sys
-from asyncio import sleep
+from asyncio import sleep, to_thread
 from dataclasses import dataclass
+from hashlib import sha256
+from mimetypes import guess_extension
 from pathlib import Path
 from ssl import SSLCertVerificationError
 from time import monotonic
@@ -21,15 +22,19 @@ from aiohttp_client_cache.session import CachedSession
 from core_helpers.logs import logger
 from rich import print
 
-from .consts import DEFAULT_CHUNK_SIZE, DEFAULT_RESPONSE_PROPERTY, KB, MAX_TIMEOUT
+from .consts import (
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_RESPONSE_PROPERTY,
+    KB,
+    MAX_SLEEP_SECONDS,
+    MAX_TIMEOUT,
+)
 from .progress import MediaProgress
 from .utils import get_unique_filename, get_url_hashfile, sanitize_path, write_to_cache
 
 if TYPE_CHECKING:
     from typing import Any
 
-
-client_timeout = ClientTimeout(total=MAX_TIMEOUT)
 if sys.version_info >= (3, 10):
     SessionType = CachedSession | ClientSession
     ResponseType = ClientResponse | CachedResponse
@@ -65,6 +70,7 @@ class Downloader:
     headers: dict[str, str] | None = None
     check_cache: bool = False
     debug: bool = False
+    timeout = ClientTimeout(total=MAX_TIMEOUT)
 
     def __post_init__(self) -> None:
         logger.debug("Initialized Downloader")
@@ -72,6 +78,7 @@ class Downloader:
     async def fetch(
         self,
         url: str,
+        method: str = "GET",
         response_property: str = DEFAULT_RESPONSE_PROPERTY,
         raw_response: bool = False,
         **kwargs: Any,
@@ -81,10 +88,20 @@ class Downloader:
             f"and raw_response={raw_response}"
         )
 
+        # Merge headers: priority to kwargs, fallback to instance defaults
+        headers = kwargs.pop("headers", self.headers)
+
+        max_attempts = 5
+        attempt = 0
         while True:
+            attempt += 1
             try:
-                response = await self.session.get(
-                    url=url, timeout=client_timeout, **kwargs
+                response = await self.session.request(
+                    method=method.upper(),
+                    url=url,
+                    headers=headers,
+                    timeout=self.timeout,
+                    **kwargs,
                 )
                 if isinstance(response, CachedResponse) and self.debug:
                     print(
@@ -96,8 +113,11 @@ class Downloader:
                     )
                 if response.status in (429, 503):
                     # Too Many Requests or Service Unavailable
-                    await sleep(5)
+                    if attempt >= max_attempts:
+                        response.raise_for_status()
+                    await sleep(min(2**attempt, MAX_SLEEP_SECONDS))
                     continue
+
                 response.raise_for_status()
 
                 if raw_response:
@@ -111,17 +131,27 @@ class Downloader:
                 )
 
             except SSLCertVerificationError as e:
-                raise e
+                logger.exception(f"SSL certificate verification failed for {url}")
+                print(f"SSL error for {url}: {e}. Retrying with SSL verification disabled...")
+                kwargs["ssl"] = False
+                if attempt >= max_attempts:
+                    raise
             except ClientConnectorError as e:
                 logger.exception(f"Failed to connect to {url}")
                 print(f"Failed to connect to {url} with error {e}. Retrying...")
-                await sleep(5)
+                if attempt >= max_attempts:
+                    raise
+                await sleep(min(2**attempt, MAX_SLEEP_SECONDS))
             except ClientResponseError as e:  # 4xx, 5xx errors
                 logger.exception(f"Failed to fetch {url}")
                 print(f"Failed to fetch {url} with status {e.status}")
 
-                response2: requests.Response = requests.get(
-                    url, timeout=MAX_TIMEOUT, **kwargs
+                response2: requests.Response = await to_thread(
+                    requests.request,
+                    method.upper(),
+                    url=url,
+                    headers=headers,
+                    timeout=MAX_TIMEOUT,
                 )
                 response2.raise_for_status()
                 if raw_response:
@@ -129,7 +159,8 @@ class Downloader:
 
                 # Dynamically access the specified response property
                 if hasattr(response2, response_property):
-                    return getattr(response2, response_property)()
+                    attr = getattr(response2, response_property)
+                    return attr() if callable(attr) else attr
                 return response2.content
 
     async def download_image(
@@ -171,9 +202,9 @@ class Downloader:
         content_length = int(response.headers.get("Content-Length", 0))
         logger.debug(f"Content length: {content_length} bytes")
 
-        remote_hash = hashlib.sha256()
+        remote_hash = sha256()
         file_exists: bool = media_path.exists()
-        local_hash = hashlib.sha256() if file_exists else None
+        local_hash = sha256() if file_exists else None
 
         temp_path: Path = media_path.with_suffix(media_path.suffix + ".part")
         logger.debug(f"Temporary file path: {temp_path}")
@@ -246,7 +277,7 @@ class Downloader:
             logger.info(f"Media already in cache, skipping download: {url}")
             return {"url": url, "status": "skipped"}
         try:
-            response = await self.fetch(url, raw_response=True, headers=self.headers)
+            response = await self.fetch(url, raw_response=True)
         except ClientResponseError as e:
             logger.exception(f"Failed to fetch {url}")
             return {"url": url, "status": f"error: {e.status}"}
@@ -273,20 +304,26 @@ class Downloader:
             )
 
             # If media_name has no extension, add one using the url content type
-            response = await self.session.head(
-                url, headers=self.headers, timeout=client_timeout
-            )
+            response = await self.fetch(url, "HEAD", raw_response=True)
             content_type: str | None = response.headers.get("Content-Type")
             if not content_type:
                 logger.error(f"Failed to get content type for {url}")
                 print(f"ERROR: Failed to get content type for {url}")
-            else:
-                # Map content type to a file extension
-                extension: str = content_type.split("/")[
-                    -1
-                ]  # e.g., 'image/jpeg' -> 'jpeg'
-                media_name = f"{media_name}.{extension}"
-                logger.debug(f"Updated media name to: {media_name}")
+                return {"url": url, "status": "error: missing content type"}
+
+            # Map content type to a file extension
+            extension: str | None = guess_extension(content_type.split(";")[0].strip())
+            if not extension:
+                logger.error(
+                    f"Failed to guess extension for content type: {content_type}"
+                )
+                print(
+                    f"ERROR: Failed to guess extension for content type: {content_type}"
+                )
+                return {"url": url, "status": "error: missing content type"}
+
+            media_name += extension
+            logger.debug(f"Updated media name to: {media_name}")
 
         media_path: Path = sanitize_path(album_path, media_name)
         logger.debug(f"Media path resolved to: {media_path}")
