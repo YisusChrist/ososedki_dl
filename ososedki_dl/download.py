@@ -83,8 +83,9 @@ class Downloader:
         raw_response: bool = False,
         **kwargs: Any,
     ) -> Any:
+        method = method.upper()
         logger.debug(
-            f"Fetching URL: {url} with response_property='{response_property}' "
+            f"{method} URL: {url} with response_property='{response_property}' "
             f"and raw_response={raw_response}"
         )
 
@@ -97,7 +98,7 @@ class Downloader:
             attempt += 1
             try:
                 response = await self.session.request(
-                    method=method.upper(),
+                    method=method,
                     url=url,
                     headers=headers,
                     timeout=self.timeout,
@@ -132,7 +133,9 @@ class Downloader:
 
             except SSLCertVerificationError as e:
                 logger.exception(f"SSL certificate verification failed for {url}")
-                print(f"SSL error for {url}: {e}. Retrying with SSL verification disabled...")
+                print(
+                    f"SSL error for {url}: {e}. Retrying with SSL verification disabled..."
+                )
                 kwargs["ssl"] = False
                 if attempt >= max_attempts:
                     raise
