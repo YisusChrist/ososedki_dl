@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import gather
+import asyncio
 from itertools import chain
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -166,7 +166,7 @@ one of the following URLs:
         tasks = [
             get_media_func(f"{url}page/{page}/") for page in range(1, last_page + 1)
         ]
-        return list(chain.from_iterable(await gather(*tasks)))
+        return list(chain.from_iterable(await asyncio.gather(*tasks)))
 
     async def bulk_download(self, url: str) -> list[dict[str, str]]:
         """
@@ -181,9 +181,7 @@ one of the following URLs:
         """
         title: str = url.rstrip("/").split("/")[-1]
 
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
+        soup: BeautifulSoup = await self.fetch_soup(url)
 
         media_urls: list[str] = await self.get_paginated_media(
             soup, self.get_media_from_page, url=url
@@ -229,31 +227,15 @@ one of the following URLs:
         Returns:
             list[str]: A list of media URLs found on the specified page.
         """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
+        soup: BeautifulSoup = await self.fetch_soup(url)
 
         page_albums: list[str] = [
             album["href"] for album in soup.find_all("a", class_="athumb thumb-link")
         ]
-        tasks = [self.find_media(album) for album in page_albums]
-        return list(chain.from_iterable(await gather(*tasks)))
-
-    async def find_media(self, url: str) -> list[str]:
-        """
-        Find and return all media URLs from a given URL.
-
-        Args:
-            url (str): The URL to retrieve media from.
-
-        Returns:
-            list[str]: A list of media URLs found in the album.
-        """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
-
-        return list(set(await self.get_media_urls(soup)))
+        tasks = [
+            self.get_media_urls(await self.fetch_soup(album)) for album in page_albums
+        ]
+        return list(chain.from_iterable(await asyncio.gather(*tasks)))
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:

@@ -41,9 +41,7 @@ class BunkrAlbumsCrawler(BaseCrawler):
         Returns:
             list[dict[str, str]]: Currently always returns an empty list.
         """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
+        soup: BeautifulSoup = await self.fetch_soup(url)
 
         # Find all links that start with https://bunkrrr.org/a/
         urls: list[str] = [

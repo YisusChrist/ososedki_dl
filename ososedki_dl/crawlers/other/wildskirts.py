@@ -8,11 +8,9 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import override
 
-from ...utils import get_final_path
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
-    from pathlib import Path
 
     from bs4 import BeautifulSoup
     from bs4.element import NavigableString, Tag
@@ -22,6 +20,7 @@ class WildskirtsCrawler(BaseCrawler):
     site_url = "https://wildskirts.com"
     base_photos_url: str = "https://photos.wildskirts.com"
     base_videos_url: str = "https://video.wildskirts.com"
+    headers = {"Referer": site_url + "/"}
 
     def get_total_items(self, soup: BeautifulSoup, item: str) -> int:
         content_div: Tag | NavigableString | None = soup.find(
@@ -30,15 +29,13 @@ class WildskirtsCrawler(BaseCrawler):
         if not content_div:
             return 0
 
-        paragraph: Tag | NavigableString | None | int = content_div.find("p")
-        if not paragraph:
+        p: Tag | NavigableString | None | int = content_div.find("p")
+        try:
+            return int(p.text)
+        except ValueError:
             return 0
-        if isinstance(paragraph, int):
-            return paragraph
 
-        return int(paragraph.text)
-
-    def wildskirts_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    def _extract_from_soup(self, soup: BeautifulSoup) -> list[str]:
         images: list[str] = [
             image["src"]
             for image in soup.find_all("img")
@@ -66,14 +63,54 @@ class WildskirtsCrawler(BaseCrawler):
             list[str]: A list of media URLs found on the page, or an empty list
             if the page could not be fetched or parsed.
         """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        return self.wildskirts_media_filter(soup) if soup else []
+        return self._extract_from_soup(await self.fetch_soup(url))
 
     @override
     async def get_album_title(): ...
 
     @override
-    async def get_media_urls(): ...
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+        """
+        https://api.wildskirts.com/api/media/<profile_id>
+        e.g. https://api.wildskirts.com/api/media/11530
+        e.g. https://api.wildskirts.com/api/media/21734
+
+        It returns a JSON with all media items like this:
+        {
+            "media": {
+                "items": {
+                    "1": {
+                        "p": "preview_url",
+                        "t": "photo"/"video",
+                        "u": "media_url",
+                        "w": width,
+                        "h": height,
+                        "l": "uri",
+                        "o": index,
+                        "bg": "background_color",
+                        "ts": "upload_timestamp"
+                    },
+                "count": 169
+            },
+            "status": "success"
+        }
+
+        Extract profile id from:
+        <input type="hidden" name="commentable_id" value="<profile_id>" />
+        """
+        total_pictures: int = self.get_total_items(soup, "photos")
+        total_videos: int = self.get_total_items(soup, "videos")
+        total_items: int = min(total_pictures + total_videos, 30)
+
+        print(f"Total items: {total_items}")
+
+        urls: list[str] = [f"{self.profile_url}/{i}" for i in range(1, total_items + 1)]
+        for url in urls:
+            print(f"Constructed URL: {url}")
+
+        # Fetch media URLs concurrently
+        tasks = [self.fetch_media_urls(url) for url in urls]
+        return list(chain.from_iterable(await asyncio.gather(*tasks)))
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -92,26 +129,6 @@ class WildskirtsCrawler(BaseCrawler):
             about each downloaded media item.
         """
         # ! Beware, the trailing slash may return different results
-        profile_url: str = url.rstrip("/")
-        profile: str = profile_url.split("/")[-1]
-
-        soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
-        if not soup:
-            return []
-
-        total_pictures: int = self.get_total_items(soup, "photos")
-        total_videos: int = self.get_total_items(soup, "videos")
-        total_items: int = total_pictures + total_videos
-
-        print(f"Total items: {total_items}")
-
-        urls: list[str] = [f"{profile_url}/{i}" for i in range(1, total_items + 1)]
-        # Fetch media URLs concurrently
-        tasks = [self.fetch_media_urls(url) for url in urls]
-        media_urls: list[str] = list(chain.from_iterable(await asyncio.gather(*tasks)))
-
-        print("Retrieved media URLs")
-
-        album_path: Path = get_final_path(self.download_path, profile)
-
-        return await self.download_media_items(media_urls, profile, album_path)
+        self.profile_url: str = url.rstrip("/")
+        profile: str = self.profile_url.split("/")[-1]
+        return await self.process_album(self.profile_url, title=profile)

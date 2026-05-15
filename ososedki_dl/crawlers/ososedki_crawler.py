@@ -9,7 +9,7 @@ from itertools import chain
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlencode, urlparse
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 from core_helpers.logs import logger
 from rich import print
 from typing_extensions import override
@@ -22,8 +22,6 @@ if TYPE_CHECKING:
     from types import CoroutineType
     from typing import Any, TypedDict
     from urllib.parse import ParseResult
-
-    from bs4 import NavigableString, ResultSet
 
     class PayloadType(TypedDict):
         album_id: str
@@ -58,9 +56,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             list if the page cannot be fetched or no albums are found.
         """
         logger.debug(f"Fetching albums from page: {page_url}")
-        soup: BeautifulSoup | None = await self.fetch_soup(page_url)
-        if not soup:
-            return []
+        soup: BeautifulSoup = await self.fetch_soup(page_url)
 
         if not self.album_path:
             logger.warning(
@@ -99,9 +95,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         }
 
         # Get the page article:tag and extract the title
-        article_tags: ResultSet[Any] = soup.find_all(
-            "meta", {"property": "article:tag"}
-        )
+        article_tags: list[Tag] = soup.find_all("meta", {"property": "article:tag"})
         for article_tag in article_tags:
             tag_content: str = article_tag.get("content", "")
             for tag in tags:
@@ -224,7 +218,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
                 anchor: Tag | NavigableString | None = soup.find(
                     "a", href=lambda href: self.base_media_url in href
                 )
-                if not anchor or not isinstance(anchor, Tag):
+                if not anchor or isinstance(anchor, NavigableString):
                     continue
                 href: str | list[str] | None = anchor.get("href")
                 if not href:
@@ -369,12 +363,9 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         # Clean the URL removing the query parameters
         model_url = model_url.split("?")[0]
 
-        soup: BeautifulSoup | None = await self.fetch_soup(model_url)
-        if not soup:
-            logger.error(f"Failed to fetch or parse model page: {model_url}")
-            return
-
+        soup: BeautifulSoup = await self.fetch_soup(model_url)
         model_name: str = self.get_album_title(soup)
+
         i = 1
         albums_found = True
 

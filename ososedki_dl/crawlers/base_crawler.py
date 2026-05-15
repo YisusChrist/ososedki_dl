@@ -6,11 +6,13 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from aiohttp import ClientResponseError
+from aiohttp.client_exceptions import ClientResponseError
 from bs4 import BeautifulSoup
 from core_helpers.logs import logger
+from requests import HTTPError
 from rich import print
 
+from ..consts import MAX_RETRIES
 from ..download import Downloader
 from ..progress import AlbumProgress
 from ..utils import get_final_path
@@ -107,17 +109,21 @@ class BaseCrawler(ABC):
 
     # region Fetching functions
 
-    async def fetch_soup(self, url: str) -> BeautifulSoup | None:
+    async def fetch_soup(self, url: str) -> BeautifulSoup:
+        """
+        Fetches HTML and returns a BeautifulSoup object.
+
+        Raises ClientResponseError or ValueError if fetching/parsing fails.
+        """
         logger.debug(f"Fetching soup for URL: {url}")
         # print(f"Fetching {url}")
 
-        try:
-            html_content: str = await self.downloader.fetch(url)
-            return BeautifulSoup(html_content, "html.parser")
-        except ClientResponseError as e:
+        html_content: str = await self.downloader.fetch(url)
+        if not html_content:
             logger.exception(f"Failed to fetch {url}")
-            print(f"Failed to fetch {url} with status {e.status}")
-            return None
+            raise ValueError(f"Empty HTML content received from {url}")
+
+        return BeautifulSoup(html_content, "html.parser")
 
     async def download_media_items(
         self,
@@ -184,14 +190,15 @@ class BaseCrawler(ABC):
         album_url.rstrip("/")
         retries = 0
 
-        while retries <= 5:
-            retries += 1
-            soup = soup or await self.fetch_soup(album_url)
-            if not soup:
-                logger.error(f"Failed to fetch or parse page: {album_url}")
-                return []
-
+        while retries <= MAX_RETRIES:
+            if retries > 0:
+                logger.info(
+                    f"Retrying ({retries}/{MAX_RETRIES}) for album: {album_url}"
+                )
+                print(f"Retrying ({retries}/{MAX_RETRIES}) for album: {album_url}")
             try:
+                soup = soup or await self.fetch_soup(album_url)
+
                 # Extract the title if a title_extractor is provided; otherwise, use the given title
                 if not title:
                     title = self.get_album_title(soup)
@@ -202,9 +209,10 @@ class BaseCrawler(ABC):
                 media_urls = list(set(media_urls))
                 # print(f"Title: {title}")
                 # print(f"Media URLs: {len(media_urls)}")
-            except (TypeError, ValueError) as e:
-                logger.exception(f"Error extracting album data from {album_url}")
-                print(f"Failed to process album: {e}. Retrying...")
+            except (TypeError, ValueError, ClientResponseError, HTTPError) as e:
+                logger.exception(f"Error processing album {album_url}")
+                print(f"Failed to process album: {e}")
+                retries += 1
                 continue
 
             album_path: Path = get_final_path(self.download_path, title)

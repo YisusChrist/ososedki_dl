@@ -88,9 +88,7 @@ class CosxuxiClubCrawler(BaseCrawler):
         urls: list[str] = []
 
         while True:
-            soup: BeautifulSoup | None = await self.fetch_soup(album_url)
-            if not soup:
-                break
+            soup: BeautifulSoup = await self.fetch_soup(album_url)
             page_urls: list[str] = self.cosxuxi_club_media_filter(soup) if soup else []
             if not page_urls:
                 break
