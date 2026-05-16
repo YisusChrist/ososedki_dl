@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from itertools import chain
 from typing import TYPE_CHECKING
 
+from core_helpers.logs import logger
 from typing_extensions import override
 
 from ..base_crawler import BaseCrawler
@@ -45,25 +45,15 @@ class WildskirtsCrawler(BaseCrawler):
         ]
         videos: list[str] = [
             video["src"]
-            for video in soup.find_all("video")
+            for video in soup.find_all("source")
             if self.base_videos_url in video["src"]
             and not video["src"].endswith("#t=0.001")
         ]
+
+        logger.debug(
+            f"Extracted {len(images)} image URLs and {len(videos)} video URLs from soup"
+        )
         return images + videos
-
-    async def fetch_media_urls(self, url: str) -> list[str]:
-        """
-        Asynchronously fetches and returns a list of media URLs from the
-        specified page URL.
-
-        Args:
-            url (str): The URL of the page to extract media URLs from.
-
-        Returns:
-            list[str]: A list of media URLs found on the page, or an empty list
-            if the page could not be fetched or parsed.
-        """
-        return self._extract_from_soup(await self.fetch_soup(url))
 
     @override
     async def get_album_title(): ...
@@ -100,17 +90,26 @@ class WildskirtsCrawler(BaseCrawler):
         """
         total_pictures: int = self.get_total_items(soup, "photos")
         total_videos: int = self.get_total_items(soup, "videos")
-        total_items: int = min(total_pictures + total_videos, 30)
-
-        print(f"Total items: {total_items}")
+        total_items: int = total_pictures + total_videos
+        logger.debug(
+            f"Total pictures: {total_pictures}, Total videos: "
+            f"{total_videos}, Total items: {total_items}"
+        )
 
         urls: list[str] = [f"{self.profile_url}/{i}" for i in range(1, total_items + 1)]
-        for url in urls:
-            print(f"Constructed URL: {url}")
 
+        results: list[str] = []
         # Fetch media URLs concurrently
-        tasks = [self.fetch_media_urls(url) for url in urls]
-        return list(chain.from_iterable(await asyncio.gather(*tasks)))
+        for url in urls:
+            results.extend(self._extract_from_soup(await self.fetch_soup(url)))
+            logger.debug(f"Extracted {len(results)} media URLs so far from {url}...")
+            if self.downloader.debug:
+                print(f"Extracted {len(results)} media URLs so far...")
+
+            await asyncio.sleep(0.5)
+
+        return results
+        # return list(chain.from_iterable(await asyncio.gather(*tasks)))
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
