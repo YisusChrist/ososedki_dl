@@ -19,8 +19,7 @@ from .base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
-    from types import CoroutineType
-    from typing import Any, TypedDict
+    from typing import TypedDict
     from urllib.parse import ParseResult
 
     class PayloadType(TypedDict):
@@ -420,9 +419,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             # Find all the albums for the model incrementally
             async for albums, _ in self._find_model_albums(url):
                 logger.info(f"Processing {len(albums)} albums concurrently")
-                tasks: list[CoroutineType[Any, Any, list[dict[str, str]]]] = [
-                    self.process_album(album) for album in albums
-                ]
+                tasks = [self.process_album(album) for album in albums]
 
                 # Process the tasks for this chunk and collect results
                 chunk_results: list[dict[str, str]] = list(
