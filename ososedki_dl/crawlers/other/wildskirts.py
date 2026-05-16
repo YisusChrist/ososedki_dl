@@ -21,6 +21,7 @@ class WildskirtsCrawler(BaseCrawler):
     site_url = "https://wildskirts.com"
     base_photos_url: str = "https://photos.wildskirts.com"
     base_videos_url: str = "https://video.wildskirts.com"
+    api_url: str = site_url + "/api/media"
     headers = {"Referer": site_url + "/"}
     max_concurrent_downloads = 5
     api = True
@@ -95,7 +96,7 @@ class WildskirtsCrawler(BaseCrawler):
             return []
 
         profile_id: str = profile_id_input["value"]  # type: ignore
-        api_url: str = f"{self.site_url}/api/media/{profile_id}"
+        api_url: str = f"{self.api_url}/{profile_id}"
         logger.debug(f"Fetching media URLs from API endpoint: {api_url}")
 
         try:
@@ -132,7 +133,7 @@ class WildskirtsCrawler(BaseCrawler):
         return results
 
     @override
-    async def get_album_title(): ...
+    def get_album_title(): ...
 
     @override
     async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
