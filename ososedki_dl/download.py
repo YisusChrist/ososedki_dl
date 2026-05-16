@@ -120,6 +120,7 @@ class Downloader:
                     continue
 
                 response.raise_for_status()
+                logger.debug(f"Response status for {url}: {response.status}")
 
                 if raw_response:
                     return response
@@ -155,6 +156,7 @@ class Downloader:
                     url=url,
                     headers=headers,
                     timeout=MAX_TIMEOUT,
+                    **kwargs,
                 )
                 response2.raise_for_status()
                 if raw_response:
@@ -168,7 +170,20 @@ class Downloader:
 
     async def download_image(
         self, url: str, response: ResponseType, media_path: Path
-    ) -> dict[str, str]:
+    ) -> tuple[str, Path]:
+        """
+        Handles reading image bytes and checking for duplicates.
+
+        Args:
+            url (str): The URL of the image to download.
+            response (ResponseType): The aiohttp response object for the image URL.
+            media_path (Path): The target file path to save the downloaded image.
+
+        Returns:
+            tuple[str, Path]: A tuple containing the download status ("ok" or "skipped
+            and the final path of the downloaded image.
+        """
+
         logger.debug(f"Downloading image from URL: {url}")
 
         image_content: bytes = await response.read()
@@ -177,20 +192,14 @@ class Downloader:
             logger.debug(f"Checking existing file: {media_path}")
             file_content: bytes = media_path.read_bytes()
             if file_content == image_content:
-                logger.info(f"File already exists and matches: {media_path}")
-                return {"url": url, "status": "skipped"}
+                return "skipped", media_path
             media_path = get_unique_filename(media_path)
             logger.debug(f"File exists, renaming to: {media_path}")
 
         async with aiofiles.open(media_path, "wb") as f:
             await f.write(image_content)
 
-        if self.check_cache:
-            write_to_cache(url)
-
-        logger.info(f"Downloaded image to: {media_path}")
-
-        return {"url": url, "status": "ok"}
+        return "ok", media_path
 
     async def download_video(
         self,
@@ -199,7 +208,23 @@ class Downloader:
         media_path: Path,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         dynamic_chunk: bool = False,
-    ) -> dict[str, str]:
+    ) -> tuple[str, Path]:
+        """
+        Handles streaming video chunks, tracking progress, and validating hashes.
+
+        Args:
+            url (str): The URL of the video to download.
+            response (ResponseType): The aiohttp response object for the video URL.
+            media_path (Path): The target file path to save the downloaded video.
+            chunk_size (int, optional): The initial size of each chunk to download.
+                Defaults to DEFAULT_CHUNK_SIZE.
+            dynamic_chunk (bool, optional): Whether to adjust chunk size dynamically
+                based on observed throughput. Defaults to False.
+
+        Returns:
+            tuple[str, Path]: A tuple containing the download status ("ok" or "skipped")
+            and the final path of the downloaded video.
+        """
         logger.debug(f"Downloading video from URL: {url}")
 
         content_length = int(response.headers.get("Content-Length", 0))
@@ -256,29 +281,36 @@ class Downloader:
                         bytes_seen = 0
                         t0 = now
 
+        # Duplicate check using hashes
         if file_exists and local_hash and local_hash.digest() == remote_hash.digest():
             logger.info(f"File already exists and matches: {media_path}")
             temp_path.unlink(missing_ok=True)
             logger.debug(f"Removed temporary file: {temp_path}")
-            return {"url": url, "status": "skipped"}
+            return "skipped", media_path
 
-        new_path: Path = get_unique_filename(media_path)
-        logger.debug(f"Final file path: {new_path}")
-        temp_path.rename(new_path)
+        final_path: Path = get_unique_filename(media_path)
+        logger.debug(f"Final file path: {final_path}")
+        temp_path.rename(final_path)
 
         if self.check_cache:
             write_to_cache(url)
 
-        logger.info(f"Downloaded video to: {new_path}")
+        logger.info(f"Downloaded video to: {final_path}")
 
-        return {"url": url, "status": "ok"}
+        return "ok", final_path
 
-    async def download_and_compare(self, url: str, media_path: Path) -> dict[str, str]:
-        logger.debug(f"Downloading and comparing media from URL: {url}")
+    async def download_and_save_media(
+        self, url: str, album_path: Path
+    ) -> dict[str, str]:
+        logger.debug(f"Downloading media from URL: {url}")
 
         if self.check_cache and get_url_hashfile(url).exists():
             logger.info(f"Media already in cache, skipping download: {url}")
             return {"url": url, "status": "skipped"}
+
+        # Use urlparse to extract the media name from the URL
+        media_name: str = unquote(urlparse(url).path).split("/")[-1]
+
         try:
             response = await self.fetch(url, raw_response=True)
         except ClientResponseError as e:
@@ -289,26 +321,11 @@ class Downloader:
             return {"url": url, "status": f"error: {e}"}
 
         content_type: str = response.headers.get("Content-Type", "")
-        if "mp4" in content_type or "video" in content_type:
-            return await self.download_video(url, response, media_path)
-        else:
-            return await self.download_image(url, response, media_path)
 
-    async def download_and_save_media(
-        self, url: str, album_path: Path
-    ) -> dict[str, str]:
-        logger.debug(f"Downloading media from URL: {url}")
-
-        # Use urlparse to extract the media name from the URL
-        media_name: str = unquote(urlparse(url).path).split("/")[-1]
         if not Path(media_name).suffix:
             logger.info(
                 f"Media name '{media_name}' has no extension, checking content type..."
             )
-
-            # If media_name has no extension, add one using the url content type
-            response = await self.fetch(url, "HEAD", raw_response=True)
-            content_type: str | None = response.headers.get("Content-Type")
             if not content_type:
                 logger.error(f"Failed to get content type for {url}")
                 print(f"ERROR: Failed to get content type for {url}")
@@ -331,4 +348,16 @@ class Downloader:
         media_path: Path = sanitize_path(album_path, media_name)
         logger.debug(f"Media path resolved to: {media_path}")
 
-        return await self.download_and_compare(url, media_path)
+        if "mp4" in content_type or "video" in content_type:
+            status, final_path = await self.download_video(url, response, media_path)
+        else:
+            status, final_path = await self.download_image(url, response, media_path)
+
+        if status == "ok":
+            if self.check_cache:
+                write_to_cache(url)
+            logger.info(f"Downloaded media to: {final_path}")
+        elif status == "skipped":
+            logger.info(f"File already exists and matches: {media_path}")
+
+        return {"url": url, "status": status}
