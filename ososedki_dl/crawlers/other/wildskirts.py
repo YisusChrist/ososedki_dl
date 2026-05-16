@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
+from bs4.element import NavigableString
 from core_helpers.logs import logger
 from typing_extensions import override
 
@@ -13,7 +14,7 @@ from ..base_crawler import BaseCrawler
 if TYPE_CHECKING:
 
     from bs4 import BeautifulSoup
-    from bs4.element import NavigableString, Tag
+    from bs4.element import Tag
 
 
 class WildskirtsCrawler(BaseCrawler):
@@ -21,6 +22,8 @@ class WildskirtsCrawler(BaseCrawler):
     base_photos_url: str = "https://photos.wildskirts.com"
     base_videos_url: str = "https://video.wildskirts.com"
     headers = {"Referer": site_url + "/"}
+    max_concurrent_downloads = 5
+    api = True
 
     def get_total_items(self, soup: BeautifulSoup, item: str) -> int:
         content_div: Tag | NavigableString | None = soup.find(
@@ -55,11 +58,7 @@ class WildskirtsCrawler(BaseCrawler):
         )
         return images + videos
 
-    @override
-    async def get_album_title(): ...
-
-    @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+    async def find_media_from_api(self, soup: BeautifulSoup) -> list[str]:
         """
         https://api.wildskirts.com/api/media/<profile_id>
         e.g. https://api.wildskirts.com/api/media/11530
@@ -88,6 +87,28 @@ class WildskirtsCrawler(BaseCrawler):
         Extract profile id from:
         <input type="hidden" name="commentable_id" value="<profile_id>" />
         """
+        profile_id_input: Tag | NavigableString | None = soup.find(
+            "input", {"name": "commentable_id", "type": "hidden"}
+        )
+        if not profile_id_input or isinstance(profile_id_input, NavigableString):
+            logger.error("Could not find profile ID in the page")
+            return []
+
+        profile_id: str = profile_id_input["value"]  # type: ignore
+        api_url: str = f"{self.site_url}/api/media/{profile_id}"
+        logger.debug(f"Fetching media URLs from API endpoint: {api_url}")
+
+        try:
+            data = await self.downloader.fetch(api_url, response_property="json")
+            media_items = data.get("media", {}).get("items", {})
+            urls = [item.get("u") for item in media_items.values() if item.get("u")]
+            logger.debug(f"Extracted {len(urls)} media URLs from API response")
+            return urls
+        except Exception as e:
+            logger.error(f"Error fetching media from API: {e}")
+            return []
+
+    async def find_media_from_soup(self, soup: BeautifulSoup) -> list[str]:
         total_pictures: int = self.get_total_items(soup, "photos")
         total_videos: int = self.get_total_items(soup, "videos")
         total_items: int = total_pictures + total_videos
@@ -109,7 +130,16 @@ class WildskirtsCrawler(BaseCrawler):
             await asyncio.sleep(0.5)
 
         return results
-        # return list(chain.from_iterable(await asyncio.gather(*tasks)))
+
+    @override
+    async def get_album_title(): ...
+
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+        if self.api:
+            return await self.find_media_from_api(soup)
+        else:
+            return await self.find_media_from_soup(soup)
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:

@@ -20,7 +20,6 @@ from ..utils import get_final_path
 if TYPE_CHECKING:
     from argparse import Namespace
     from pathlib import Path
-    from typing import Any
 
     from rich.progress import TaskID
 
@@ -35,6 +34,7 @@ class BaseCrawler(ABC):
     download_path: Path
     base_image_path: str | None = None
     headers: dict[str, str] | None = None
+    max_concurrent_downloads: int = 30
 
     def __init__(self, session: SessionType, args: Namespace) -> None:
         """
@@ -135,10 +135,16 @@ class BaseCrawler(ABC):
             f"Downloading {len(media_urls)} media items for album '{album_title}'"
         )
 
-        tasks: list[Any] = [
-            self.downloader.download_and_save_media(url, album_path)
-            for url in media_urls
-        ]
+        # 1. Create a semaphore to limit concurrent network requests
+        semaphore = asyncio.Semaphore(self.max_concurrent_downloads)
+
+        # 2. Create a worker wrapper that respects the semaphore
+        async def sem_worker(url: str) -> dict[str, str]:
+            async with semaphore:
+                return await self.downloader.download_and_save_media(url, album_path)
+
+        # 3. Create the tasks using the wrapper instead of calling the method directly
+        tasks = [sem_worker(url) for url in media_urls]
 
         results: list[dict[str, str]] = []
         with AlbumProgress() as progress:
