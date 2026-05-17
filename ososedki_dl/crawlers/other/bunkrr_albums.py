@@ -20,29 +20,10 @@ class BunkrAlbumsCrawler(BaseCrawler):
     site_url = "https://bunkr-albums.io"
 
     @override
-    async def get_album_title(): ...
+    def get_album_title(self, soup: BeautifulSoup) -> str: ...
 
     @override
-    async def get_media_urls(): ...
-
-    @override
-    async def download(self, url: str) -> list[dict[str, str]]:
-        """
-        Extracts and resolves all unique Bunkr album URLs from the given page.
-
-        Fetches the HTML content of the specified URL, identifies all anchor
-        tags with hrefs starting with "https://bunkr", removes duplicates, and
-        resolves each to its final destination URL. Returns an empty list;
-        downloading functionality is not yet implemented.
-
-        Args:
-            url (str): The URL of the page to scan for Bunkr album links.
-
-        Returns:
-            list[dict[str, str]]: Currently always returns an empty list.
-        """
-        soup: BeautifulSoup = await self.fetch_soup(url)
-
+    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
         # Find all links that start with https://bunkrrr.org/a/
         urls: list[str] = [
             u["href"]
@@ -64,12 +45,30 @@ class BunkrAlbumsCrawler(BaseCrawler):
         ]
         real_urls: list[str] = await asyncio.gather(*tasks)
 
-        print(f"Found {len(real_urls)} albums on {url}")
+        print(f"Found {len(real_urls)} albums on the page:")
         print(real_urls)
 
         # TODO: Try to call the cyberdrop_dl program to download the albums
 
         return []
+
+    @override
+    async def download(self, url: str) -> list[dict[str, str]]:
+        """
+        Extracts and resolves all unique Bunkr album URLs from the given page.
+
+        Fetches the HTML content of the specified URL, identifies all anchor
+        tags with hrefs starting with "https://bunkr", removes duplicates, and
+        resolves each to its final destination URL. Returns an empty list;
+        downloading functionality is not yet implemented.
+
+        Args:
+            url (str): The URL of the page to scan for Bunkr album links.
+
+        Returns:
+            list[dict[str, str]]: Currently always returns an empty list.
+        """
+        return await self.process_album(url)
 
     async def cyberdrop_dl(
         self, url: str, download_path: Path, real_urls: list[str]

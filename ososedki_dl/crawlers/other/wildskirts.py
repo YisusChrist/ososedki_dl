@@ -21,7 +21,7 @@ class WildskirtsCrawler(BaseCrawler):
     site_url = "https://wildskirts.com"
     base_photos_url: str = "https://photos.wildskirts.com"
     base_videos_url: str = "https://video.wildskirts.com"
-    api_url: str = site_url + "/api/media"
+    api_url: str = "https://api.wildskirts.com/api/media"
     headers = {"Referer": site_url + "/"}
     max_concurrent_downloads = 5
     api = True
@@ -36,7 +36,7 @@ class WildskirtsCrawler(BaseCrawler):
         p: Tag | NavigableString | None | int = content_div.find("p")
         try:
             return int(p.text)
-        except ValueError:
+        except (ValueError, AttributeError):
             return 0
 
     def _extract_from_soup(self, soup: BeautifulSoup) -> list[str]:
@@ -99,15 +99,11 @@ class WildskirtsCrawler(BaseCrawler):
         api_url: str = f"{self.api_url}/{profile_id}"
         logger.debug(f"Fetching media URLs from API endpoint: {api_url}")
 
-        try:
-            data = await self.downloader.fetch(api_url, response_property="json")
-            media_items = data.get("media", {}).get("items", {})
-            urls = [item.get("u") for item in media_items.values() if item.get("u")]
-            logger.debug(f"Extracted {len(urls)} media URLs from API response")
-            return urls
-        except Exception as e:
-            logger.error(f"Error fetching media from API: {e}")
-            return []
+        data = await self.downloader.fetch(api_url, response_property="json")
+        media_items = data.get("media", {}).get("items", {})
+        urls = [item.get("u") for item in media_items.values() if item.get("u")]
+        logger.debug(f"Extracted {len(urls)} media URLs from API response")
+        return urls
 
     async def find_media_from_soup(self, soup: BeautifulSoup) -> list[str]:
         total_pictures: int = self.get_total_items(soup, "photos")
@@ -133,7 +129,7 @@ class WildskirtsCrawler(BaseCrawler):
         return results
 
     @override
-    def get_album_title(): ...
+    def get_album_title(self, soup: BeautifulSoup) -> str: ...
 
     @override
     async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:

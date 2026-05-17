@@ -112,7 +112,7 @@ one of the following URLs:
         return "-" in self._validate_url(url)
 
     @override
-    async def get_album_title(): ...
+    def get_album_title(self, soup: BeautifulSoup) -> str: ...
 
     @override
     async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
@@ -227,14 +227,17 @@ one of the following URLs:
         Returns:
             list[str]: A list of media URLs found on the specified page.
         """
+
+        async def fetch_and_extract(album: str) -> list[str]:
+            soup: BeautifulSoup = await self.fetch_soup(album)
+            return await self.get_media_urls(soup)
+
         soup: BeautifulSoup = await self.fetch_soup(url)
 
         page_albums: list[str] = [
             album["href"] for album in soup.find_all("a", class_="athumb thumb-link")
         ]
-        tasks = [
-            self.get_media_urls(await self.fetch_soup(album)) for album in page_albums
-        ]
+        tasks = [fetch_and_extract(album) for album in page_albums]
         return list(chain.from_iterable(await asyncio.gather(*tasks)))
 
     @override

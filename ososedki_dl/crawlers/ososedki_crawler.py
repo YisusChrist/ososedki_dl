@@ -41,37 +41,6 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
     button_class: str | None = None
     pagination: bool
 
-    async def fetch_page_albums(self, page_url: str) -> list[str]:
-        """
-        Asynchronously fetches a page and returns a list of unique album URLs
-        found on that page.
-
-        Args:
-            page_url (str): The URL of the page to fetch.
-
-        Returns:
-            list[str]: A list of absolute album URLs extracted from anchor tags
-            whose href starts with the configured album path. Returns an empty
-            list if the page cannot be fetched or no albums are found.
-        """
-        logger.debug(f"Fetching albums from page: {page_url}")
-        soup: BeautifulSoup = await self.fetch_soup(page_url)
-
-        if not self.album_path:
-            logger.warning(
-                f"Album path is not set for {self.__class__.__name__}. Skipping album fetch."
-            )
-
-        logger.debug(f"Extracting albums from soup for {self.__class__.__name__}")
-        return list(
-            {
-                f"{self.site_url}{a['href']}"
-                for a in soup.find_all(
-                    "a", href=lambda href: href and href.startswith(self.album_path)
-                )
-            }
-        )
-
     def _get_article_title(self, soup: BeautifulSoup) -> str:
         logger.debug("Extracting article title from soup")
 
@@ -345,7 +314,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
 
     async def _find_model_albums(
         self, model_url: str
-    ) -> AsyncGenerator[tuple[list[str], str], None]:
+    ) -> AsyncGenerator[list[str], None]:
         """
         Asynchronously iterates through paginated model pages to yield album
         URLs and the model name.
@@ -359,6 +328,12 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         """
         logger.debug(f"Finding model albums for URL: {model_url}")
 
+        if not self.album_path:
+            logger.warning(
+                f"Album path is not set for {self.__class__.__name__}. Skipping album fetch."
+            )
+            return
+
         # Clean the URL removing the query parameters
         model_url = model_url.split("?")[0]
 
@@ -371,13 +346,24 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         while albums_found:
             page_url: str = f"{model_url}?page={i}"
             logger.debug("Fetching albums from page %s", page_url)
-            albums_extracted: list[str] = await self.fetch_page_albums(page_url)
+
+            soup: BeautifulSoup = await self.fetch_soup(page_url)
+
+            logger.debug(f"Extracting albums from soup for {self.__class__.__name__}")
+            albums_extracted: list[str] = list(
+                {
+                    f"{self.site_url}{a['href']}"
+                    for a in soup.find_all(
+                        "a", href=lambda href: href and href.startswith(self.album_path)
+                    )
+                }
+            )
             if not albums_extracted:
                 albums_found = False
                 continue
 
             logger.info(f"Found {len(albums_extracted)} albums on page {page_url}")
-            yield albums_extracted, model_name
+            yield albums_extracted
             i += 1
 
             # Sleep for a while to avoid being banned
@@ -417,7 +403,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             results: list[dict[str, str]] = []
 
             # Find all the albums for the model incrementally
-            async for albums, _ in self._find_model_albums(url):
+            async for albums in self._find_model_albums(url):
                 logger.info(f"Processing {len(albums)} albums concurrently")
                 tasks = [self.process_album(album) for album in albums]
 

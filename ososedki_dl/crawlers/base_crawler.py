@@ -113,14 +113,21 @@ class BaseCrawler(ABC):
         """
         Fetches HTML and returns a BeautifulSoup object.
 
-        Raises ClientResponseError or ValueError if fetching/parsing fails.
+        Args:
+            url (str): The URL to fetch and parse.
+
+        Returns:
+            BeautifulSoup: Parsed HTML content of the page.
+
+        Raises:
+            ValueError: If the fetched HTML content is empty or cannot be parsed.
         """
         logger.debug(f"Fetching soup for URL: {url}")
         # print(f"Fetching {url}")
 
         html_content: str = await self.downloader.fetch(url)
         if not html_content:
-            logger.exception(f"Failed to fetch {url}")
+            logger.error(f"Failed to fetch {url}: empty HTML content")
             raise ValueError(f"Empty HTML content received from {url}")
 
         return BeautifulSoup(html_content, "html.parser")
@@ -193,7 +200,7 @@ class BaseCrawler(ABC):
         """
         logger.debug(f"Processing album: {album_url}")
 
-        album_url.rstrip("/")
+        album_url = album_url.rstrip("/")
         retries = 0
 
         while retries <= MAX_RETRIES:

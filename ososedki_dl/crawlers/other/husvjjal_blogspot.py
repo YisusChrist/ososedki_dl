@@ -101,7 +101,9 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         return max_stream
 
     @override
-    async def get_album_title(): ...
+    def get_album_title(self, soup: BeautifulSoup) -> str:
+        # Title is hardcoded to "husvjjal" in download(), so this is a fallback
+        return "husvjjal"
 
     async def process_image(self, img: str) -> str | None:
         img_hostname: str | None = urlparse(img).hostname
@@ -203,9 +205,9 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         tasks = [self.process_image(img) for img in images if img] + [
             self.process_video(vid) for vid in videos
         ]
-        urls: list[str | None] = [url for url in await asyncio.gather(*tasks) if url]
+        results = await asyncio.gather(*tasks)
         # Filter out the empty strings and None values
-        return [url for url in urls if url and url.startswith("https://")]
+        return [url for url in results if url and url.startswith("https://")]
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
