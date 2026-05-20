@@ -19,13 +19,15 @@ class SorryMotherCrawler(BaseCrawler):
     headers = {"Referer": site_url, "Range": "bytes=0-"}
 
     @override
-    def get_album_title(self, soup: BeautifulSoup) -> str:
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
         """
         Extracts the content title from the HTML soup by locating the first <a>
         tag with class "entry-tag".
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the page.
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed (not used in this
+                method).
 
         Returns:
             str: The text of the first matching tag, or `DEFAULT_ALBUM_TITLE`
@@ -37,7 +39,7 @@ class SorryMotherCrawler(BaseCrawler):
         return tags[0].text if tags else DEFAULT_ALBUM_TITLE
 
     @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Extracts and normalizes media URLs from the provided HTML soup.
 
@@ -46,8 +48,10 @@ class SorryMotherCrawler(BaseCrawler):
         from video URLs.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content to search for media
+            soup (BeautifulSoup): The parsed HTML content to search for media
                 elements.
+            url (str): The URL of the page being processed (not used in this
+                method).
 
         Returns:
             list[str]: List of cleaned image and video URLs found in the soup.
@@ -66,17 +70,3 @@ class SorryMotherCrawler(BaseCrawler):
             for video in soup.find_all("button", class_="cfp_dl")
         ]
         return images + videos
-
-    @override
-    async def download(self, url: str) -> list[dict[str, str]]:
-        """
-        Download and process media content from the specified URL.
-
-        Args:
-            url (str): The target page URL to download media from.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries containing information
-            about each downloaded media item.
-        """
-        return await self.process_album(url)

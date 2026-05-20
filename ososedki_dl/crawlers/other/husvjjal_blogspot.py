@@ -17,7 +17,7 @@ from ..base_crawler import BaseCrawler
 if TYPE_CHECKING:
     from typing import Any
 
-    from bs4.element import BeautifulSoup, Tag
+    from bs4 import BeautifulSoup, Tag
 
 
 class HusvjjalBlogspotCrawler(BaseCrawler):
@@ -101,8 +101,18 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         return max_stream
 
     @override
-    def get_album_title(self, soup: BeautifulSoup) -> str:
-        # Title is hardcoded to "husvjjal" in download(), so this is a fallback
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Title is hardcoded to "husvjjal" in the call to the `download` method,
+        so this is a fallback
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the album page.
+            url (str): The URL of the album page.
+
+        Returns:
+            str: The album title, which is hardcoded to "husvjjal".
+        """
         return "husvjjal"
 
     async def process_image(self, img: str) -> str | None:
@@ -176,7 +186,7 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
             return src
 
     @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Asynchronously extracts downloadable image and video URLs from a
         BeautifulSoup-parsed album page.
@@ -188,7 +198,9 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         all found media.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the album page.
+            soup (BeautifulSoup): The parsed HTML content of the album page.
+            url (str): The URL of the album page being processed (not used in
+                this method).
 
         Returns:
             list[str]: List of HTTPS URLs pointing to downloadable images and

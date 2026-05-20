@@ -78,7 +78,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         return DEFAULT_ALBUM_TITLE
 
     @override
-    def get_album_title(self, soup: BeautifulSoup) -> str:
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
         """
         Extracts the title of an album or model page from the provided
         BeautifulSoup object.
@@ -89,7 +89,9 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         found.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the page.
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed (not used in this
+                method).
 
         Returns:
             str: The extracted title of the album or model, or
@@ -215,7 +217,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         method yields valid IDs.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the album page.
+            soup (BeautifulSoup): The parsed HTML content of the album page.
 
         Returns:
             tuple[str, str]: A tuple containing the owner ID and album ID, or
@@ -257,7 +259,7 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         return "", ""
 
     @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Asynchronously extracts all media (image) URLs from an album or page.
 
@@ -268,7 +270,9 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         and normalizes URLs as needed.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the album or page.
+            soup (BeautifulSoup): The parsed HTML content of the album or page.
+            url (str): The URL of the album or page being processed (not used
+                in this method).
 
         Returns:
             list[str]: List of extracted image URLs.
@@ -312,21 +316,22 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
         logger.info(f"Found {len(images)} images after alternative search")
         return images
 
-    async def _find_model_albums(
-        self, model_url: str
-    ) -> AsyncGenerator[list[str], None]:
+    async def _find_albums(self, url: str) -> AsyncGenerator[list[str], None]:
         """
-        Asynchronously iterates through paginated model pages to yield album
-        URLs and the model name.
+        Asynchronously iterates through paginated pages to yield the discovered
+        album URLs.
+
+        This method is designed to handle model or cosplay pages that list
+        multiple albums, fetching each page incrementally to avoid overwhelming
+        the server and to allow for real-time processing of found albums.
 
         Args:
-            model_url (str): The URL of the model page to start from.
+            url (str): The URL of the model page to start from.
 
         Yields:
-            Tuples containing a list of album URLs and the model name for each
-            page with albums found.
+            list[str]: A list of album URLs found on the current page.
         """
-        logger.debug(f"Finding model albums for URL: {model_url}")
+        logger.debug(f"Finding albums for URL: {url}")
 
         if not self.album_path:
             logger.warning(
@@ -335,16 +340,15 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             return
 
         # Clean the URL removing the query parameters
-        model_url = model_url.split("?")[0]
+        url = url.split("?")[0]
 
-        soup: BeautifulSoup = await self.fetch_soup(model_url)
-        model_name: str = self.get_album_title(soup)
+        soup: BeautifulSoup = await self.fetch_soup(url)
 
         i = 1
         albums_found = True
 
         while albums_found:
-            page_url: str = f"{model_url}?page={i}"
+            page_url: str = f"{url}?page={i}"
             logger.debug("Fetching albums from page %s", page_url)
 
             soup: BeautifulSoup = await self.fetch_soup(page_url)
@@ -369,13 +373,14 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             # Sleep for a while to avoid being banned
             await asyncio.sleep(1)
 
-        logger.debug(f"Finished finding albums for model: {model_name}")
+        title: str = self.get_album_title(soup, url)
+        logger.debug(f"Finished finding albums for: {title}")
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
         """
-        Download and extract media and metadata from a given album or model
-        URL.
+        Download and extract media and metadata from a given album, model or
+        cosplay URL.
 
         If the URL corresponds to an album, processes and returns its media and
         metadata. If the URL matches a model or cosplay section, finds all
@@ -399,11 +404,11 @@ class OsosedkiBaseCrawler(BaseCrawler, ABC):
             or (self.cosplay_url and url.startswith(self.cosplay_url))
             or (self.fandom_url and url.startswith(self.fandom_url))
         ):
-            logger.info(f"Downloading albums for model or cosplay from {url}")
+            logger.info(f"Downloading albums from {url}")
             results: list[dict[str, str]] = []
 
-            # Find all the albums for the model incrementally
-            async for albums in self._find_model_albums(url):
+            # Find all the albums incrementally
+            async for albums in self._find_albums(url):
                 logger.info(f"Processing {len(albums)} albums concurrently")
                 tasks = [self.process_album(album) for album in albums]
 

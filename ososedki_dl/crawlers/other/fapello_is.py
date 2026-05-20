@@ -20,14 +20,41 @@ class FapelloIsCrawler(BaseCrawler):
     headers = {"Referer": site_url}
 
     @override
-    def get_album_title(self, soup: BeautifulSoup) -> str:
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Extracts the album title from the page's HTML soup.
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed (not used in this
+                method).
+
+        Returns:
+            str: The extracted album title, or a default title if not found.
+        """
         title_element = soup.find("h1", class_="text-xl font-semibold text-lead")
         return title_element.text.strip() if title_element else DEFAULT_ALBUM_TITLE
 
     @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
-        profile_id: str = self.profile_url.split("/")[-1]
-        headers: dict[str, str] = {"Referer": self.profile_url}
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
+        """
+        Extracts media URLs from the profile page by paginating through the API.
+
+        Uses the profile ID from the URL to fetch media URLs in batches until no
+        more media is found. Returns a list of media URLs or an empty list if
+        none are found.
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the profile page
+                (not used in this method).
+            url (str): The profile URL to download media from.
+
+        Returns:
+            list[str]: A list of media URLs extracted from the profile, or an
+            empty list if no media is found.
+        """
+        profile_id: str = url.split("/")[-1]
+        headers: dict[str, str] = {"Referer": url}
         urls: list[str] = []
         page = 1
 
@@ -51,23 +78,3 @@ class FapelloIsCrawler(BaseCrawler):
             page += 1
 
         return urls
-
-    @override
-    async def download(self, url: str) -> list[dict[str, str]]:
-        """
-        Asynchronously downloads all media items from a given Fapello profile
-        URL.
-
-        Iterates through paginated API endpoints to collect media URLs,
-        determines the album title, and downloads all found media items to the
-        resolved album path.
-
-        Args:
-            url (str): The Fapello profile URL to download media from.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries representing the
-            downloaded media items.
-        """
-        self.profile_url: str = url.rstrip("/")
-        return await self.process_album(album_url=self.profile_url)

@@ -5,19 +5,18 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from bs4.element import NavigableString
+from bs4 import NavigableString
 from core_helpers.logs import logger
 from typing_extensions import override
 
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
-
-    from bs4 import BeautifulSoup
-    from bs4.element import Tag
+    from bs4 import BeautifulSoup, Tag
 
 
 class WildskirtsCrawler(BaseCrawler):
+    # ! Beware, the trailing slash may return different results
     site_url = "https://wildskirts.com"
     base_photos_url: str = "https://photos.wildskirts.com"
     base_videos_url: str = "https://video.wildskirts.com"
@@ -103,9 +102,22 @@ class WildskirtsCrawler(BaseCrawler):
         media_items = data.get("media", {}).get("items", {})
         urls = [item.get("u") for item in media_items.values() if item.get("u")]
         logger.debug(f"Extracted {len(urls)} media URLs from API response")
+
         return urls
 
-    async def find_media_from_soup(self, soup: BeautifulSoup) -> list[str]:
+    async def find_media_from_soup(self, soup: BeautifulSoup, url: str) -> list[str]:
+        """
+        Determines the total number of photos and videos, constructs URLs for
+        each media item, retrieves all media URLs concurrently and returns the
+        complete list of media URLs.
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the profile page.
+            url (str): The URL of the profile page to fetch media from.
+
+        Returns:
+            list[str]: A list of media URLs extracted from the profile page.
+        """
         total_pictures: int = self.get_total_items(soup, "photos")
         total_videos: int = self.get_total_items(soup, "videos")
         total_items: int = total_pictures + total_videos
@@ -114,7 +126,7 @@ class WildskirtsCrawler(BaseCrawler):
             f"{total_videos}, Total items: {total_items}"
         )
 
-        urls: list[str] = [f"{self.profile_url}/{i}" for i in range(1, total_items + 1)]
+        urls: list[str] = [f"{url}/{i}" for i in range(1, total_items + 1)]
 
         results: list[str] = []
         # Fetch media URLs concurrently
@@ -129,32 +141,36 @@ class WildskirtsCrawler(BaseCrawler):
         return results
 
     @override
-    def get_album_title(self, soup: BeautifulSoup) -> str: ...
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Extracts the album title from the URL by taking the last segment after
+        the final slash.
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the page (not used
+                in this method).
+            url (str): The URL of the page being processed.
+
+        Returns:
+            str: The extracted album title derived from the URL.
+        """
+        return url.split("/")[-1]
 
     @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
+        """
+        Determines whether to fetch media URLs using the API or by parsing the
+        soup, and returns the list of media URLs accordingly.
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed.
+
+        Returns:
+            list[str]: A list of media URLs extracted from the page, either via
+            the API or by parsing the soup.
+        """
         if self.api:
             return await self.find_media_from_api(soup)
         else:
-            return await self.find_media_from_soup(soup)
-
-    @override
-    async def download(self, url: str) -> list[dict[str, str]]:
-        """
-        Downloads all media items from a Wildskirts profile URL.
-
-        Fetches the profile page, determines the total number of photos and
-        videos, constructs URLs for each media item, retrieves all media URLs
-        concurrently, and downloads the media to a local album path.
-
-        Args:
-            url (str): The Wildskirts profile URL to download media from.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries containing information
-            about each downloaded media item.
-        """
-        # ! Beware, the trailing slash may return different results
-        self.profile_url: str = url.rstrip("/")
-        profile: str = self.profile_url.split("/")[-1]
-        return await self.process_album(self.profile_url, title=profile)
+            return await self.find_media_from_soup(soup, url)

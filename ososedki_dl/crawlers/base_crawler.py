@@ -59,12 +59,13 @@ class BaseCrawler(ABC):
         return self.site_url + (self.base_image_path or "")
 
     @abstractmethod
-    def get_album_title(self, soup: BeautifulSoup) -> str:
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
         """
         Extracts and returns the album title from the given URL and parsed HTML.
 
         Args:
-            soup (BeautifulSoup | None): Parsed HTML content of the album page.
+            soup (BeautifulSoup): Parsed HTML content of the album page.
+            url (str): The URL of the album page being processed.
 
         Returns:
             str: The extracted album title.
@@ -74,13 +75,14 @@ class BaseCrawler(ABC):
         )
 
     @abstractmethod
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]:
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Asynchronously extracts and returns a list of media URLs from the given
         album URL and parsed HTML.
 
         Args:
-            soup (BeautifulSoup | None): Parsed HTML content of the album page.
+            soup (BeautifulSoup): Parsed HTML content of the album page.
+            url (str): The URL of the album page being processed.
 
         Returns:
             list[str]: A list of media URLs extracted from the album page.
@@ -89,10 +91,18 @@ class BaseCrawler(ABC):
             "Each crawler must implement its own get_media_urls method"
         )
 
-    @abstractmethod
     async def download(self, url: str) -> list[dict[str, str]]:
         """
         Asynchronously downloads and parses content from the specified URL.
+
+        This method serves as the main entry point for processing a given URL.
+        It calls the `process_album` method, which handles the core logic of
+        fetching the album page, extracting the title and media URLs, and
+        downloading the media items.
+
+        Subclasses can override this method if they need to implement custom
+        behavior for different types of URLs (e.g., model pages vs. album
+        pages), but by default it will simply delegate to `process_album`.
 
         Args:
             url (str): The URL to crawl and extract data from.
@@ -105,7 +115,7 @@ class BaseCrawler(ABC):
             NotImplementedError: If the method is not implemented by a
                 subclass.
         """
-        raise NotImplementedError("Each crawler must implement its own download method")
+        return await self.process_album(url)
 
     # region Fetching functions
 
@@ -175,7 +185,6 @@ class BaseCrawler(ABC):
         album_url: str,
         title: str | None = None,
         media_urls: list[str] | None = None,
-        soup: BeautifulSoup | None = None,
     ) -> list[dict[str, str]]:
         """
         Asynchronously processes an album page by extracting media URLs,
@@ -190,9 +199,8 @@ class BaseCrawler(ABC):
             album_url (str): The URL of the album page to process.
             title (str, optional): Fallback title for the album.
             media_urls (list[str], optional): Pre-extracted list of media
-                URLs to download.
-            soup (BeautifulSoup, optional): Pre-fetched parsed HTML of the album
-                page.
+                URLs to download. If not provided, media URLs will be extracted
+                from the album page.
 
         Returns:
             list[dict[str, str]]: A list of dictionaries containing the results of
@@ -210,15 +218,15 @@ class BaseCrawler(ABC):
                 )
                 print(f"Retrying ({retries}/{MAX_RETRIES}) for album: {album_url}")
             try:
-                soup = soup or await self.fetch_soup(album_url)
+                soup = await self.fetch_soup(album_url)
 
                 # Extract the title if a title_extractor is provided; otherwise, use the given title
                 if not title:
-                    title = self.get_album_title(soup)
+                    title = self.get_album_title(soup, album_url)
                 if not title:
                     raise ValueError("Title could not be determined")
 
-                media_urls = media_urls or await self.get_media_urls(soup)
+                media_urls = media_urls or await self.get_media_urls(soup, album_url)
                 media_urls = list(set(media_urls))
                 # print(f"Title: {title}")
                 # print(f"Media URLs: {len(media_urls)}")

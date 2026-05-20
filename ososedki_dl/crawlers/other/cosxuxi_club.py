@@ -9,12 +9,9 @@ from core_helpers.logs import logger
 from typing_extensions import override
 
 from ...consts import DEFAULT_ALBUM_TITLE
-from ...utils import get_final_path
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from bs4 import BeautifulSoup, Tag
 
 
@@ -24,93 +21,89 @@ class CosxuxiClubCrawler(BaseCrawler):
     title_separator: str = " - "
 
     @override
-    def get_album_title(self, soup: BeautifulSoup) -> str: ...
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Extracts the album title from the page's HTML soup.
 
-    @override
-    async def get_media_urls(self, soup: BeautifulSoup) -> list[str]: ...
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed (not used in this
+                method).
 
-    def cosxuxi_club_title_extractor(self, soup: BeautifulSoup) -> str:
-        text_div: Tag | NavigableString | None = soup.find("title")
-        if not text_div:
+        Returns:
+            str: The extracted album title, or a default title if not found.
+        """
+        if not soup or not soup.title:
             logger.warning(
                 f"No title tag found in the soup for {self.__class__.__name__}"
             )
             return DEFAULT_ALBUM_TITLE
 
-        text: str = text_div.text.strip()
-        title: str = DEFAULT_ALBUM_TITLE
+        text: str = soup.title.text.strip()
+        if f"{self.site_name}: " in text:
+            text = text.split(f"{self.site_name}: ")[1].strip()
+        if self.title_separator in text:
+            text = text.split(self.title_separator)[0].strip()
 
-        try:
-            if f"{self.site_name}: " in text:
-                title = text.split(f"{self.site_name}: ")[1].strip()
-            if self.title_separator in text:
-                title = text.split(self.title_separator)[0].strip()
-        except IndexError:
-            logger.error(f"Failed to extract title from '{text}'")
-            print(f"ERROR: Failed to extract title from '{text}'")
+        return text or DEFAULT_ALBUM_TITLE
 
-        return title
-
-    def cosxuxi_club_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Extracts and returns a list of image URLs from the 'contentme' div that
         contain the specified base URL fragment.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the page.
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed (not used in this
+                method).
 
         Returns:
             list[str]: List of image source URLs matching the base URL filter,
             or an empty list if no valid images are found.
         """
-        # Find all the images inside the div with the class 'contentme'
-        content_div: Tag | NavigableString | None = soup.find("div", class_="contentme")
-        if not content_div or isinstance(content_div, NavigableString):
-            return []
-
-        return [img.get("src") for img in content_div.find_all("img")]
-
-    @override
-    async def download(self, url: str) -> list[dict[str, str]]:
-        """
-        Asynchronously downloads all media items from a CosXuxi Club album,
-        following pagination if present.
-
-        Args:
-            url (str): The URL of the CosXuxi Club album to download.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries containing information
-            about each downloaded media item.
-        """
-        album_url: str = url.rstrip("/")
-        title: str = ""
         urls: list[str] = []
 
         while True:
-            soup: BeautifulSoup = await self.fetch_soup(album_url)
-            page_urls: list[str] = self.cosxuxi_club_media_filter(soup) if soup else []
-            if not page_urls:
+            # Find all the images inside the div with the class 'contentme'
+            content_div: Tag | None = soup.select_one("div.contentme")
+            if not content_div:
+                logger.warning(
+                    f"No content div found in the soup for {self.__class__.__name__}"
+                )
                 break
 
-            urls.extend(page_urls)
+            page_urls: list[str] = [
+                img.get("src") for img in content_div.find_all("img")
+            ]
+            if not page_urls:
+                logger.warning(
+                    f"No images found in the content div for {self.__class__.__name__}"
+                )
+                break
 
-            if not title:
-                title = self.cosxuxi_club_title_extractor(soup)
+            logger.info(f"Found {len(page_urls)} image(s) on the current page.")
+            urls.extend(page_urls)
 
             # Check if there is a next page
             next_page: Tag | NavigableString | None = soup.find(
                 "a", class_="page-numbers", string="Next >"
             )
-            if isinstance(next_page, NavigableString):
-                next_page = None
-            if not next_page or not next_page.get("href"):
+            if not next_page or isinstance(next_page, NavigableString):
+                logger.info("No next page found, ending pagination.")
                 break
-            next_page_url: str | list[str] = next_page.get("href", "")
-            if isinstance(next_page_url, list):
-                next_page_url = next_page_url[0]
-            album_url = self.site_url + next_page_url
 
-        album_path: Path = get_final_path(self.download_path, title)
+            next_href: str | list[str] = next_page.get("href", "")
+            next_page_url: str = (
+                next_href[0] if isinstance(next_href, list) else next_href
+            )
+            if not next_page_url or not next_page_url.startswith("/"):
+                logger.warning(
+                    f"Invalid next page URL: {next_page_url}, ending pagination."
+                )
+                break
 
-        return await self.download_media_items(urls, title, album_path)
+            album_url: str = self.site_url + next_page_url
+            soup = await self.fetch_soup(album_url)
+
+        return urls
