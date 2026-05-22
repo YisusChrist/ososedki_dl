@@ -83,6 +83,26 @@ class Downloader:
         raw_response: bool = False,
         **kwargs: Any,
     ) -> Any:
+        """
+        Fetches a URL with retries and error handling.
+
+        This method implements robust fetching logic with retries for transient
+        errors, SSL error handling, and dynamic response property access. It
+        also supports returning the raw response object if needed.
+
+        Args:
+            url (str): The URL to fetch.
+            method (str, optional): The HTTP method to use. Defaults to "GET".
+            response_property (str, optional): The property of the response to
+                return (e.g., "text", "json", "content"). Defaults to "text".
+            raw_response (bool, optional): If True, return the raw response object
+                instead of a property. Defaults to False.
+            **kwargs: Additional keyword arguments to pass to the request method.
+
+        Returns:
+            Any: The requested property of the response, or the raw response if
+            raw_response is True.
+        """
         method = method.upper()
         logger.debug(
             f"{method} URL: {url} with response_property='{response_property}' "
@@ -180,10 +200,9 @@ class Downloader:
             media_path (Path): The target file path to save the downloaded image.
 
         Returns:
-            tuple[str, Path]: A tuple containing the download status ("ok" or "skipped
+            tuple[str, Path]: A tuple containing the download status ("ok" or "skipped"
             and the final path of the downloaded image.
         """
-
         logger.debug(f"Downloading image from URL: {url}")
 
         image_content: bytes = await response.read()
@@ -230,13 +249,10 @@ class Downloader:
         content_length = int(response.headers.get("Content-Length", 0))
         logger.debug(f"Content length: {content_length} bytes")
 
-        remote_hash = sha256()
-        file_exists: bool = media_path.exists()
-        local_hash = sha256() if file_exists else None
-
         temp_path: Path = media_path.with_suffix(media_path.suffix + ".part")
         logger.debug(f"Temporary file path: {temp_path}")
 
+        remote_hash = sha256()
         bytes_seen = 0
         t0: float = monotonic()
         if dynamic_chunk:
@@ -261,9 +277,6 @@ class Downloader:
                         f"Total written: {p_task.completed}/{p_task.total}"
                     )
 
-                    if local_hash is not None:
-                        local_hash.update(chunk)
-
                     if not dynamic_chunk:
                         continue
 
@@ -282,26 +295,46 @@ class Downloader:
                         t0 = now
 
         # Duplicate check using hashes
-        if file_exists and local_hash and local_hash.digest() == remote_hash.digest():
-            logger.info(f"File already exists and matches: {media_path}")
-            temp_path.unlink(missing_ok=True)
-            logger.debug(f"Removed temporary file: {temp_path}")
-            return "skipped", media_path
+        if media_path.exists():
+            logger.debug(f"File exists. Calculating local hash for: {media_path}")
+            local_hash = sha256()
+
+            # Read the existing local file in chunks asynchronously
+            async with aiofiles.open(media_path, "rb") as f:
+                while local_chunk := await f.read(chunk_size):
+                    local_hash.update(local_chunk)
+
+            if local_hash.digest() == remote_hash.digest():
+                logger.info(f"File already exists and matches: {media_path}")
+                temp_path.unlink(missing_ok=True)
+                logger.debug(f"Removed temporary file: {temp_path}")
+                return "skipped", media_path
 
         final_path: Path = get_unique_filename(media_path)
         logger.debug(f"Final file path: {final_path}")
         temp_path.rename(final_path)
-
-        if self.check_cache:
-            write_to_cache(url)
-
-        logger.info(f"Downloaded video to: {final_path}")
 
         return "ok", final_path
 
     async def download_and_save_media(
         self, url: str, album_path: Path
     ) -> dict[str, str]:
+        """
+        Downloads media from the given URL and saves it to the specified album
+        path.
+
+        This method determines the media type (image or video) based on the
+        content type and delegates to the appropriate download method. It also
+        handles caching and returns a standardized result dictionary.
+
+        Args:
+            url (str): The URL of the media to download.
+            album_path (Path): The directory path where the media should be saved.
+
+        Returns:
+            dict[str, str]: A dictionary containing the URL and the download status
+            ("ok", "skipped", or "error: <message>").
+        """
         logger.debug(f"Downloading media from URL: {url}")
 
         if self.check_cache and get_url_hashfile(url).exists():
