@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 
 from .base_crawler import BaseCrawler
+from .depvailon import crawlers as depvailon_crawlers
 from .ososedki import crawlers as ososedki_crawlers
 from .ososedki_crawler import OsosedkiBaseCrawler
 from .other import crawlers as other_crawlers
@@ -10,7 +11,7 @@ from .other import crawlers as other_crawlers
 if sys.version_info >= (3, 10):
     CrawlerType = type[OsosedkiBaseCrawler] | type[BaseCrawler]
     CrawlerInstance = OsosedkiBaseCrawler | BaseCrawler
-    crawlers = ososedki_crawlers + other_crawlers
+    crawlers = ososedki_crawlers + other_crawlers + depvailon_crawlers
 else:
     from typing import Union
 
