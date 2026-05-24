@@ -152,7 +152,7 @@ async def handle_downloader(
 
     for CrawlerClass in crawler_modules:
         logger.debug("Checking crawler: %s for URL: %s", CrawlerClass.__name__, url)
-        if url.startswith(CrawlerClass.site_url):
+        if CrawlerClass.can_handle(url):
             crawler: CrawlerInstance = CrawlerClass(session, args)
             crawler_name: str = crawler.__class__.__name__
             logger.info("Downloading for URL: %s using crawler: %s", url, crawler_name)

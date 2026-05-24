@@ -17,10 +17,12 @@ if TYPE_CHECKING:
 
 
 class BunkrAlbumsCrawler(BaseCrawler):
-    site_url = "https://bunkr-albums.io"
+    site_url = "https://balbums.st"
+    site_aliases = ("https://bunkr-albums.io",)
 
     @override
-    def get_album_title(self, soup: BeautifulSoup, url: str) -> str: ...
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        return url.split("/")[-1]
 
     @override
     async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from aiohttp.client_exceptions import ClientResponseError
 from bs4 import BeautifulSoup
@@ -30,6 +31,7 @@ class BaseCrawler(ABC):
     """Abstract base class for crawlers, providing common functionality."""
 
     site_url: str
+    site_aliases: tuple[str, ...] = ()
     session: SessionType
     download_path: Path
     base_image_path: str | None = None
@@ -57,6 +59,32 @@ class BaseCrawler(ABC):
     @property
     def base_media_url(self) -> str:
         return self.site_url + (self.base_image_path or "")
+
+    @classmethod
+    def can_handle(cls, url: str) -> bool:
+        """
+        Determines if this crawler can handle the given URL by checking the
+        primary site_url and any historical domain aliases.
+
+        Args:
+            url (str): The URL to check against the crawler's supported domains.
+
+        Returns:
+            bool: True if the crawler can handle the URL, False otherwise.
+        """
+        url_domain = urlparse(url).netloc.lower()
+        site_domain = urlparse(cls.site_url).netloc.lower()
+
+        # Check primary domain
+        if url_domain == site_domain:
+            return True
+
+        # Check historical domains
+        for alias in cls.site_aliases:
+            if url_domain == urlparse(alias).netloc.lower():
+                return True
+
+        return False
 
     @abstractmethod
     def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
