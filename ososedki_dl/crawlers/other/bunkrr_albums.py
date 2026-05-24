@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from rich import print
 from typing_extensions import override
 
-from ...consts import MAX_TIMEOUT
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
@@ -17,27 +17,15 @@ if TYPE_CHECKING:
 
 
 class BunkrAlbumsCrawler(BaseCrawler):
-    site_url = "https://bunkr-albums.io"
-
-    async def get_real_url(self, url: str) -> str:
-        """
-        Resolve and return the final destination URL after following any
-        redirects.
-
-        Args:
-            url (str): The initial URL to resolve.
-
-        Returns:
-            str: The fully resolved URL after all redirects.
-        """
-        print(f"Resolving {url}")
-        response = await self.session.head(
-            url, allow_redirects=True, timeout=MAX_TIMEOUT
-        )
-        return str(response.url)
+    site_url = "https://balbums.st"
+    site_aliases = ("https://bunkr-albums.io",)
 
     @override
-    async def download(self, url: str) -> list[dict[str, str]]:
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        return url.split("/")[-1]
+
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Extracts and resolves all unique Bunkr album URLs from the given page.
 
@@ -47,15 +35,15 @@ class BunkrAlbumsCrawler(BaseCrawler):
         downloading functionality is not yet implemented.
 
         Args:
-            url (str): The URL of the page to scan for Bunkr album links.
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page to scan for Bunkr album links (not
+                used in the current implementation).
 
         Returns:
-            list[dict[str, str]]: Currently always returns an empty list.
+            list[str]: A list of resolved album URLs found on the page.
+            Currently returns an empty list as the downloading functionality is
+            not implemented.
         """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
-
         # Find all links that start with https://bunkrrr.org/a/
         urls: list[str] = [
             u["href"]
@@ -66,9 +54,18 @@ class BunkrAlbumsCrawler(BaseCrawler):
         urls = list(set(urls))
         # Every url inside the list redirects to a different domain
         # so we need to resolve the real domain
-        real_urls: list[str] = [await self.get_real_url(u) for u in urls]
+        tasks = [
+            self.downloader.fetch(
+                u,
+                "HEAD",
+                response_property="url",
+                allow_redirects=True,
+            )
+            for u in urls
+        ]
+        real_urls: list[str] = await asyncio.gather(*tasks)
 
-        print(f"Found {len(real_urls)} albums on {url}")
+        print(f"Found {len(real_urls)} albums on the page:")
         print(real_urls)
 
         # TODO: Try to call the cyberdrop_dl program to download the albums

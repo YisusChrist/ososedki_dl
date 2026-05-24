@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import configparser
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from core_helpers.cli import setup_parser
+from core_helpers.logs import logger
 from rich import print
 
-from .config import (print_entire_config, print_specific_config_field,
-                     update_config_file)
+from .config import print_entire_config, print_specific_config_field, update_config_file
 from .consts import CONFIG_FILE, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
@@ -36,7 +37,7 @@ def get_parsed_args() -> Namespace:
         "-dst",
         "--destination",
         dest="dest_path",
-        type=str,
+        type=Path,
         help="Specify the destination path for moving profiles.",
     )
     # Config file argument
@@ -44,7 +45,7 @@ def get_parsed_args() -> Namespace:
         "-f",
         "--config-file",
         dest="config_file",
-        type=str,
+        type=Path,
         help="Specify a configuration file to use instead of the default one.",
     )
     # Create config file interactive
@@ -62,6 +63,13 @@ def get_parsed_args() -> Namespace:
         action="store_true",
         default=False,
         help="Enable caching support for the requests.",
+    )
+    g_main.add_argument(
+        "-cch",
+        "--check-cache",
+        action="store_true",
+        default=False,
+        help="Check for cached downloads before downloading.",
     )
 
     g_user = parser.add_argument_group("User Options")
@@ -115,22 +123,32 @@ def handle_config_command(args: Namespace) -> None:
     Args:
         args (Namespace): The parsed arguments.
     """
+    logger.debug("Handling config command")
+
     # Read both configuration file and command-line arguments
     config = configparser.ConfigParser()
     try:
+        logger.info(f"Reading config file: {CONFIG_FILE}")
         config.read(CONFIG_FILE)
 
         if not args.print_config:
+            logger.debug("Printing entire config")
             print_entire_config(config)
         elif len(args.print_config) == 1:
+            logger.debug(f"Printing specific config field: {args.print_config[0]}")
             print_specific_config_field(config, args.print_config[0])
         else:
+            logger.debug("Updating config fields")
             update_config_file(config, args.print_config)
             # Save updated config
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 config.write(f)
+            logger.info("Config file updated successfully.")
+            print("[green]Config file updated successfully.[/]")
 
     except configparser.Error as e:
+        logger.exception("Error parsing config file")
         print(f"Error parsing config file: {e}")
     except IOError as e:
+        logger.exception("Error accessing config file")
         print(f"Error accessing config file: {e}")

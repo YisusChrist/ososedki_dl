@@ -2,42 +2,26 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+from collections import deque
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from bs4 import NavigableString
+from bs4 import BeautifulSoup, NavigableString
 from rich import print
 from typing_extensions import override
 
-from ...download import fetch
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from bs4 import ResultSet
-    from bs4.element import BeautifulSoup, Tag
+    from bs4 import BeautifulSoup, Tag
 
 
 class HusvjjalBlogspotCrawler(BaseCrawler):
     site_url = "https://husvjjal.blogspot.com"
-
-    # @lru_cache
-    async def download_album(self, album_url: str) -> list[dict[str, str]]:
-        """
-        Download all media items from a specified album URL.
-
-        Args:
-            album_url (str): The URL of the album to download media from.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries containing media
-            metadata and URLs extracted from the album.
-        """
-        return await self.process_album(
-            album_url, self.husvjjal_blogspot_media_filter, title="husvjjal"
-        )
 
     async def get_related_albums(self, album_url: str) -> list[str]:
         """
@@ -62,8 +46,8 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
             "q": 'label:"Video"',
         }
 
-        js_script: str = await fetch(
-            self.session, js_url, headers=headers, params=params
+        js_script: str = await self.downloader.fetch(
+            js_url, headers=headers, params=params
         )
         script_json: str = (
             js_script.split("BloggerJS.related(")[1].split(");")[0].strip()
@@ -83,7 +67,7 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
 
         return related_albums
 
-    def get_max_stream(self, js_script: str) -> dict[str, str]:
+    def get_max_stream(self, js_script: str | None) -> dict[str, str]:
         """
         Extracts the video stream with the highest format ID from a JavaScript
         VIDEO_CONFIG snippet.
@@ -116,7 +100,93 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
 
         return max_stream
 
-    async def husvjjal_blogspot_media_filter(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Title is hardcoded to "husvjjal" in the call to the `download` method,
+        so this is a fallback
+
+        Args:
+            soup (BeautifulSoup): The parsed HTML content of the album page.
+            url (str): The URL of the album page.
+
+        Returns:
+            str: The album title, which is hardcoded to "husvjjal".
+        """
+        return "husvjjal"
+
+    async def process_image(self, img: str) -> str | None:
+        img_hostname: str | None = urlparse(img).hostname
+        if img_hostname and img_hostname == "i.postimg.cc":
+            return img
+
+        soup: BeautifulSoup = await self.fetch_soup(img)
+
+        download_link: Tag | NavigableString | None = soup.find(
+            "a",
+            {"id": "download"},
+        )
+        if not download_link or isinstance(download_link, NavigableString):
+            return
+
+        download_href: str | list[str] = download_link.get("href", "")
+        if isinstance(download_href, list):
+            download_href = download_href[0]
+
+        download_href = download_href.strip()
+        download_hostname: str | None = urlparse(download_href).hostname
+        if download_hostname and download_href.startswith("https://"):
+            return download_href
+
+    async def process_video(self, vid: str) -> str | None:
+        soup: BeautifulSoup = await self.fetch_soup(vid)
+
+        js_script: Tag | NavigableString | None = soup.find(
+            "script",
+            {"type": "text/javascript"},
+        )
+        if not js_script or isinstance(js_script, NavigableString):
+            return
+
+        max_stream: dict[str, str] = self.get_max_stream(js_script.string)
+
+        play_url: str = max_stream.get("play_url", "").strip()
+        play_hostname: str | None = urlparse(play_url).hostname
+        if play_hostname and play_url.startswith("https://"):
+            return play_url
+        return None
+
+    def find_image_url(self, tag: Tag) -> str | None:
+        """
+        Extracts image URL from an anchor tag that may contain an image,
+        checking against allowed hostnames.
+
+        Args:
+            img (str): The URL of the image to check.
+
+        Returns:
+            str | None: The validated image URL or None if not found.
+        """
+        allowed_img_hostnames: set[str] = {"i.postimg.cc", "postimg.cc"}
+
+        img_tag: Tag | NavigableString | None = tag.find("img")
+        if not img_tag or isinstance(img_tag, NavigableString):
+            return
+
+        href: str = tag.get("href", "").strip()
+        src: str = img_tag.get("src", "").strip()
+
+        # Parse the URL to check the hostname
+        href_hostname: str | None = urlparse(href).hostname
+        src_hostname: str | None = urlparse(src).hostname
+
+        if href_hostname and href_hostname in allowed_img_hostnames:
+            return href
+        elif src_hostname and src_hostname in allowed_img_hostnames:
+            return src
+
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Asynchronously extracts downloadable image and video URLs from a
         BeautifulSoup-parsed album page.
@@ -128,89 +198,28 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         all found media.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content of the album page.
+            soup (BeautifulSoup): The parsed HTML content of the album page.
+            url (str): The URL of the album page being processed (not used in
+                this method).
 
         Returns:
             list[str]: List of HTTPS URLs pointing to downloadable images and
             videos found on the album page.
         """
-        allowed_img_hostnames: set[str] = {"i.postimg.cc", "postimg.cc"}
-
-        images: list[str] = []
-        for tag in soup.find_all("a"):
-            img_tag = tag.find("img")
-            if not img_tag:
-                continue
-
-            href: str = tag.get("href", "").strip()
-            src: str = img_tag.get("src", "").strip()
-
-            # Parse the URL to check the hostname
-            href_hostname: str | None = urlparse(href).hostname
-            src_hostname: str | None = urlparse(src).hostname
-
-            if href_hostname and href_hostname in allowed_img_hostnames:
-                images.append(href)
-            elif src_hostname and src_hostname in allowed_img_hostnames:
-                images.append(src)
-
+        images: list[str | None] = [
+            self.find_image_url(tag) for tag in soup.find_all("a")
+        ]
         videos: list[str] = [
             tag.get("src", "").strip()
             for tag in soup.find_all("iframe", class_="b-hbp-video b-uploaded")
         ]
 
-        urls: list[str] = []
-        for img in images:
-            img_hostname: str | None = urlparse(img).hostname
-            if img_hostname and img_hostname == "i.postimg.cc":
-                urls.append(img)
-                continue
-
-            soup2: BeautifulSoup | None = await self.fetch_soup(img)
-            if not soup2:
-                continue
-
-            download_link: Tag | NavigableString | None = soup2.find(
-                "a",
-                {"id": "download"},
-            )
-            if not download_link or isinstance(download_link, NavigableString):
-                continue
-
-            download_href: str | list[str] = download_link.get("href", "")
-            if isinstance(download_href, list):
-                download_href = download_href[0]
-            download_href = download_href.strip()
-            download_hostname: str | None = urlparse(download_href).hostname
-            if download_hostname and download_href.startswith("https://"):
-                urls.append(download_href)
-
-        for vid in videos:
-            soup2 = await self.fetch_soup(vid)
-            if not soup2:
-                continue
-
-            js_script: Tag | NavigableString | None = soup2.find(
-                "script",
-                {"type": "text/javascript"},
-            )
-            if not js_script or isinstance(js_script, NavigableString):
-                continue
-
-            js_script_str: str | None = js_script.string
-            if not js_script_str:
-                continue
-
-            max_stream: dict[str, str] = self.get_max_stream(js_script_str)
-            if not max_stream:
-                continue
-
-            play_url: str = max_stream.get("play_url", "").strip()
-            play_hostname: str | None = urlparse(play_url).hostname
-            if play_hostname and play_url.startswith("https://"):
-                urls.append(play_url)
-
-        return urls
+        tasks = [self.process_image(img) for img in images if img] + [
+            self.process_video(vid) for vid in videos
+        ]
+        results = await asyncio.gather(*tasks)
+        # Filter out the empty strings and None values
+        return [url for url in results if url and url.startswith("https://")]
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -234,18 +243,14 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
         profile_url: str = url.rstrip("/")
         if profile_url.endswith(".html"):
             results: list[dict[str, str]] = await self.process_album(
-                profile_url, self.husvjjal_blogspot_media_filter, title="husvjjal"
+                profile_url, title="husvjjal"
             )
             related_albums: list[str] = await self.get_related_albums(profile_url)
             for related_album in related_albums:
-                results += await self.process_album(
-                    related_album, self.husvjjal_blogspot_media_filter, title="husvjjal"
-                )
+                results += await self.process_album(related_album, title="husvjjal")
             return results
 
-        soup: BeautifulSoup | None = await self.fetch_soup(profile_url)
-        if not soup:
-            return []
+        soup: BeautifulSoup = await self.fetch_soup(profile_url)
 
         album_classes: list[str] = [
             "card-image ratio o-hidden mask ratio-16:9",
@@ -254,19 +259,25 @@ class HusvjjalBlogspotCrawler(BaseCrawler):
             "gallery ratio mask carousel-top gallery-featured ratio-16:9",
         ]
 
-        albums_html: ResultSet[Any] = soup.find_all("a", class_=album_classes)
+        albums_html: list[Tag] = soup.find_all("a", class_=album_classes)
         albums: list[str] = list({album["href"] for album in albums_html})
 
-        results = []
-        index = 0
-        while index < len(albums):
-            album: str = albums[index]
-            results += await self.download_album(album)
-            related_albums = await self.get_related_albums(album)
-            for related_album in related_albums:
-                if related_album not in albums:
-                    albums.append(related_album)
+        results: list[dict[str, str]] = []
+        # Turn your initial list into a queue
+        queue: deque[str] = deque(albums)
+        # Track visited albums to prevent infinite loops if Site A links to Site B, and B links to A
+        visited: set[str] = set(albums)
 
-            index += 1  # Move to the next album in the list
+        while queue:
+            # Pop the oldest item from the left side of the queue (FIFO)
+            album_url: str = queue.popleft()
+
+            results += await self.process_album(album_url, title="husvjjal")
+            related_albums: list[str] = await self.get_related_albums(album_url)
+
+            for related_album in related_albums:
+                if related_album not in visited:
+                    visited.add(related_album)
+                    queue.append(related_album)
 
         return results

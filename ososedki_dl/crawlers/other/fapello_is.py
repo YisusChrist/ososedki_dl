@@ -7,85 +7,74 @@ from typing import TYPE_CHECKING
 from rich import print
 from typing_extensions import override
 
-from ...utils import get_final_path
+from ...consts import DEFAULT_ALBUM_TITLE
 from ..base_crawler import BaseCrawler
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from bs4 import BeautifulSoup
 
 
 class FapelloIsCrawler(BaseCrawler):
     site_url = "https://fapello.is"
-    download_url: str = site_url + "/api/media"
+    api_url: str = site_url + "/api/media"
     headers = {"Referer": site_url}
 
-    async def fetch_media_urls(
-        self, url: str, referer_url: str
-    ) -> list[dict[str, str]] | str:
+    @override
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
         """
-        Asynchronously retrieves media metadata from the specified API URL with
-        a custom referer header.
+        Extracts the album title from the page's HTML soup.
 
         Args:
-            url (str): The API endpoint to fetch media data from.
-            referer_url (str): The referer URL to include in the request
-                headers.
+            soup (BeautifulSoup): The parsed HTML content of the page.
+            url (str): The URL of the page being processed (not used in this
+                method).
 
         Returns:
-            list[dict[str, str]] | str: A list of media metadata dictionaries
-            if the response is successful, or the raw JSON string if the
-            response is not a list.
+            str: The extracted album title, or a default title if not found.
         """
-        headers: dict[str, str] = {"Referer": referer_url}
-        async with self.session.get(url, headers=headers) as response:
-            if response.status != 200:
-                return []
-            return await response.json()
+        title_element = soup.find("h1", class_="text-xl font-semibold text-lead")
+        return title_element.text.strip() if title_element else DEFAULT_ALBUM_TITLE
 
     @override
-    async def download(self, url: str) -> list[dict[str, str]]:
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
-        Asynchronously downloads all media items from a given Fapello profile
-        URL.
+        Extracts media URLs from the profile page by paginating through the API.
 
-        Iterates through paginated API endpoints to collect media URLs,
-        determines the album title, and downloads all found media items to the
-        resolved album path.
+        Uses the profile ID from the URL to fetch media URLs in batches until no
+        more media is found. Returns a list of media URLs or an empty list if
+        none are found.
 
         Args:
-            url (str): The Fapello profile URL to download media from.
+            soup (BeautifulSoup): The parsed HTML content of the profile page
+                (not used in this method).
+            url (str): The profile URL to download media from.
 
         Returns:
-            list[dict[str, str]]: A list of dictionaries representing the
-            downloaded media items.
+            list[str]: A list of media URLs extracted from the profile, or an
+            empty list if no media is found.
         """
-        profile_url: str = url.rstrip("/")
-        profile_id: str = profile_url.split("/")[-1]
-        i = 1
-
-        title: str = ""
+        profile_id: str = url.split("/")[-1]
+        headers: dict[str, str] = {"Referer": url}
         urls: list[str] = []
+        page = 1
+
         print(f"Fetching data from profile {profile_id}...")
         while True:
-            print(f"Fetching page {i} for profile {profile_id}...")
-            fetch_url: str = f"{self.download_url}/{profile_id}/{i}/1"
-            album: list[dict[str, str]] | str = await self.fetch_media_urls(
-                fetch_url, url
+            print(f"Fetching page {page} for profile {profile_id}...")
+            fetch_url: str = f"{self.api_url}/{profile_id}/{page}/1"
+
+            data = await self.downloader.fetch(
+                fetch_url, headers=headers, response_property="json"
             )
-            if not album or album == "null":
+            if not data or data == "null":
                 break
 
-            if isinstance(album, str):
-                print("Error fetching album:", album)
+            if isinstance(data, str):
+                print("Error fetching data:", data)
                 break
 
-            if not title:
-                title = album[0]["name"]
-            urls += [media["newUrl"] for media in album if media["newUrl"]]
-            i += 1
+            urls.extend([m["newUrl"] for m in data if m["newUrl"]])
+            print(f"Found {len(urls)} media URLs so far...")
+            page += 1
 
-        print(f"Found {len(urls)} media items in profile {profile_id}")
-
-        album_path: Path = get_final_path(self.download_path, title)
-
-        return await self.download_media_items(urls, title, album_path)
+        return urls

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from asyncio import gather
+import asyncio
 from itertools import chain
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from bs4 import NavigableString
+from core_helpers.logs import logger
 from rich import print
 from typing_extensions import override
 
@@ -17,8 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
     from urllib.parse import ParseResult
 
-    from bs4 import BeautifulSoup
-    from bs4.element import Tag
+    from bs4 import BeautifulSoup, Tag
 
 
 class EromeXXXCrawler(BaseCrawler):
@@ -31,16 +30,14 @@ class EromeXXXCrawler(BaseCrawler):
     video_url: str = site_url + "/video/"
 
     def print_help_message(self) -> None:
-        print(
-            f"""[bold yellow]Warning:[/] URL not supported. Please provide \
+        print(f"""[bold yellow]Warning:[/] URL not supported. Please provide \
 one of the following URLs:
 - Model URL: {self.model_url}<model_name>
 - All Models URL: {self.models_url}
 - Category URL: {self.category_url}<category_name> or {self.site_url}/<category_name>
 - All Categories URL: {self.categories_url}
 - Single Post URL: {self.site_url}/<post_id>
-"""
-        )
+""")
 
     def _validate_url(self, url: str) -> str:
         """
@@ -79,9 +76,9 @@ one of the following URLs:
         Returns:
             bool: True if the URL is a category URL, False otherwise.
         """
-        if url.startswith(self.category_url) and url.rstrip(
-            "/"
-        ) != self.category_url.rstrip("/"):
+        if url.startswith(self.category_url) and (
+            url.rstrip("/") != self.category_url.rstrip("/")
+        ):
             return True
 
         path: str = self._validate_url(url)
@@ -114,7 +111,12 @@ one of the following URLs:
             return True
         return "-" in self._validate_url(url)
 
-    async def media_filter(self, soup: BeautifulSoup) -> list[str]:
+    @override
+    def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
+        return url.rstrip("/").split("/")[-1]
+
+    @override
+    async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
         Filter and retrieve media URLs from the BeautifulSoup object.
 
@@ -133,40 +135,6 @@ one of the following URLs:
         ]
         return images + videos
 
-    async def get_paginated_media(
-        self,
-        soup: BeautifulSoup,
-        get_media_func: Callable[..., Awaitable[list[str]]],
-        url: str,
-    ) -> list[str]:
-        """
-        Retrieve all media URLs across paginated pages.
-
-        Args:
-            soup (BeautifulSoup): The BeautifulSoup object of the initial page.
-            get_media_func (Callable[..., Awaitable[list[str]]]): The function to
-                retrieve media URLs from a specific page.
-            url (str): The base URL for pagination.
-
-        Returns:
-            list[str]: A list of all media URLs found across paginated pages.
-        """
-        try:
-            # Get pagination items
-            pagination: Tag | NavigableString | None = soup.find(
-                "ul", class_="pagination"
-            )
-            # Get the last page number
-            last_page = int(pagination.find_all("li")[-2].get_text(strip=True))
-        except AttributeError:
-            # Only one page, return the current page
-            last_page = 1
-
-        tasks = [
-            get_media_func(f"{url}page/{page}/") for page in range(1, last_page + 1)
-        ]
-        return list(chain.from_iterable(await gather(*tasks)))
-
     async def bulk_download(self, url: str) -> list[dict[str, str]]:
         """
         Download media from all albums of a model or category URL.
@@ -178,22 +146,25 @@ one of the following URLs:
             list[dict[str, str]]: A list of dictionaries with information about
             each downloaded media item.
         """
-        title: str = url.rstrip("/").split("/")[-1]
+        logger.info(f"Downloading albums from {url}")
+        soup: BeautifulSoup = await self.fetch_soup(url)
 
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
+        try:
+            # Get pagination items
+            pagination: Tag | None = soup.select_one("ul.pagination")
+            # Get the last page number
+            last_page = int(pagination.find_all("li")[-2].get_text(strip=True))
+        except AttributeError:
+            # Only one page, return the current page
+            last_page = 1
 
-        media_urls: list[str] = await self.get_paginated_media(
-            soup, self.get_media_from_page, url=url
-        )
-        if not media_urls:
-            print(f"No media found for {title}")
-            return []
+        tasks = [
+            self.get_media_from_page(f"{url}page/{page}/")
+            for page in range(1, last_page + 1)
+        ]
+        media_urls: list[str] = list(chain.from_iterable(await asyncio.gather(*tasks)))
 
-        return await self.process_album(
-            url, self.media_filter, title=title, media_urls=media_urls, soup=soup
-        )
+        return await self.process_album(url, media_urls=media_urls)
 
     async def all_models_download(self) -> list[dict[str, str]]:
         print("[yellow]Downloading all models is not implemented yet.[/]")
@@ -214,8 +185,7 @@ one of the following URLs:
             list[dict[str, str]]: A list of dictionaries with information about
             each downloaded media item.
         """
-        title: str = post_url.rstrip("/").split("/")[-1]
-        return await self.process_album(post_url, self.media_filter, title=title)
+        return await self.process_album(post_url)
 
     async def get_media_from_page(self, url: str) -> list[str]:
         """
@@ -228,31 +198,19 @@ one of the following URLs:
         Returns:
             list[str]: A list of media URLs found on the specified page.
         """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
+
+        async def fetch_and_extract(album: str) -> list[str]:
+            """fetch_and_extract === process_album logic"""
+            soup: BeautifulSoup = await self.fetch_soup(album)
+            return await self.get_media_urls(soup, album)
+
+        soup: BeautifulSoup = await self.fetch_soup(url)
 
         page_albums: list[str] = [
             album["href"] for album in soup.find_all("a", class_="athumb thumb-link")
         ]
-        tasks = [self.find_media(album) for album in page_albums]
-        return list(chain.from_iterable(await gather(*tasks)))
-
-    async def find_media(self, url: str) -> list[str]:
-        """
-        Find and return all media URLs from a given URL.
-
-        Args:
-            url (str): The URL to retrieve media from.
-
-        Returns:
-            list[str]: A list of media URLs found in the album.
-        """
-        soup: BeautifulSoup | None = await self.fetch_soup(url)
-        if not soup:
-            return []
-
-        return list(set(await self.media_filter(soup)))
+        tasks = [fetch_and_extract(album) for album in page_albums]
+        return list(chain.from_iterable(await asyncio.gather(*tasks)))
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
@@ -272,7 +230,7 @@ one of the following URLs:
         """
         url = url if url.endswith("/") else url + "/"
         try:
-            response = await self.session.head(url)
+            response = await self.downloader.fetch(url, "HEAD", raw_response=True)
             response.raise_for_status()
             if (
                 response.status == 301

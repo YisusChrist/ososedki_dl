@@ -5,15 +5,13 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING
 
+from core_helpers.logs import logger
 from rich import print
 
 from .crawlers import crawlers as crawler_modules
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
-    from aiohttp import ClientResponse
-    from aiohttp_client_cache.response import CachedResponse
+    from argparse import Namespace
 
     from .crawlers import CrawlerInstance
     from .download import SessionType
@@ -45,7 +43,9 @@ def print_error_report_card(error_groups: dict[str, list[str]]) -> None:
     print(f"Unique Error Types: {unique}\n")
 
     print("Top Issues:")
-    for err, urls in sorted(error_groups.items(), key=lambda x: len(x[1]), reverse=True):
+    for err, urls in sorted(
+        error_groups.items(), key=lambda x: len(x[1]), reverse=True
+    ):
         print(f"  • {err} ({len(urls)})")
     print()
 
@@ -57,6 +57,8 @@ def print_errors(results: list[dict[str, str]]) -> None:
     Args:
         results (list[dict[str, str]]): The list of results.
     """
+    logger.debug("Printing errors from results...")
+
     # Extract only errors with normalized message
     errors: list[tuple[str, str]] = [
         (normalize_error_message(r["status"]), r["url"])
@@ -73,7 +75,7 @@ def print_errors(results: list[dict[str, str]]) -> None:
 
 
 async def generic_download(
-    session: SessionType, urls: list[str], download_path: Path
+    session: SessionType, urls: list[str], args: Namespace
 ) -> None:
     """
     Download images from a list of URLs using the appropriate crawler.
@@ -81,27 +83,32 @@ async def generic_download(
     Args:
         session (SessionType): The HTTP session to use for requests.
         urls (list[str]): List of URLs to download images from.
-        download_path (Path): The base path where downloaded media will be saved.
+        args (Namespace): The command-line arguments containing context such as
+            download path and cache checking.
     """
+    logger.debug("Starting generic download...")
+
     results: list[dict[str, str]] = []
     for url in urls:
-        results.extend(await handle_downloader(session, download_path, url))
+        results.extend(await handle_downloader(session, url, args))
 
-    status_counts = Counter(result["status"].split(":")[0] for result in results)
-
-    print(
-        f"""
-[green]Downloaded: {status_counts['ok']}[/]
-[yellow]Skipped: {status_counts['skipped']}[/]
-[red]Errors: {status_counts['error']}[/]\n"""
+    status_counts: Counter[str] = Counter(
+        result["status"].split(":")[0] for result in results
     )
 
-    if status_counts['error'] > 0:
+    logger.debug(f"Download results summary: {status_counts}")
+    print(f"""
+[green]Downloaded: {status_counts['ok']}[/]
+[yellow]Skipped: {status_counts['skipped']}[/]
+[red]Errors: {status_counts['error']}[/]\n""")
+
+    if status_counts["error"] > 0:
+        logger.info("There were errors during download")
         print_errors(results)
 
 
 async def handle_downloader(
-    session: SessionType, download_path: Path, url: str
+    session: SessionType, url: str, args: Namespace
 ) -> list[dict[str, str]]:
     """
     Selects and invokes the appropriate crawler to download content from the
@@ -114,23 +121,23 @@ async def handle_downloader(
 
     Args:
         session (SessionType): The HTTP session to use for requests.
-        download_path (Path): The base path where downloaded media will be saved.
         url (str): The URL to download from.
+        args (Namespace): The command-line arguments containing context such as
+            download path and cache checking.
 
     Returns:
         list[dict[str, str]]: The list to append download results to.
     """
-    # Check if the URL is valid
-    try:
-        response: ClientResponse | CachedResponse = await session.get(url)
-        response.raise_for_status()
-    except Exception as e:
-        return [{"url": url, "status": f"error: {e}"}]
+    logger.debug(f"Handling downloader for URL: {url}")
 
     for CrawlerClass in crawler_modules:
-        if url.startswith(CrawlerClass.site_url):
-            crawler: CrawlerInstance = CrawlerClass(session, download_path)
+        logger.debug("Checking crawler: %s for URL: %s", CrawlerClass.__name__, url)
+        if CrawlerClass.can_handle(url):
+            crawler: CrawlerInstance = CrawlerClass(session, args)
+            crawler_name: str = crawler.__class__.__name__
+            logger.info("Downloading for URL: %s using crawler: %s", url, crawler_name)
             return await crawler.download(url)
     else:
+        logger.warning("No downloader found for URL: %s", url)
         print(f"[yellow]No downloader found for URL: {url}[/]")
         return [{"url": url, "status": "error: no downloader found"}]
