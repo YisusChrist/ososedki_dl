@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlparse
 
 import aiofiles
-import requests
 from aiohttp.client import ClientResponse, ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientConnectorError, ClientResponseError
 from aiohttp_client_cache.response import CachedResponse
@@ -147,7 +146,8 @@ class Downloader:
 
                 # Dynamically access the specified response property
                 if hasattr(response, response_property):
-                    return await getattr(response, response_property)()
+                    attr = getattr(response, response_property)
+                    return await attr() if callable(attr) else attr
                 raise ValueError(
                     f"Response object has no property '{response_property}'"
                 )
@@ -169,24 +169,8 @@ class Downloader:
             except ClientResponseError as e:  # 4xx, 5xx errors
                 logger.exception(f"Failed to fetch {url}")
                 print(f"Failed to fetch {url} with status {e.status}")
-
-                response2: requests.Response = await to_thread(
-                    requests.request,
-                    method.upper(),
-                    url=url,
-                    headers=headers,
-                    timeout=MAX_TIMEOUT,
-                    **kwargs,
-                )
-                response2.raise_for_status()
-                if raw_response:
-                    return response2
-
-                # Dynamically access the specified response property
-                if hasattr(response2, response_property):
-                    attr = getattr(response2, response_property)
-                    return attr() if callable(attr) else attr
-                return response2.content
+                if attempt >= max_attempts:
+                    raise
 
     async def download_image(
         self, url: str, response: ResponseType, media_path: Path
