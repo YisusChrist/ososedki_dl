@@ -9,5 +9,6 @@ class OsosedkiCrawler(OsosedkiBaseCrawler):
     album_path = "/photos/"
     model_url = None
     cosplay_url = f"{site_url}/cosplay/"
+    fandom_url = None
     button_class = None
     pagination = False
