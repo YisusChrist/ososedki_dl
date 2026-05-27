@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from asyncio import sleep, to_thread
+from asyncio import sleep
 from dataclasses import dataclass
 from hashlib import sha256
 from mimetypes import guess_extension
