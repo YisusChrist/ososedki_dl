@@ -166,6 +166,7 @@ Since 2025-08-18, the program includes progress bars for downloading processes. 
 
 | Domain              | URL                           | Scrapping          | Downloading        |
 | ------------------- | ----------------------------- | ------------------ | ------------------ |
+| `baobua`            | https://baobua.net            | :heavy_check_mark: | :heavy_check_mark: |
 | `bunkr-albums`      | https://bunkr-albums.io       | :heavy_check_mark: | :x:\*              |
 | `balbums`           | https://balbums.st            | :heavy_check_mark: | :x:\*              |
 | `cosplayasian`      | https://cosplayasian.com      | :heavy_check_mark: | :heavy_check_mark: |
@@ -188,6 +189,7 @@ Since 2025-08-18, the program includes progress bars for downloading processes. 
 | `ocosplay`          | https://ocosplay.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `sorrymother`       | https://sorrymother.top       | :heavy_check_mark: | :heavy_check_mark: |
+| `thismore`          | https://thismore.fun          | :heavy_check_mark: | :heavy_check_mark: |
 | `vipthots`          | https://vipthots.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `waifubitches`      | https://waifubitches.com      | :heavy_check_mark: | :heavy_check_mark: |
 | `wildskirts`        | https://wildskirts.com        | :heavy_check_mark: | :heavy_check_mark: |
