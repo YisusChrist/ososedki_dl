@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 class CosxuxiClubCrawler(BaseCrawler):
     site_url = "https://cosxuxi.club"
     site_name: str = "CosXuxi Club"
-    title_separator: str = " - "
+    title_separator: str | None = " - "
+    content_div: str = "div.contentme"
 
     @override
     def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
@@ -42,7 +43,7 @@ class CosxuxiClubCrawler(BaseCrawler):
         text: str = soup.title.text.strip()
         if f"{self.site_name}: " in text:
             text = text.split(f"{self.site_name}: ")[1].strip()
-        if self.title_separator in text:
+        if self.title_separator and self.title_separator in text:
             text = text.split(self.title_separator)[0].strip()
 
         return text or DEFAULT_ALBUM_TITLE
@@ -50,7 +51,7 @@ class CosxuxiClubCrawler(BaseCrawler):
     @override
     async def get_media_urls(self, soup: BeautifulSoup, url: str) -> list[str]:
         """
-        Extracts and returns a list of image URLs from the 'contentme' div that
+        Extracts and returns a list of image URLs from the media div that
         contain the specified base URL fragment.
 
         Args:
@@ -65,8 +66,8 @@ class CosxuxiClubCrawler(BaseCrawler):
         urls: list[str] = []
 
         while True:
-            # Find all the images inside the div with the class 'contentme'
-            content_div: Tag | None = soup.select_one("div.contentme")
+            # Find all the images inside the div with the specific class
+            content_div: Tag | None = soup.select_one(self.content_div)
             if not content_div:
                 logger.warning(
                     f"No content div found in the soup for {self.__class__.__name__}"
