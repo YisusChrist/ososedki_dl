@@ -69,10 +69,26 @@ class Downloader:
     headers: dict[str, str] | None = None
     check_cache: bool = False
     debug: bool = False
+    chunk_size: int = 0
+    dynamic_chunk: bool = False
     timeout = ClientTimeout(sock_connect=SOCK_TIMEOUT, sock_read=SOCK_TIMEOUT)
 
     def __post_init__(self) -> None:
         logger.debug("Initialized Downloader")
+
+    def _get_initial_chunk_size(self, content_length: int) -> int:
+        if self.dynamic_chunk:
+            return _choose_chunk_size()
+        elif self.chunk_size:
+            return self.chunk_size
+        else:
+            MB = KB * KB
+            if content_length > 50 * MB:
+                return 256 * KB
+            elif content_length > 5 * MB:
+                return 64 * KB
+            else:
+                return DEFAULT_CHUNK_SIZE
 
     async def fetch(
         self,
@@ -205,12 +221,7 @@ class Downloader:
         return "ok", media_path
 
     async def download_video(
-        self,
-        url: str,
-        response: ResponseType,
-        media_path: Path,
-        chunk_size: int = DEFAULT_CHUNK_SIZE,
-        dynamic_chunk: bool = False,
+        self, url: str, response: ResponseType, media_path: Path
     ) -> tuple[str, Path]:
         """
         Handles streaming video chunks, tracking progress, and validating hashes.
@@ -219,10 +230,6 @@ class Downloader:
             url (str): The URL of the video to download.
             response (ResponseType): The aiohttp response object for the video URL.
             media_path (Path): The target file path to save the downloaded video.
-            chunk_size (int, optional): The initial size of each chunk to download.
-                Defaults to DEFAULT_CHUNK_SIZE.
-            dynamic_chunk (bool, optional): Whether to adjust chunk size dynamically
-                based on observed throughput. Defaults to False.
 
         Returns:
             tuple[str, Path]: A tuple containing the download status ("ok" or "skipped")
@@ -239,44 +246,59 @@ class Downloader:
         remote_hash = sha256()
         bytes_seen = 0
         t0: float = monotonic()
-        if dynamic_chunk:
-            chunk_size = _choose_chunk_size()
 
-        with MediaProgress() as progress:
-            task = progress.add_task(
-                "Downloading", filename=media_path.name, total=content_length
+        chunk_size: int = self._get_initial_chunk_size(content_length)
+        logger.debug(f"Initial chunk size: {chunk_size} bytes")
+
+        try:
+            with MediaProgress() as progress:
+                task = progress.add_task(
+                    "Downloading", filename=media_path.name, total=content_length
+                )
+                p_task = progress.tasks[0]
+                async with aiofiles.open(temp_path, "wb") as f:
+                    logger.debug(f"Opened temporary file for writing: {temp_path}")
+                    async for chunk in response.content.iter_chunked(chunk_size):
+                        if not chunk:
+                            continue
+
+                        remote_hash.update(chunk)
+                        await f.write(chunk)
+                        progress.advance(task, len(chunk))
+
+                        now: float = monotonic()
+                        bytes_seen += len(chunk)
+                        elapsed: float = now - t0
+                        if elapsed > 1.0:  # update once per second (cheap)
+                            logger.debug(
+                                f"Wrote {len(chunk)} bytes to {temp_path.name}, "
+                                f"Total written: {p_task.completed}/{p_task.total}"
+                            )
+
+                            if self.dynamic_chunk:
+                                throughput_bps = int(bytes_seen / elapsed)
+                                chunk_size = _choose_chunk_size(
+                                    throughput_bps
+                                )  # 32KB..1MB
+                                logger.debug(
+                                    f"Throughput: {throughput_bps / KB:.2f} KB/s, "
+                                    f"Chunk size: {chunk_size / KB:.2f} KB"
+                                )
+                                print(f"New chunk size: {chunk_size / KB:.2f} KB")
+                                bytes_seen = 0
+
+                            t0 = now
+
+        except TimeoutError as e:
+            logger.warning(f"Timeout reached for {url}")
+            print(
+                f"[bold red]ERROR[/bold red]: Request timed out for {media_path.name}: {e}"
             )
-            p_task = progress.tasks[0]
-            async with aiofiles.open(temp_path, "wb") as f:
-                logger.debug(f"Opened temporary file for writing: {temp_path}")
-                async for chunk in response.content.iter_chunked(chunk_size):
-                    if not chunk:
-                        continue
 
-                    remote_hash.update(chunk)
-                    await f.write(chunk)
-                    progress.advance(task, len(chunk))
-                    logger.debug(
-                        f"Wrote {len(chunk)} bytes to {temp_path.name}, "
-                        f"Total written: {p_task.completed}/{p_task.total}"
-                    )
-
-                    if not dynamic_chunk:
-                        continue
-
-                    now: float = monotonic()
-                    bytes_seen += len(chunk)
-                    elapsed: float = now - t0
-                    if elapsed > 1.0:  # update once per second (cheap)
-                        throughput_bps = int(bytes_seen / elapsed)
-                        chunk_size = _choose_chunk_size(throughput_bps)  # 32KB..1MB
-                        logger.debug(
-                            f"Throughput: {throughput_bps / KB:.2f} KB/s, "
-                            f"Chunk size: {chunk_size / KB:.2f} KB"
-                        )
-                        print(f"New chunk size: {chunk_size / KB:.2f} KB")
-                        bytes_seen = 0
-                        t0 = now
+            if temp_path.exists():
+                temp_path.unlink(missing_ok=True)
+                logger.debug(f"Removed temporary file: {temp_path} after timeout")
+            return "error: timeout", media_path
 
         # Duplicate check using hashes
         if media_path.exists():
@@ -329,7 +351,7 @@ class Downloader:
         media_name: str = unquote(urlparse(url).path).split("/")[-1]
 
         try:
-            response = await self.fetch(url, raw_response=True)
+            response: ResponseType = await self.fetch(url, raw_response=True)
         except ClientResponseError as e:
             logger.exception(f"Failed to fetch {url}")
             return {"url": url, "status": f"error: {e.status}"}
@@ -345,7 +367,9 @@ class Downloader:
             )
             if not content_type:
                 logger.error(f"Failed to get content type for {url}")
-                print(f"ERROR: Failed to get content type for {url}")
+                print(
+                    f"[bold red]ERROR[/bold red]: Failed to get content type for {url}"
+                )
                 return {"url": url, "status": "error: missing content type"}
 
             # Map content type to a file extension
@@ -355,7 +379,7 @@ class Downloader:
                     f"Failed to guess extension for content type: {content_type}"
                 )
                 print(
-                    f"ERROR: Failed to guess extension for content type: {content_type}"
+                    f"[bold red]ERROR[/bold red]: Failed to guess extension for content type: {content_type}"
                 )
                 return {"url": url, "status": "error: missing content type"}
 
