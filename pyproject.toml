@@ -46,6 +46,17 @@ update_changelog_on_bump = true
 [tool.isort]
 profile = "black"
 
+[tool.pylint]
+disable = [
+  "C0114", # missing-module-docstring
+  "C0116", # missing-function-docstring
+  "E0401", # import-error
+  "R0801", # duplicate-code
+  "R0913", # too-many-arguments
+  "R0917", # too-many-positional-arguments
+  "W0622", # redefined-builtin
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
