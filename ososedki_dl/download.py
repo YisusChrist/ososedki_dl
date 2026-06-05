@@ -26,7 +26,7 @@ from .consts import (
     DEFAULT_RESPONSE_PROPERTY,
     KB,
     MAX_SLEEP_SECONDS,
-    MAX_TIMEOUT,
+    SOCK_TIMEOUT,
 )
 from .progress import MediaProgress
 from .utils import get_unique_filename, get_url_hashfile, sanitize_path, write_to_cache
@@ -69,7 +69,7 @@ class Downloader:
     headers: dict[str, str] | None = None
     check_cache: bool = False
     debug: bool = False
-    timeout = ClientTimeout(total=MAX_TIMEOUT)
+    timeout = ClientTimeout(sock_connect=SOCK_TIMEOUT, sock_read=SOCK_TIMEOUT)
 
     def __post_init__(self) -> None:
         logger.debug("Initialized Downloader")
