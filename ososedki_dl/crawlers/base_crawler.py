@@ -21,6 +21,7 @@ from ..utils import get_final_path
 if TYPE_CHECKING:
     from argparse import Namespace
     from pathlib import Path
+    from typing import ClassVar
 
     from rich.progress import TaskID
 
@@ -30,13 +31,15 @@ if TYPE_CHECKING:
 class BaseCrawler(ABC):
     """Abstract base class for crawlers, providing common functionality."""
 
-    site_url: str
-    site_aliases: tuple[str, ...] = ()
+    site_url: ClassVar[str]
+    site_aliases: ClassVar[tuple[str, ...]] = ()
+    base_image_path: ClassVar[str | None] = None
+    headers: ClassVar[dict[str, str] | None] = None
+    max_concurrent_downloads: ClassVar[int] = 30
+
     session: SessionType
     download_path: Path
-    base_image_path: str | None = None
-    headers: dict[str, str] | None = None
-    max_concurrent_downloads: int = 30
+    downloader: Downloader
 
     def __init__(self, session: SessionType, args: Namespace) -> None:
         """
@@ -138,10 +141,6 @@ class BaseCrawler(ABC):
         Returns:
             list[dict[str, str]]: A list of dictionaries containing extracted
             data.
-
-        Raises:
-            NotImplementedError: If the method is not implemented by a
-                subclass.
         """
         return await self.process_album(url)
 
@@ -171,17 +170,19 @@ class BaseCrawler(ABC):
         return BeautifulSoup(html_content, "html.parser")
 
     async def download_media_items(
-        self,
-        media_urls: list[str],
-        album_title: str,
-        album_path: Path,
+        self, media_urls: list[str], album_title: str
     ) -> list[dict[str, str]]:
         logger.debug(
             f"Downloading {len(media_urls)} media items for album '{album_title}'"
         )
 
+        album_path: Path = get_final_path(self.download_path, album_title)
+
         # 1. Create a semaphore to limit concurrent network requests
         semaphore = asyncio.Semaphore(self.max_concurrent_downloads)
+        logger.debug(
+            f"Using a semaphore with max {self.max_concurrent_downloads} concurrent downloads"
+        )
 
         # 2. Create a worker wrapper that respects the semaphore
         async def sem_worker(url: str) -> dict[str, str]:
@@ -264,8 +265,7 @@ class BaseCrawler(ABC):
                 retries += 1
                 continue
 
-            album_path: Path = get_final_path(self.download_path, title)
-            return await self.download_media_items(media_urls, title, album_path)
+            return await self.download_media_items(media_urls, title)
 
         logger.error(f"Max retries reached for {album_url}. Skipping...")
         print(f"ERROR: Max retries reached for {album_url}. Skipping...")
