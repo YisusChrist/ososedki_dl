@@ -364,9 +364,6 @@ class Downloader:
             logger.info(f"Media already in cache, skipping download: {url}")
             return {"url": url, "status": "skipped"}
 
-        # Use urlparse to extract the media name from the URL
-        media_name: str = unquote(urlparse(url).path).split("/")[-1]
-
         try:
             response: ResponseType = await self.fetch(url, raw_response=True)
         except ClientResponseError as e:
@@ -375,6 +372,22 @@ class Downloader:
         except Exception as e:
             logger.exception(f"Failed to fetch {url}")
             return {"url": url, "status": f"error: {e}"}
+
+        # Use urlparse to extract the media name from the URL
+        media_name: str = unquote(urlparse(url).path).split("/")[-1]
+        if not media_name or media_name.endswith(".php"):
+            # Extract media name from the response content-disposition header
+            content_disposition: str = response.headers.get("Content-Disposition", "")
+            if "filename=" in content_disposition:
+                media_name = content_disposition.split("filename=")[-1].strip('"')
+                logger.debug(
+                    f"Extracted media name from Content-Disposition: {media_name}"
+                )
+            else:
+                logger.warning(
+                    f"Could not determine media name from URL or headers for {url}, using hash"
+                )
+                media_name = get_url_hashfile(url).stem
 
         content_type: str = response.headers.get("Content-Type", "")
 
