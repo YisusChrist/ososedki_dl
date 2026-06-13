@@ -13,7 +13,7 @@ from core_helpers.logs import logger
 from requests import HTTPError
 from rich import print
 
-from ..consts import MAX_RETRIES
+from ..consts import MAX_CONCURRENT_DOWNLOADS, MAX_RETRIES
 from ..download import Downloader
 from ..progress import AlbumProgress
 from ..utils import get_final_path
@@ -35,7 +35,7 @@ class BaseCrawler(ABC):
     site_aliases: ClassVar[tuple[str, ...]] = ()
     base_image_path: ClassVar[str | None] = None
     headers: ClassVar[dict[str, str] | None] = None
-    max_concurrent_downloads: ClassVar[int] = 30
+    max_concurrent_downloads: ClassVar[int] = MAX_CONCURRENT_DOWNLOADS
 
     session: SessionType
     download_path: Path

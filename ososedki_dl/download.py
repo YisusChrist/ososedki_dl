@@ -25,6 +25,7 @@ from .consts import (
     DEFAULT_CHUNK_SIZE,
     DEFAULT_RESPONSE_PROPERTY,
     KB,
+    MAX_RETRIES,
     MAX_SLEEP_SECONDS,
     SOCK_TIMEOUT,
 )
@@ -127,7 +128,6 @@ class Downloader:
         # Merge headers: priority to kwargs, fallback to instance defaults
         headers = kwargs.pop("headers", self.headers)
 
-        max_attempts = 5
         attempt = 0
         while True:
             attempt += 1
@@ -149,7 +149,7 @@ class Downloader:
                     )
                 if response.status in (429, 503):
                     # Too Many Requests or Service Unavailable
-                    if attempt >= max_attempts:
+                    if attempt >= MAX_RETRIES:
                         response.raise_for_status()
                     await sleep(min(2**attempt, MAX_SLEEP_SECONDS))
                     continue
@@ -174,18 +174,18 @@ class Downloader:
                     f"SSL error for {url}: {e}. Retrying with SSL verification disabled..."
                 )
                 kwargs["ssl"] = False
-                if attempt >= max_attempts:
+                if attempt >= MAX_RETRIES:
                     raise
             except ClientConnectorError as e:
                 logger.exception(f"Failed to connect to {url}")
                 print(f"Failed to connect to {url} with error {e}. Retrying...")
-                if attempt >= max_attempts:
+                if attempt >= MAX_RETRIES:
                     raise
                 await sleep(min(2**attempt, MAX_SLEEP_SECONDS))
             except ClientResponseError as e:  # 4xx, 5xx errors
                 logger.exception(f"Failed to fetch {url}")
                 print(f"Failed to fetch {url} with status {e.status}")
-                if attempt >= max_attempts:
+                if attempt >= MAX_RETRIES:
                     raise
 
     async def download_image(
