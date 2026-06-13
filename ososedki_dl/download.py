@@ -240,23 +240,44 @@ class Downloader:
         content_length = int(response.headers.get("Content-Length", 0))
         logger.debug(f"Content length: {content_length} bytes")
 
-        temp_path: Path = media_path.with_suffix(media_path.suffix + ".part")
-        logger.debug(f"Temporary file path: {temp_path}")
-
         remote_hash = sha256()
         bytes_seen = 0
-        t0: float = monotonic()
+        bytes_downloaded = 0
 
         chunk_size: int = self._get_initial_chunk_size(content_length)
         logger.debug(f"Initial chunk size: {chunk_size} bytes")
 
+        url_hash: str = get_url_hashfile(url).stem
+        # Add the hash to the temporary filename to avoid collisions
+        temp_path: Path = media_path.with_name(
+            f"{url_hash}_{media_path.name}"
+        ).with_suffix(media_path.suffix + ".part")
+        logger.debug(f"Temporary file path: {temp_path}")
+
+        if temp_path.exists():
+            # Continue from previous unfinished download
+            bytes_downloaded = temp_path.stat().st_size
+            logger.debug(f"Resuming download from {bytes_downloaded} bytes")
+            print(f"Resuming download from {bytes_downloaded} bytes")
+
+            async with aiofiles.open(temp_path, "rb") as f:
+                while existing_chunk := await f.read(64 * KB):
+                    remote_hash.update(existing_chunk)
+
+            headers = {"Range": f"bytes={bytes_downloaded}-"}
+            response = await self.fetch(url, raw_response=True, headers=headers)
+
+        t0: float = monotonic()
         try:
             with MediaProgress() as progress:
                 task = progress.add_task(
-                    "Downloading", filename=media_path.name, total=content_length
+                    "Downloading",
+                    filename=media_path.name,
+                    completed=bytes_downloaded,
+                    total=content_length,
                 )
                 p_task = progress.tasks[0]
-                async with aiofiles.open(temp_path, "wb") as f:
+                async with aiofiles.open(temp_path, "ab") as f:
                     logger.debug(f"Opened temporary file for writing: {temp_path}")
                     async for chunk in response.content.iter_chunked(chunk_size):
                         if not chunk:
@@ -294,10 +315,6 @@ class Downloader:
             print(
                 f"[bold red]ERROR[/bold red]: Request timed out for {media_path.name}: {e}"
             )
-
-            if temp_path.exists():
-                temp_path.unlink(missing_ok=True)
-                logger.debug(f"Removed temporary file: {temp_path} after timeout")
             return "error: timeout", media_path
 
         # Duplicate check using hashes
