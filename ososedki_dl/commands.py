@@ -42,7 +42,7 @@ async def run_main_loop(args: Namespace) -> None:
     ua = UserAgent(min_version=MIN_USER_AGENT_VERSION)
     logger.debug(f"Generated User-Agent: {ua.random}")
     headers: dict[str, str] = {"User-Agent": ua.random}
-    async with SessionType(headers=headers) as session:
+    async with SessionType(headers=headers, verify_ssl=False) as session:
         while True:
             urls, download_path = get_user_input(args.dest_path)
             args.dest_path = download_path
