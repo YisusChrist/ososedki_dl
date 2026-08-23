@@ -174,19 +174,6 @@ one of the following URLs:
         print("[yellow]Downloading all categories is not implemented yet.[/]")
         return []
 
-    async def post_download(self, post_url: str) -> list[dict[str, str]]:
-        """
-        Download media from a single post URL.
-
-        Args:
-            post_url (str): The URL of the post to download media from.
-
-        Returns:
-            list[dict[str, str]]: A list of dictionaries with information about
-            each downloaded media item.
-        """
-        return await self.process_album(post_url)
-
     async def get_media_from_page(self, url: str) -> list[str]:
         """
         Callback to retrieve all media URLs from a specific paginated page of
@@ -247,7 +234,7 @@ one of the following URLs:
         if url == self.categories_url:
             return await self.all_categories_download()
         if self.is_post_url(url):
-            return await self.post_download(url)
+            return await self.process_album(url)
         if any([url.startswith(self.model_url), self.is_category_url(url)]):
             return await self.bulk_download(url)
         else:
