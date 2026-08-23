@@ -71,6 +71,12 @@ def get_parsed_args() -> Namespace:
         default=False,
         help="Check for cached downloads before downloading.",
     )
+    g_main.add_argument(
+        "-cf",
+        "--cookies-file",
+        type=Path,
+        help="Specify the cookies file to use for authentication.",
+    )
 
     g_user = parser.add_argument_group("User Options")
     g_user.add_argument(

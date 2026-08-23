@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from aiohttp import ClientSession
@@ -12,8 +14,7 @@ from fake_useragent import UserAgent
 from rich import print
 
 from .cli import handle_config_command
-from .consts import (CONFIG_FILE, GITHUB, LOG_FILE, MIN_USER_AGENT_VERSION,
-                     PACKAGE)
+from .consts import CONFIG_FILE, GITHUB, LOG_FILE, MIN_USER_AGENT_VERSION, PACKAGE
 from .consts import __desc__ as DESC
 from .consts import __version__ as VERSION
 from .crawlers import crawlers as crawler_modules
@@ -22,6 +23,40 @@ from .utils import get_user_input
 
 if TYPE_CHECKING:
     from argparse import Namespace
+
+
+def load_cookies_from_file(cookies_file: Path) -> dict[str, str]:
+    """
+    Load cookies from a JSON file.
+
+    Args:
+        cookies_file (Path): Path to the JSON file containing cookies.
+
+    Returns:
+        dict[str, str]: A dictionary of cookies.
+    """
+    try:
+        with open(cookies_file, "r") as f:
+            cookies = json.load(f)
+            return cookies
+    except json.JSONDecodeError as e:
+        with open(cookies_file, "r") as f:
+            content = f.read()
+
+        if "=" not in content:
+            raise e
+
+        # Parse the one line cookie string into a dictionary
+        cookies: dict[str, str] = dict(item.split("=", 1) for item in content.strip().split("; "))
+        with open(cookies_file, "w") as f:
+            json.dump(cookies, f, indent=2)
+
+        logger.info(f"Loaded cookies from {cookies_file}")
+        return cookies
+    except ValueError as e:
+        logger.error(f"Failed to load cookies from {cookies_file}: {e}")
+        print(f"[red]Error:[/red] Failed to load cookies from {cookies_file}: {e}")
+        return {}
 
 
 async def run_main_loop(args: Namespace) -> None:
@@ -39,10 +74,14 @@ async def run_main_loop(args: Namespace) -> None:
     print(msg)
     logger.info(msg)
 
+    cookies: dict[str, str] = {}
+    if args.cookies_file:
+        cookies = load_cookies_from_file(args.cookies_file)
+
     ua = UserAgent(min_version=MIN_USER_AGENT_VERSION)
     logger.debug(f"Generated User-Agent: {ua.random}")
     headers: dict[str, str] = {"User-Agent": ua.random}
-    async with SessionType(headers=headers) as session:
+    async with SessionType(headers=headers, cookies=cookies) as session:
         while True:
             urls, download_path = get_user_input(args.dest_path)
             args.dest_path = download_path
