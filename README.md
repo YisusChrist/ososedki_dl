@@ -188,6 +188,7 @@ Since 2025-08-18, the program includes progress bars for downloading processes. 
 | `nungvl`            | https://nungvl.net            | :heavy_check_mark: | :heavy_check_mark: |
 | `ocosplay`          | https://ocosplay.com          | :heavy_check_mark: | :heavy_check_mark: |
 | `ososedki`          | https://ososedki.com          | :heavy_check_mark: | :heavy_check_mark: |
+| `recume`            | https://recu.me               | :heavy_check_mark: | :heavy_check_mark: |
 | `sorrymother`       | https://sorrymother.top       | :heavy_check_mark: | :heavy_check_mark: |
 | `thismore`          | https://thismore.fun          | :heavy_check_mark: | :heavy_check_mark: |
 | `vipthots`          | https://vipthots.com          | :heavy_check_mark: | :heavy_check_mark: |
