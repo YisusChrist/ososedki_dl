@@ -17,9 +17,9 @@ class RecumeCrawler(BaseCrawler):
     }
 
     video_url: str = site_url + "/performer/{model}/video/{video_id}/play"
-    videos_url: str = site_url + "/performer/{model}/latest/page/"
-    clips_url: str = site_url + "/clips/{model}/latest/page/"
-    kinks_url: str = site_url + "/performer/{model}/kinks/latest/page/"
+    videos_url: str = site_url + "/performer/{model}/latest"
+    clips_url: str = site_url + "/clips/{model}/latest"
+    kinks_url: str = site_url + "/performer/{model}/kinks/latest"
 
     @override
     def get_album_title(self, soup: BeautifulSoup, url: str) -> str:
@@ -93,7 +93,7 @@ class RecumeCrawler(BaseCrawler):
         index = 1
 
         url = url.rstrip("/")
-        url_index: str = url.rstrip("/").split("/")[-1]
+        url_index: str = url.split("/")[-1]
         if url_index.isdigit() and f"/page/{url_index}" in url:
             index = int(url_index)
             url = url.replace(f"/page/{url_index}", "")
@@ -128,17 +128,18 @@ class RecumeCrawler(BaseCrawler):
 
     @override
     async def download(self, url: str) -> list[dict[str, str]]:
+        url = url.rstrip("/")
         if "/kinks/" in url:
-            self.model: str = url.rstrip("/").split("/kinks/")[0].split("/")[-1]
+            self.model: str = url.split("/kinks/")[0].split("/")[-1]
         elif "/clips/" in url:
-            self.model = url.rstrip("/").split("/clips/")[0].split("/")[-1]
+            self.model = url.split("/clips/")[1].split("/")[0]
         elif "/video/" in url:
             print(
                 "Video downloading is not supported yet. Please use the performer page or clips/kinks pages."
             )
             return []
         elif "/performer/" in url:
-            self.model = url.rstrip("/").split("/performer/")[1].split("/")[0]
+            self.model = url.split("/performer/")[1].split("/")[0]
         else:
             logger.error(f"Invalid URL format: {url}")
             raise ValueError(f"Invalid URL format: {url}")
